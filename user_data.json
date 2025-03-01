@@ -37,7 +37,94 @@
         }
 
     ],
-    "skills": {
-
+    "skills": [
+    {
+      "category": "Frontend Technologies",
+      "technologies": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "Bootstrap",
+        "React.js",
+        "TypeScript",
+        "Redux",
+        "Material-UI",
+        "WebSocket"
+      ]
+    },
+    {
+      "category": "Backend Technologies",
+      "technologies": [
+        "Express.js",
+        "Node.js",
+        "RESTful APIs",
+        "GraphQL"
+      ]
+    },
+    {
+      "category": "Databases and Storage",
+      "technologies": [
+        "MongoDB",
+        "Mongoose",
+        "SQL",
+        "MySQL",
+        "PostgreSQL"
+      ]
+    },
+    {
+      "category": "Blockchain",
+      "technologies": [
+        "Hyperledger Fabric"
+      ]
+    },
+    {
+      "category": "Testing",
+      "technologies": [
+        "Unit Testing",
+        "Integration Testing",
+        "End-to-End Testing"
+      ]
+    },
+    {
+      "category": "DevOps and Deployment",
+      "technologies": [
+        "Kubernetes",
+        "Docker",
+        "Docker Compose",
+        "Jenkins",
+        "CI/CD Pipelines"
+      ]
+    },
+    {
+      "category": "Security",
+      "technologies": [
+        "JWT Authentication",
+        "OAuth",
+        "Encryption",
+        "Rate Limiting",
+        "XSS Prevention",
+        "Secure Coding Practices"
+      ]
+    },
+    {
+      "category": "Additional Tools and Technologies",
+      "technologies": [
+        "Git/GitHub",
+        "Postman",
+        "Agile/Scrum Methodologies",
+        "Unit Testing (Jest, Mocha)",
+        "Performance Tuning and Optimization",
+        "Real-time Communication (WebRTC, Socket.io)"
+      ]
+    },
+    {
+      "category": "Soft Skills",
+      "technologies": [
+        "Problem Solving",
+        "Team Collaboration",
+        "Communication Skills",
+        "Project Management"
+      ]
     }
+  ]
 }

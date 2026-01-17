@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Resume</title>
+    <style>
+        /* --- CSS RESET & BASE STYLES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #f0f2f5; /* Light gray background outside the resume paper */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            padding: 20px 0;
+        }
+
+        /* --- MAIN CONTAINER (The "Paper") --- */
+        .resume-container {
+            /* max-width: 900px; */
+            width: 100%;
+            margin: 0 auto;
+            background-color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 40px !important;
+        }
+
+        /* A subtle accent color used throughout */
+        :root {
+            --accent-color: #2c5282; /* A professional dark blue */
+            --secondary-text: #666;
+            --border-color: #e2e8f0;
+        }
+
+        /* --- TYPOGRAPHY & SHARED STYLES --- */
+        h1, h2, h3, h4 {
+            color: var(--accent-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            color: #2d3748;
+            margin-bottom: 2px;
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        ul {
+            list-style-position: inside;
+            margin-left: 10px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* --- HEADER SECTION --- */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .contact-info {
+            font-size: 0.95rem;
+            color: var(--secondary-text);
+        }
+
+        /* Adds a separator pipe | between contact items */
+        .contact-info span:not(:last-child)::after {
+            content: "|";
+            margin: 0 10px;
+            color: var(--border-color);
+        }
+
+        /* --- MAIN LAYOUT GRID --- */
+        .resume-content {
+            display: grid;
+            /* 70% main content, 30% sidebar gap */
+            grid-template-columns: 7fr 3fr; 
+            gap: 40px;
+        }
+
+        /* --- EXPERIENCE SECTION STYLING --- */
+        .job-item {
+            margin-bottom: 25px;
+        }
+
+        /* Flex container for job title and date row */
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+        }
+
+        .company-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .job-date {
+            color: var(--secondary-text);
+            font-size: 0.9rem;
+            font-style: italic;
+            white-space: nowrap; /* Prevents date wrapping awkwardly */
+        }
+
+        .job-role {
+            color: var(--accent-color);
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        /* --- SIDEBAR STYLING --- */
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        /* A cleaner look for skills lists */
+        .skills-list {
+            list-style: none;
+            margin-left: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skills-list li {
+            background-color: #edf2f7;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .education-item {
+            margin-bottom: 15px;
+        }
+        
+        .degree {
+            font-weight: 600;
+        }
+
+        /* --- RESPONSIVE DESIGN (For smaller screens/printing) --- */
+        @media (max-width: 768px) {
+            .resume-container {
+                padding: 20px;
+                width: 95%;
+            }
+            /* Stack the grid on mobile */
+            .resume-content {
+                grid-template-columns: 1fr; 
+                gap: 20px;
+            }
+            header {
+                text-align: left;
+            }
+            .contact-info span {
+                display: block;
+                margin-bottom: 5px;
+            }
+            .contact-info span:not(:last-child)::after {
+                display: none;
+            }
+            .job-header {
+                flex-direction: column;
+            }
+        }
+
+        /* Ensure it prints nicely without background colors */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .resume-container {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="resume-container">
+        <header>
+            <h1>Jonathan Doe</h1>
+            <div class="contact-info">
+                <span>john.doe@email.com</span>
+                <span>(555) 123-4567</span>
+                <span>linkedin.com/in/johndoe</span>
+                <span>San Francisco, CA</span>
+            </div>
+        </header>
+
+        <section class="summary-section">
+            <h2>Professional Summary</h2>
+            <p>Results-oriented Software Engineer with 6+ years of experience in full-stack web development. Proven track record of designing scalable architectures and leading teams to deliver high-impact projects under tight deadlines. Passionate about clean code, optimizing performance, and creating intuitive user experiences.</p>
+        </section>
+
+        <div class="resume-content">
+            
+            <main>
+                <h2>Work Experience</h2>
+
+                <div class="job-item">
+                    <div class="job-header">
+                        <h3 class="company-name">TechSolutions Inc.</h3>
+                        <span class="job-date">Jan 2021 – Present</span>
+                    </div>
+                    <span class="job-role">Senior Software Engineer</span>
+                    <ul>
+                        <li>Spearheaded the migration of a legacy monolith architecture to microservices using Node.js and Docker, reducing deployment time by 40%.</li>
+                        <li>Mentored a team of 4 junior developers, conducting code reviews and establishing best practices for API design.</li>
+                        <li>Optimized database queries and implemented Redis caching, resulting in a 30% decrease in average page load speeds for high-traffic dashboards.</li>
+                    </ul>
+                </div>
+
+                <div class="job-item">
+                    <div class="job-header">
+                        <h3 class="company-name">Creative Web Agency</h3>
+                        <span class="job-date">Jun 2018 – Dec 2020</span>
+                    </div>
+                    <span class="job-role">Full Stack Developer</span>
+                    <ul>
+                        <li>Developed and launched over 15 responsive client websites using React and Python Django.</li>
+                        <li>Collaborated directly with clients to gather requirements and translate business needs into technical specifications.</li>
+                        <li>Integrated third-party APIs like Stripe for payments and Twilio for SMS notifications.</li>
+                    </ul>
+                </div>
+
+                 <div class="job-item">
+                    <div class="job-header">
+                        <h3 class="company-name">StartUp Hub</h3>
+                        <span class="job-date">May 2016 – May 2018</span>
+                    </div>
+                    <span class="job-role">Junior Front-End Developer</span>
+                    <ul>
+                        <li>Built interactive UI components using HTML5, CSS3 SASS, and vanilla JavaScript.</li>
+                        <li>Ensured cross-browser compatibility and mobile responsiveness for the company's main product platform.</li>
+                    </ul>
+                </div>
+            </main>
+
+            <aside>
+                <section class="sidebar-section">
+                    <h2>Technical Skills</h2>
+                    <ul class="skills-list">
+                        <li>JavaScript (ES6+)</li>
+                        <li>React & Redux</li>
+                        <li>Node.js</li>
+                        <li>Python</li>
+                        <li>HTML5 & CSS3</li>
+                        <li>SQL (PostgreSQL)</li>
+                        <li>Docker</li>
+                        <li>AWS (EC2, S3)</li>
+                        <li>Git Workflow</li>
+                    </ul>
+                </section>
+
+                <section class="sidebar-section">
+                    <h2>Soft Skills</h2>
+                    <ul class="skills-list">
+                        <li>Team Leadership</li>
+                        <li>Agile/Scrum</li>
+                        <li>Problem Solving</li>
+                        <li>Communication</li>
+                    </ul>
+                </section>
+
+                <section class="sidebar-section">
+                    <h2>Education</h2>
+                    <div class="education-item">
+                        <div class="degree">B.S. Computer Science</div>
+                        <div>University of California, Berkeley</div>
+                        <div class="job-date">Graduated 2016</div>
+                    </div>
+                </section>
+                
+                <section class="sidebar-section">
+                    <h2>Certifications</h2>
+                    <div class="education-item">
+                        <div class="degree">AWS Certified Solutions Architect</div>
+                        <div class="job-date">2022</div>
+                    </div>
+                </section>
+            </aside>
+
+        </div> </div> </body>
+</html>

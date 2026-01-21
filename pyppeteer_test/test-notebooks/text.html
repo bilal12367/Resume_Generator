@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Rivera - Senior Spring Boot Developer Resume</title>
+    <style>
+        /* Global Styles & A4 Formatting */
+        @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css');
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: #34495e;
+        }
+
+        .resume-container {
+            background: #ffffff;
+            width: 210mm;
+            /* A4 width */
+            min-height: 297mm;
+            /* A4 height */
+            margin: 20px 0;
+            padding: 10mm !important;
+            box-sizing: border-box;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* --- Typography & General Elements --- */
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 0;
+        }
+
+        li {
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        /* --- Section Titles --- */
+        .section-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            text-transform: uppercase;
+            border-bottom: 2px solid #bdc3c7;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+            margin-top: 30px;
+        }
+
+        /* --- Header Section --- */
+        .resume-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .resume-header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+
+        .resume-header h2 {
+            font-size: 1.5em;
+            font-weight: 400;
+            color: #34495e;
+            margin: 0;
+            padding-top: 10px;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px 20px;
+            font-size: 0.9em;
+            margin-top: 20px;
+            border-top: 2px solid #bdc3c7;
+            padding-top: 20px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .contact-info i {
+            margin-right: 8px;
+            color: #3498db;
+        }
+
+        /* --- Summary Section --- */
+        .professional-summary p {
+            font-size: 1em;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* --- Skills Section --- */
+        .skills-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .skills-list li {
+            margin-bottom: 10px;
+        }
+
+        .skills-list strong {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-right: 8px;
+            display: inline-block;
+            width: 150px;
+            /* Aligns the skill details */
+        }
+
+        /* --- Experience & Projects Section --- */
+        .entry {
+            margin-bottom: 25px;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+        }
+
+        .entry-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .entry-dates {
+            font-style: italic;
+            color: #555;
+            white-space: nowrap;
+            padding-left: 15px;
+        }
+
+        .entry-subtitle {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* --- Education Section --- */
+        .education-entry .entry-title {
+            margin-bottom: 5px;
+        }
+
+        /* --- Print Optimization --- */
+        @media print {
+            body {
+                background-color: #ffffff;
+            }
+
+            .resume-container {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                width: 100%;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="resume-container"> <!-- Header Section -->
+        <header class="resume-header">
+            <h1>ALEX RIVERA</h1>
+            <h2>Senior Spring Boot Developer</h2>
+            <div class="contact-info"> <span class="contact-item"><i class="fas fa-envelope"></i><a
+                        href="mailto:alex.rivera@email.com">alex.rivera@email.com</a></span> <span
+                    class="contact-item"><i class="fas fa-phone"></i> +1-555-0123</span> <span class="contact-item"><i
+                        class="fas fa-map-marker-alt"></i> New York, NY</span> <span class="contact-item"><i
+                        class="fab fa-github"></i><a href="https://github.com/arivera-dev"
+                        target="_blank">github.com/arivera-dev</a></span> <span class="contact-item"><i
+                        class="fab fa-linkedin"></i><a href="https://linkedin.com/in/arivera"
+                        target="_blank">linkedin.com/in/arivera</a></span> </div>
+        </header>
+        <main> <!-- Professional Summary Section -->
+            <section class="professional-summary">
+                <h3 class="section-title">Professional Summary</h3>
+                <p>Backend Engineer with 6+ years of experience specializing in Java and the Spring Ecosystem. Expert in
+                    designing and deploying scalable Microservices architectures, optimizing database performance, and
+                    implementing secure RESTful APIs. Proven track record of reducing system latency by 40% and leading
+                    cross-functional teams in Agile environments.</p>
+            </section> <!-- Technical Skills Section -->
+            <section class="technical-skills">
+                <h3 class="section-title">Technical Skills</h3>
+                <ul class="skills-list">
+                    <li><strong>Languages:</strong> Java (8, 11, 17, 21), SQL, Bash, Python.</li>
+                    <li><strong>Spring Framework:</strong> Spring Boot 3.x, Spring Security (OAuth2/JWT), Spring Data
+                        JPA, Spring Cloud, Spring Batch.</li>
+                    <li><strong>Microservices:</strong> Netflix OSS (Eureka, Zuul), Config Server, API Gateway, Feign
+                        Clients.</li>
+                    <li><strong>Databases:</strong> PostgreSQL, MySQL, MongoDB, Redis (Caching).</li>
+                    <li><strong>Messaging:</strong> Apache Kafka, RabbitMQ.</li>
+                    <li><strong>Cloud & DevOps:</strong> AWS (EC2, S3, RDS), Docker, Kubernetes, Jenkins (CI/CD),
+                        Terraform.</li>
+                    <li><strong>Testing:</strong> JUnit 5, Mockito, Testcontainers.</li>
+                </ul>
+            </section> <!-- Professional Experience Section -->
+            <section class="professional-experience">
+                <h3 class="section-title">Professional Experience</h3>
+                <div class="entry">
+                    <div class="entry-header">
+                        <h4 class="entry-title">Lead Backend Developer | FinTech Solutions Inc.</h4>
+                        <p class="entry-dates">Jan 2021 – Present</p>
+                    </div>
+                    <ul>
+                        <li>Architected and implemented a high-volume payment processing system using Spring Boot and
+                            Apache Kafka, handling over 10,000 transactions per second.</li>
+                        <li>Migrated a monolithic legacy application to a Microservices architecture, improving
+                            deployment frequency by 300%.</li>
+                        <li>Configured Spring Security with OpenID Connect (OIDC) to secure internal and external APIs.
+                        </li>
+                        <li>Optimized PostgreSQL queries and implemented Redis caching, resulting in a 50% reduction in
+                            API response times.</li>
+                    </ul>
+                </div>
+                <div class="entry">
+                    <div class="entry-header">
+                        <h4 class="entry-title">Software Engineer | CloudScale Systems</h4>
+                        <p class="entry-dates">July 2018 – Dec 2020</p>
+                    </div>
+                    <ul>
+                        <li>Developed and maintained 15+ microservices using Spring Cloud for a multi-tenant SaaS
+                            platform.</li>
+                        <li>Automated CI/CD pipelines using Jenkins and Docker, reducing manual deployment errors by
+                            90%.</li>
+                        <li>Integrated 3rd-party REST APIs for inventory management and shipping logistics.</li>
+                        <li>Mentored junior developers on Java best practices and conducted rigorous code reviews.</li>
+                    </ul>
+                </div>
+            </section> <!-- Projects Section -->
+            <section class="projects">
+                <h3 class="section-title">Projects</h3>
+                <div class="entry">
+                    <h4 class="entry-title">E-Commerce Microservices Suite</h4>
+                    <ul>
+                        <li>Built a full-stack mock e-commerce platform using Spring Boot, React, and PostgreSQL.</li>
+                        <li>Implemented a distributed tracing system using Zipkin and Sleuth for monitoring
+                            service-to-service communication.</li>
+                    </ul>
+                </div>
+                <div class="entry">
+                    <h4 class="entry-title">Real-time Stock Tracker</h4>
+                    <ul>
+                        <li>Created a reactive application using Spring WebFlux and WebSockets to stream live stock data
+                            to a frontend dashboard.</li>
+                    </ul>
+                </div>
+            </section> <!-- Education Section -->
+            <section class="education">
+                <h3 class="section-title">Education</h3>
+                <div class="entry education-entry">
+                    <h4 class="entry-title">Bachelor of Science in Computer Science</h4>
+                    <p class="entry-subtitle">University of Technology</p>
+                    <p class="entry-dates">2014 – 2018</p>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+
+</html>

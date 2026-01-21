@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .work-experience-section {
+            margin-bottom: 20px;
+        }
+
+        .work-experience-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .work-experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+
+        .company-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .role-title {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 3px;
+        }
+
+        .experience-period {
+            font-size: 0.9em;
+            color: #777;
+        }
+
+        .work-description {
+            margin-bottom: 8px;
+        }
+
+        .achievements-list {
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .tech-stack {
+            font-size: 0.85em;
+            color: #333;
+        }
+
+        .tech-stack strong {
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .work-experience-header {
+            flex-direction: column;
+            align-items: flex-start;
+            }
+
+            .company-name,
+            .role-title {
+            margin-bottom: 5px;
+            }
+
+            .experience-period {
+            margin-bottom: 10px;
+            }
+        }
+        </style>
+</head>
+<body>
+    
+<div class="work-experience-section">
+  <!-- Work Experience Items will be dynamically added here -->
+  <div class="work-experience-item">
+    <div class="work-experience-header">
+      <div>
+        <div class="company-name">TechNova Solutions</div>
+        <div class="role-title">Senior Full Stack Engineer</div>
+        <div class="location">San Francisco, CA</div>
+      </div>
+      <div class="experience-period">Jan 2023 — Present (3 years)</div>
+    </div>
+    <div class="work-description">
+      Leading the core platform team focusing on microservices architecture and
+      real-time data processing.
+    </div>
+    <ul class="achievements-list">
+      <li>
+        Architected a real-time analytics dashboard using WebSocket and Redis,
+        reducing data latency by 45%.
+      </li>
+      <li>
+        Mentored a team of 12 junior and mid-level developers, implementing
+        rigorous code review standards.
+      </li>
+      <li>
+        Migrated legacy monolithic architecture to AWS Lambda-based serverless
+        functions, saving $12k/month in infrastructure costs.
+      </li>
+    </ul>
+    <div class="tech-stack">
+      <strong>Technologies:</strong> React, Node.js, AWS, Terraform, PostgreSQL,
+      Redis
+    </div>
+  </div>
+
+  <div class="work-experience-item">
+    <div class="work-experience-header">
+      <div>
+        <div class="company-name">CloudStream Systems</div>
+        <div class="role-title">Software Engineer II</div>
+        <div class="location">Austin, TX</div>
+      </div>
+      <div class="experience-period">June 2020 — Dec 2022 (2.5 years)</div>
+    </div>
+    <div class="work-description">
+      Developed and maintained high-traffic e-commerce APIs and frontend
+      interfaces.
+    </div>
+    <ul class="achievements-list">
+      <li>
+        Optimized database queries for the product catalog, resulting in a 30%
+        improvement in page load speeds.
+      </li>
+      <li>
+        Integrated third-party payment gateways (Stripe, PayPal) with a 99.9%
+        transaction success rate.
+      </li>
+      <li>
+        Refactored the frontend state management from Redux to React Query,
+        simplifying the codebase by 2,000 lines.
+      </li>
+    </ul>
+    <div class="tech-stack">
+      <strong>Technologies:</strong> TypeScript, Next.js, Express, MongoDB,
+      Stripe API, Docker
+    </div>
+  </div>
+
+  <div class="work-experience-item">
+    <div class="work-experience-header">
+      <div>
+        <div class="company-name">PixelPoint Creative</div>
+        <div class="role-title">Junior Web Developer</div>
+        <div class="location">Remote</div>
+      </div>
+      <div class="experience-period">Jan 2018 — May 2020 (2.5 years)</div>
+    </div>
+    <div class="work-description">
+      Focused on building responsive UI components and internal tooling for
+      digital marketing clients.
+    </div>
+    <ul class="achievements-list">
+      <li>
+        Developed a custom CMS for 15+ clients, allowing non-technical users to
+        update site content easily.
+      </li>
+      <li>
+        Implemented automated testing using Jest and Cypress, reducing
+        production bugs by 20%.
+      </li>
+      <li>
+        Assisted in the transition from jQuery to Vue.js for all internal
+        dashboard projects.
+      </li>
+    </ul>
+    <div class="tech-stack">
+      <strong>Technologies:</strong> JavaScript, Vue.js, Sass, Firebase, Jest,
+      Git
+    </div>
+  </div>
+</div>
+</body>
+</html>

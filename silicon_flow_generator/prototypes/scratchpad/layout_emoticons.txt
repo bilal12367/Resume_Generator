@@ -1,0 +1,32 @@
+__________________________________________________________________________________________________________
+|                                                NAME IN CAPS                                            |
+|                                               POSITION TITLE                                           |
+|---------------------------------------------------------------------------------------------------------|
+|  Summary                                                                                                |
+|  -------------------------------------------------------------------------------------------------------|
+|  Experience                                                                                             |
+|      - Company Name | Year Range | Location                                                             |
+|         • Detail point one                                                                              |
+|         • Detail point two                                                                              |
+|      - Company Name | Year Range | Location                                                             |
+|         • Detail point one                                                                              |
+|         • Detail point two                                                                              |
+|  -------------------------------------------------------------------------------------------------------|
+|  Projects                                                                                               |
+|      - Project Name                                                                                     |
+|         • Detail point one                                                                              |
+|         • Detail point two                                                                              |
+|  -------------------------------------------------------------------------------------------------------|
+|  | Skills & Tools       |  Education & Certification                                                    |
+|  |----------------------|-------------------------------------------------------------------------------|
+|  |  • Skill 1            |  • Degree Name (Year Range)                                                   |
+|  |  • Skill 2            |    Institution Name                                                           |
+|  |  • Skill 3            |  • Certification Name (Year)                                                  |
+|  |  • Skill 4            |    Issuing Organization                                                       |
+|  |                      |                                                                               |
+|  |  Languages           |  Contact & Links                                                              |
+|  |  • Language 1         |  • 📧 email@example.com                                                       |
+|  |  • Language 2         |  • 📱 +1 234 567 8900                                                         |
+|  |                      |  • 📍 City, Country                                                           |
+|  |                      |  • 🔗 linkedin.com/in/username                                                |
+|  |______________________|_______________________________________________________________________________|

@@ -1,0 +1,177 @@
+{
+    "prompts": {
+        "color_generation": "You are a professional resume designer and color theory expert.\n\nGenerate a cohesive, modern color palette for a resume. The palette should feel\nprofessional yet distinctive — avoid generic black-and-white only schemes.\n\nThink about:\n- A strong primary color (used for headings, accents, borders)\n- A complementary secondary color (used for subheadings, highlights)\n- A light background tint (used for section backgrounds or cards)\n- A dark text color (used for body text)\n- An accent color (used for links, icons, or skill tags)\n\nReturn ONLY a valid JSON object in this exact structure, no explanation, no markdown:\n{\n  \"primary\": \"#hex\",\n  \"secondary\": \"#hex\",\n  \"background_tint\": \"#hex\",\n  \"text\": \"#hex\",\n  \"accent\": \"#hex\",\n  \"theme_name\": \"a short creative name for this theme\"\n}",
+
+        "header_generation": "You are an expert front-end developer specializing in resume design.\n\nUsing the colors and user information provided below, generate a stunning resume\nheader section as a self-contained HTML + CSS block.\n\nCOLORS:\n{{colors}}\n\nUSER INFO:\n{{user_data}}\n\nRULES:\n- Start with a single <div> as the root container. Do NOT include <html>, <head>, <body>, or any other outer tags.\n- Embed all CSS inside a <style> tag placed at the very top, before the div.\n- You may import Google Fonts using a <link> tag placed before the <style> tag.\n- You may use Material Icons by referencing the Material Icons CDN class names inline (e.g. <span class=\"material-icons\">email</span>).\n- You may use Bootstrap utility classes for layout (flex, row, col, gap, etc.).\n- Apply creative but professional typography — mix font weights (300, 400, 700), sizes, letter-spacing, and text transforms where appropriate.\n- Use the provided colors meaningfully — primary for name/title, accent for icons or links, background_tint for the container background, etc.\n- The header should include: full name, job title, email, phone, location, and any social links present in user data (LinkedIn, GitHub, portfolio, etc.).\n- Use flexbox or grid for layout. Think about visual hierarchy — the name should dominate, supporting info should be clearly readable but smaller.\n- You may use creative touches: a colored left border, a gradient strip, an underline accent on the name, icon + text rows for contact info, etc.\n- Do NOT use any external images or avatars.\n- Return ONLY the raw HTML block. No explanation, no markdown, no code fences.",
+
+        "experience_generation": "You are an expert front-end developer specializing in resume design.\n\nUsing the colors and user information provided below, generate a professional\nWork Experience section as a self-contained HTML + CSS block.\n\nCOLORS:\n{{colors}}\n\nUSER INFO:\n{{user_data}}\n\nRULES:\n- Start with a single <div> as the root container. Do NOT include <html>, <head>, <body>, or any other outer tags.\n- Embed all CSS inside a <style> tag placed at the very top, before the div.\n- You may import Google Fonts using a <link> tag placed before the <style> tag.\n- You may use Material Icons by referencing Material Icons CDN class names inline.\n- You may use Bootstrap utility classes for layout.\n- Apply creative but professional typography — vary font sizes, weights, and styles to create clear visual hierarchy between company name, role title, date range, and bullet points.\n- Use the provided colors meaningfully — primary for section heading and company names, accent for date ranges or tags, background_tint for alternating cards or row backgrounds, text color for body content.\n- The section should include a clear 'Experience' heading at the top.\n- For each role, display: company name, job title, date range (start – end), location, and bullet point achievements/responsibilities.\n- Layout ideas to consider: timeline with a vertical colored line on the left, card-per-role with subtle border or shadow, two-column layout with company on the left and details on the right.\n- You may use borders, border-radius, box-shadow, padding, and flex/grid layouts to make it visually rich.\n- Bullet points should use styled list items — you may replace default bullets with colored dots, dashes, chevrons, or Material Icon checkmarks.\n- Do NOT use any external images.\n- Return ONLY the raw HTML block. No explanation, no markdown, no code fences."
+    },
+    "user_data": {
+        "personal": {
+            "name": "Shaik Mohammed Bilal",
+            "email": "sk.bilal.md@gmail.com",
+            "phone": "+91 7981266312",
+            "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+            "location": "Hyderabad, India"
+        },
+
+        "career_objective": "Passionate AI Engineer with 5 years of hands-on experience designing and deploying intelligent systems across the banking and technology sectors. Seeking to leverage deep expertise in LLMs, RAG pipelines, and production-grade AI systems to solve complex, real-world problems at scale. Committed to building AI that is explainable, efficient, and impactful.",
+
+        "summary": "AI Engineer with 5 years of experience building end-to-end machine learning and generative AI solutions for Fortune 500 companies. Proven track record of delivering RAG-based document intelligence systems, personalized recommendation engines, and LLM-powered applications in high-stakes enterprise environments. Adept at bridging the gap between cutting-edge AI research and scalable production systems. Currently contributing to AI initiatives at Apple after delivering high-impact solutions at Bank of America through Infosys.",
+
+        "experience": [
+            {
+            "company": "Apple Inc.",
+            "location": "Remote / Hyderabad, India",
+            "role": "AI Engineer",
+            "type": "Full-time",
+            "start": "Jan 2024",
+            "end": "Present",
+            "responsibilities": [
+                "Designing and developing intelligent AI pipelines integrated into Apple's internal developer tooling and productivity platforms.",
+                "Building and fine-tuning LLM-based systems for document understanding, semantic search, and automated content generation.",
+                "Collaborating with cross-functional teams to embed AI capabilities into existing product workflows, improving operational efficiency.",
+                "Conducting research and rapid prototyping of agentic AI systems using LlamaIndex and LangChain frameworks.",
+                "Establishing best practices for LLM evaluation, prompt engineering, and model observability in production environments."
+            ]
+            },
+            {
+            "company": "Infosys Limited",
+            "location": "Hyderabad, India",
+            "role": "AI Developer",
+            "type": "Full-time",
+            "start": "Jul 2019",
+            "end": "Dec 2023",
+            "responsibilities": [
+                "Led AI development for Bank of America engagement, delivering multiple GenAI and ML solutions across document intelligence and customer experience domains.",
+                "Architected a Retrieval-Augmented Generation (RAG) pipeline enabling natural language querying over thousands of banking and compliance documents, reducing analyst research time by 60%.",
+                "Built a bank product recommendation system leveraging collaborative filtering and customer transaction data, driving a 22% uplift in cross-sell conversion rates.",
+                "Designed and maintained MLOps pipelines for model training, versioning, and deployment using MLflow and Docker on AWS.",
+                "Mentored a team of 3 junior developers on NLP fundamentals, prompt engineering, and LLM integration patterns.",
+                "Worked closely with business stakeholders to translate complex AI capabilities into clear, measurable business outcomes."
+            ]
+            }
+        ],
+
+        "projects": [
+            {
+            "name": "RAG Pipeline for Banking Document Intelligence",
+            "client": "Bank of America (via Infosys)",
+            "duration": "6 months",
+            "tech_stack": ["Python", "LlamaIndex", "OpenAI GPT-4", "FAISS", "LangChain", "AWS S3", "FastAPI"],
+            "description": "Designed and deployed a production-grade Retrieval-Augmented Generation system that allowed banking analysts and compliance officers to query a vast corpus of financial documents, regulatory filings, and internal policy documents using natural language.",
+            "highlights": [
+                "Ingested and indexed 50,000+ banking documents using FAISS vector store with chunk-level metadata filtering.",
+                "Implemented hybrid search combining dense vector retrieval and BM25 keyword matching for higher precision.",
+                "Reduced average analyst document research time from 45 minutes to under 5 minutes.",
+                "Deployed as a secure internal API on AWS with role-based access control."
+            ]
+            },
+            {
+            "name": "Bank Product Recommendation System",
+            "client": "Bank of America (via Infosys)",
+            "duration": "4 months",
+            "tech_stack": ["Python", "Scikit-learn", "XGBoost", "Apache Spark", "PostgreSQL", "Flask", "AWS SageMaker"],
+            "description": "Built an end-to-end personalized recommendation engine that analyzes customer transaction history, demographics, and behavioral patterns to recommend relevant banking products such as credit cards, loans, and investment accounts.",
+            "highlights": [
+                "Processed over 2 million customer records using Apache Spark for feature engineering at scale.",
+                "Achieved AUC-ROC of 0.91 on product propensity prediction using XGBoost ensemble models.",
+                "Delivered a 22% increase in cross-sell conversion rates within the first quarter of deployment.",
+                "Integrated real-time scoring API into the bank's CRM platform used by 3,000+ relationship managers."
+            ]
+            },
+            {
+            "name": "Intelligent Document Summarization & Classification",
+            "client": "Internal — Infosys AI Lab",
+            "duration": "3 months",
+            "tech_stack": ["Python", "HuggingFace Transformers", "BERT", "FastAPI", "Docker", "Redis"],
+            "description": "Developed an NLP pipeline to automatically classify and summarize incoming banking correspondence, regulatory notices, and client communications, reducing manual triaging effort for operations teams.",
+            "highlights": [
+                "Fine-tuned a BERT-based classifier on domain-specific banking data achieving 94% classification accuracy across 12 document categories.",
+                "Integrated abstractive summarization using BART to generate concise 3-sentence summaries of lengthy documents.",
+                "Deployed as a containerized microservice processing 10,000+ documents per day in near real-time."
+            ]
+            },
+            {
+            "name": "Agentic AI Assistant for Developer Productivity",
+            "client": "Apple Inc.",
+            "duration": "Ongoing",
+            "tech_stack": ["Python", "LlamaIndex", "OpenAI", "LangGraph", "FastAPI", "PostgreSQL"],
+            "description": "Building an agentic AI assistant that helps internal engineering teams automate repetitive development tasks including code review summarization, ticket triage, and documentation generation.",
+            "highlights": [
+                "Designed a multi-step agentic workflow using LlamaIndex with tool-calling capabilities for dynamic task execution.",
+                "Integrated with internal ticketing and code review systems via REST APIs for seamless workflow automation.",
+                "Reduced average code review triage time by 35% in internal pilot testing."
+            ]
+            }
+        ],
+
+        "skills": {
+            "ai_ml": [
+            "Large Language Models (LLMs)",
+            "Retrieval-Augmented Generation (RAG)",
+            "Prompt Engineering",
+            "Fine-tuning (LoRA, PEFT)",
+            "Agentic AI Systems",
+            "Natural Language Processing (NLP)",
+            "Recommendation Systems",
+            "Classification & Regression",
+            "Vector Search & Embeddings"
+            ],
+            "frameworks_libraries": [
+            "LlamaIndex",
+            "LangChain",
+            "LangGraph",
+            "HuggingFace Transformers",
+            "OpenAI SDK",
+            "Scikit-learn",
+            "XGBoost",
+            "PyTorch",
+            "FastAPI",
+            "Flask"
+            ],
+            "data_engineering": [
+            "Apache Spark",
+            "FAISS",
+            "PostgreSQL",
+            "Redis",
+            "AWS S3",
+            "MLflow"
+            ],
+            "devops_cloud": [
+            "AWS (SageMaker, S3, EC2)",
+            "Docker",
+            "Git",
+            "CI/CD Pipelines"
+            ],
+            "languages": [
+            "Python",
+            "SQL",
+            "Bash"
+            ]
+        },
+
+        "education": [
+            {
+            "degree": "Bachelor of Technology (B.Tech)",
+            "field": "Electronics and Communication Engineering (ECE)",
+            "institution": "Jawaharlal Nehru Technological University (JNTU)",
+            "location": "Hyderabad, India",
+            "year": "2019"
+            }
+        ],
+
+        "languages": [
+            { "language": "English", "proficiency": "Professional Proficiency" },
+            { "language": "Telugu", "proficiency": "Native" },
+            { "language": "Hindi", "proficiency": "Professional Proficiency" },
+            { "language": "Urdu", "proficiency": "Native" }
+        ],
+
+        "certifications": [
+            "AWS Certified Machine Learning – Specialty",
+            "Deep Learning Specialization — Coursera (Andrew Ng)",
+            "LLMOps — DeepLearning.AI"
+        ]
+    }
+}

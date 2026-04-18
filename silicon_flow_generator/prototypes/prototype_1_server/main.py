@@ -1,0 +1,46 @@
+from prompts.inputs import one_shot_prompt
+# from db.connection import engine, get_db
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from config.jpa_repository import JpaRepository
+from sqlalchemy import create_engine, Column, UUID, Integer, String
+from db.connection import Base, get_db, engine
+from service.log_svc import LoggingService
+from sqlalchemy.orm import sessionmaker, declarative_base
+from workflow_agent.agent_workflow import main
+import asyncio as aio
+## Example JPA Usage
+
+
+# class Base(DeclarativeBase):
+#     pass
+
+# class User(Base):
+#     __tablename__ = 'test_users'
+#     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+#     name: str = Column(String)
+#     email: str = Column(String)
+
+    
+#     def __repr__(self):
+#         return f"<User id={self.id} name={self.name!r} email={self.email!r}>"
+Base.metadata.create_all(engine)
+
+log = LoggingService(next(get_db()))
+
+# log.log_workflow_event(session_id=None, message="Test Event", model_input="Test Model Input")
+log.log_workflow_object('test1', 'testrn', {'message': 'test_message'}, False)
+aio.run(main())
+
+# class UserRepository(JpaRepository[User]):
+#     pass
+
+# session = sessionmaker(bind=engine)()
+
+# user_repo = UserRepository(User,session )
+# bilal = user_repo.save(User(name='bilal', email='test1@gmail.com'))
+
+# print(f"Created User: {bilal}")
+
+
+
+

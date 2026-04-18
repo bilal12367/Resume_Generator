@@ -1,11 +1,11 @@
 from workflows import Context, Workflow, step
 from workflows.events import StartEvent, StopEvent, Event
 import asyncio
-from llm import LLM
-from inputs import inputs
+from .llm import LLM
+from .inputs import inputs
 import logging
 import dotenv, os
-from log_test import log_to_jsonl
+from .log_test import log_to_jsonl
 
 
 
@@ -81,15 +81,26 @@ class MyWorkflow(Workflow):
     async def start(self, ctx: Context, ev: StartEvent) -> ColorGenerateEvent | LayoutGenerateEvent:
         await asyncio.sleep(1)
 
-        prompts: dict   = ev.get("prompts")
+        # prompts: dict   = ev.get("prompts")
+        color_prompt: str = ev.get('color_prompt')
+        color_user_input: str = ev.get('color_user_input')
+        layout_user_input: str = ev.get('layout_user_input')
+        layout_prompt: str = ev.get('layout_prompt')
+        resume_prompt: str = ev.get('resume_generation_prompt')
+        
         user_data: dict = ev.get("user_data")
 
-        if prompts is None:
-            raise ValueError("StartEvent is missing 'prompts' (dict).")
+        # if prompts is None:
+        #     raise ValueError("StartEvent is missing 'prompts' (dict).")
         if user_data is None:
             raise ValueError("StartEvent is missing 'user_data' (dict).")
 
-        await ctx.store.set("prompts",   prompts)
+        # await ctx.store.set("prompts",   prompts)
+        await ctx.store.set('color_prompt', color_prompt)
+        await ctx.store.set('color_user_input', color_user_input)
+        await ctx.store.set('layout_user_input', layout_user_input)
+        await ctx.store.set('layout_prompt', layout_prompt)
+        await ctx.store.set('resume_prompt', resume_prompt)
         await ctx.store.set("user_data", user_data)
 
         ctx.write_event_to_stream(LogEvent(message="[start] Firing color_generator and layout_generator in parallel."))
@@ -104,16 +115,18 @@ class MyWorkflow(Workflow):
     @step
     async def color_generator(self, ctx: Context, ev: ColorGenerateEvent) -> ColorDoneEvent:
         try:
-            prompts: dict = await ctx.store.get("prompts")
+            color_prompt: str = await ctx.store.get("color_prompt")
+            color_input: str = await ctx.store.get('color_user_input')
 
-            color_prompt: str = prompts.get("color_generation")
+            
             if not color_prompt:
-                raise ValueError("prompts dict is missing 'color_generation' key.")
+                raise ValueError("Missing 'color_generation' prompt.")
 
-            llm    = LLM()
+            llm = LLM()
             result = llm.call(
                 system_prompt=color_prompt,
-                user_prompt="Need a emerald green kind of set of colours for professional color set",
+                user_prompt=color_input,
+                # user_prompt="Need a emerald green kind of set of colours for professional color set",
                 max_tokens=512
             )
 
@@ -134,14 +147,14 @@ class MyWorkflow(Workflow):
     @step
     async def layout_generator(self, ctx: Context, ev: LayoutGenerateEvent) -> LayoutDoneEvent:
         try:
-            prompts: dict   = await ctx.store.get("prompts")
-            user_data: dict = await ctx.store.get("user_data")
+            layout_prompt: dict   = await ctx.store.get("layout_prompt")
+            # user_data: dict = await ctx.store.get("user_data")
 
-            layout_prompt: str = prompts.get("layout_prompt")
+            
             if not layout_prompt:
                 raise ValueError("prompts dict is missing 'layout_prompt' key.")
 
-            llm    = LLM()
+            llm = LLM()
             result = llm.call(
                 user_prompt=layout_prompt,
                 max_tokens=4096
@@ -188,15 +201,15 @@ class MyWorkflow(Workflow):
     @step
     async def resume_generator(self, ctx: Context, ev: GenerateResumeEvent) -> ResumeDoneEvent:
         try:
-            prompts: dict   = await ctx.store.get("prompts")
+            resume_prompt: str   = await ctx.store.get("resume_prompt")
             user_data: dict = await ctx.store.get("user_data")
 
-            header_prompt: str = prompts.get("resume_generation")
-            if not header_prompt:
+            # header_prompt: str = prompts.get("resume_generation")
+            if not resume_prompt:
                 raise ValueError("prompts dict is missing 'resume_generation' key.")
 
             filled_prompt = (
-                header_prompt
+                resume_prompt
                 .replace("{{colors}}",    ev.colors)
                 .replace("{{layout}}",    ev.layout)
                 .replace("{{user_data}}", str(user_data))
@@ -272,7 +285,21 @@ def save_output(data: dict, output_dir: str = "outputs", mode: str = "json"):
 
 async def main():
     wf      = MyWorkflow(timeout=None, verbose=True)
-    handler = wf.run(prompts=inputs['prompts'], user_data=inputs['user_data'])
+    # color_prompt: str = ev.get('color_prompt')
+    # color_user_input: str = ev.get('color_user_input')
+    # layout_user_input: str = ev.get('layout_user_input')
+    # layout_prompt: str = ev.get('layout_prompt')
+    # resume_prompt: str = ev.get('resume_generation_prompt')
+    
+    # user_data: dict = ev.get("user_data")
+    handler = wf.run(
+        user_data=inputs['user_data'], 
+        color_prompt=inputs['prompts']['color_prompt'],
+        layout_prompt=inputs['prompts']['layout_prompt'],
+        resume_generation_prompt=inputs['prompts']['resume_generation'],
+        color_user_input="Need a navy blue, professional color set, with contrast colours",
+        layout_user_input=""
+    )
 
     async for ev in handler.stream_events():
         log_to_jsonl("Event", ev.__dict__)
@@ -304,4 +331,4 @@ async def main():
 
 
 
-asyncio.run(main())
+# asyncio.run(main())

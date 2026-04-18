@@ -1,0 +1,12 @@
+curl -H "Content-Type: application/json" \
+     -XPOST "http://localhost:3100/loki/api/v1/push" \
+     --data '{
+       "streams": [
+         {
+           "stream": { "app": "test-app" },
+           "values": [
+             [ "'$(date +%s%N)'", "This is a manual test log from my terminal!" ]
+           ]
+         }
+       ]
+     }'

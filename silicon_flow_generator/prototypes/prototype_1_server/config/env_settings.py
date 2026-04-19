@@ -16,10 +16,17 @@ class AppSettings(BaseSettings):
     # Model
     MODEL_ID: str =  ''
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    
 
     # Logging
     loki_url: str = ''
+
+    # Prompt Langfuse
+    LANGFUSE_SECRET_KEY: str = ''
+    LANGFUSE_PUBLIC_KEY: str = ''
+    LANGFUSE_BASE_URL: str = ''
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 

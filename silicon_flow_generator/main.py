@@ -4,7 +4,7 @@ import logging
 from socket_app.events import sio
 import socketio
 from database.connection import Base, engine
-from service.prompt_svc import PromptService
+from service.prompt_svc_test import PromptService
 from database.connection import get_db
 
 setup_logging()

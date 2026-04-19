@@ -6,12 +6,12 @@ from .inputs import inputs
 import logging
 import dotenv, os
 from .log_test import log_to_jsonl
-
+from service.prompt_svc import PromptService
 
 import json
 from datetime import datetime
 from pathlib import Path
-
+from service.logging_svc import LoggerService
 logging.basicConfig(level=logging.INFO)
 dotenv.load_dotenv()
 
@@ -76,22 +76,22 @@ class ResumeDoneEvent(Event):
 # ---------------------------------------------------------------------------
 
 class MyWorkflow(Workflow):
-
+    logger = LoggerService(app_name='resume_service', name='workflow_one_shot')
     # ------------------------------------------------------------------
     # Node 1 — start: validates inputs, fires color + layout in parallel
     # ------------------------------------------------------------------
     @step
     async def start(self, ctx: Context, ev: StartEvent) -> ColorGenerateEvent | LayoutGenerateEvent:
         await asyncio.sleep(1)
-
+        prompt_svc = PromptService()
         # prompts: dict   = ev.get("prompts")
-        color_prompt: str = ev.get('color_prompt')
-        color_user_input: str = ev.get('color_user_input')
-        layout_user_input: str = ev.get('layout_user_input')
-        layout_prompt: str = ev.get('layout_prompt')
-        resume_prompt: str = ev.get('resume_generation_prompt')
+        color_prompt: str = prompt_svc.get_prompt('color_generation')
+        layout_prompt: str = prompt_svc.get_prompt('layout_generation')
+        resume_prompt: str = prompt_svc.get_prompt('resume_generation')
         
         user_data: dict = ev.get("user_data")
+        layout_user_input: str = ev.get('layout_user_input')
+        color_user_input: str = ev.get('color_user_input')
 
         # if prompts is None:
         #     raise ValueError("StartEvent is missing 'prompts' (dict).")
@@ -106,7 +106,10 @@ class MyWorkflow(Workflow):
         await ctx.store.set('resume_prompt', resume_prompt)
         await ctx.store.set("user_data", user_data)
 
-        ctx.write_event_to_stream(LogEvent(message="[start] Firing color_generator and layout_generator in parallel."))
+
+        self.logger.log("Workflow Initialized: Firing Steps to execute...")
+
+        # ctx.write_event_to_stream(LogEvent(message="[start] Firing color_generator and layout_generator in parallel."))
 
         # Fire both in parallel — workflow picks them up concurrently
         ctx.send_event(ColorGenerateEvent())
@@ -125,13 +128,16 @@ class MyWorkflow(Workflow):
             if not color_prompt:
                 raise ValueError("Missing 'color_generation' prompt.")
 
+            self.logger.log("Color Generator Node Initialized: Calling LLM...")
             llm = LLM()
+            self.logger.log({'type':'llm_call_init', 'input_prompt': color_prompt, 'user_input': color_input} )
             result = llm.call(
                 system_prompt=color_prompt,
                 user_prompt=color_input,
                 # user_prompt="Need a emerald green kind of set of colours for professional color set",
                 max_tokens=512
             )
+            self.logger.log({'type':'llm_call_complete', 'result': result} )
 
             ctx.write_event_to_stream(LogEvent(
                 message="[color_generator] Done.",
@@ -141,6 +147,7 @@ class MyWorkflow(Workflow):
             return ColorDoneEvent(colors=result)
 
         except Exception as e:
+            self.logger.log({'type': 'error', 'node':'color generator node','error': e})
             ctx.write_event_to_stream(LogEvent(error=True, message=f"[color_generator] Error: {e}"))
             raise
 
@@ -156,12 +163,15 @@ class MyWorkflow(Workflow):
             
             if not layout_prompt:
                 raise ValueError("prompts dict is missing 'layout_prompt' key.")
-
+            
+            self.logger.log("Layout Generator Node Initialized: Calling LLM...")
             llm = LLM()
+            self.logger.log({'type':'llm_call_init', 'input_prompt': layout_prompt, 'user_input': None} )
             result = llm.call(
                 user_prompt=layout_prompt,
                 max_tokens=4096
             )
+            self.logger.log({'type':'llm_call_complete', 'result': result} )
 
             ctx.write_event_to_stream(LogEvent(
                 message="[layout_generator] Done.",
@@ -171,6 +181,7 @@ class MyWorkflow(Workflow):
             return LayoutDoneEvent(layout=result)
 
         except Exception as e:
+            self.logger.log({'type': 'error', 'node':'layout_generator node','error': e})
             ctx.write_event_to_stream(LogEvent(error=True, message=f"[layout_generator] Error: {e}"))
             raise
 
@@ -191,6 +202,8 @@ class MyWorkflow(Workflow):
         ctx.write_event_to_stream(LogEvent(
             message="[collector] Both color and layout ready — firing header and experience generators in parallel."
         ))
+
+        self.logger.log("Events Collected both color and layout, proceeding to Assumebler/Resume Generator Node.")
 
         # Fan-out second wave — header and experience in parallel
         ctx.send_event(GenerateResumeEvent(colors=colors, layout=layout))
@@ -218,9 +231,12 @@ class MyWorkflow(Workflow):
                 .replace("{{user_data}}", str(user_data))
             )
 
-            llm    = LLM()
+            self.logger.log("Resume Generator Node Initialized: Calling LLM...")
+            llm = LLM()
+            self.logger.log({'type':'llm_call_init', 'input_prompt': filled_prompt, 'user_input': user_data} )
             result = llm.call(user_prompt=filled_prompt, max_tokens=10000)
-
+            self.logger.log({'type':'llm_call_complete', 'result': result} )
+            self.logger.log("Resume Generator Node Finished")
             ctx.write_event_to_stream(LogEvent(
                 message="[resume_generator] Done.",
                 object={"header_html": result}
@@ -244,10 +260,14 @@ class MyWorkflow(Workflow):
             message="[final_collector] All sections ready.",
             object=ev.html
         ))
+        self.logger.log("Final Collector Node")
+        
 
         return StopEvent(result={
             "resume": ev.html
         })
+    
+
 def save_output(data: dict, output_dir: str = "outputs", mode: str = "json"):
     """
     Save workflow result to file.
@@ -294,15 +314,16 @@ async def main():
     # user_data: dict = ev.get("user_data")
     handler = wf.run(
         user_data=inputs['user_data'], 
-        color_prompt=inputs['prompts']['color_prompt'],
-        layout_prompt=inputs['prompts']['layout_prompt'],
-        resume_generation_prompt=inputs['prompts']['resume_generation'],
+        # color_prompt=inputs['prompts']['color_prompt'],
+        # layout_prompt=inputs['prompts']['layout_prompt'],
+        # resume_generation_prompt=inputs['prompts']['resume_generation'],
         color_user_input="Need a navy blue, professional color set, with contrast colours",
         layout_user_input=""
     )
 
     async for ev in handler.stream_events():
-        log_to_jsonl("Event", ev.__dict__)
+        # log_to_jsonl("Event", ev.__dict__)
+        print(ev.__dict__)
 
     final_result = await handler
     html = str(final_result.get('resume', '')).replace('\n', '')
@@ -320,11 +341,11 @@ async def main():
     <title>Document</title>
 </head>
 <body>
-    {{final_html}}
+    {final_html}
 </body>
 </html>'''
 
-    final_html = final_html_template.replace('{{final_html}}', html)
+    final_html = final_html_template.replace('{final_html}', html)
     with open('index.html','w', encoding='utf-8') as f:
         f.write(final_html)
     save_output(final_result, output_dir="outputs", mode="json")

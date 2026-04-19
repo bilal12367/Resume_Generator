@@ -9,9 +9,10 @@
 # from workflow_agent.agent_workflow import main
 # import asyncio as aio
 ## Example JPA Usage
-
+from workflow_agent.agent_workflow_2 import main
+import asyncio
 # from service.logging_svc import LoggerService
-
+asyncio.run(main())
 # class Base(DeclarativeBase):
 #     pass
 

@@ -10,7 +10,7 @@ import asyncio, sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from pydantic import BaseModel
 from database.connection import get_db
-from service.prompt_svc import PromptService
+from service.prompt_svc_test import PromptService
 from schema.resume_generator_schemas.user_data_schema import ResumeData
 
 

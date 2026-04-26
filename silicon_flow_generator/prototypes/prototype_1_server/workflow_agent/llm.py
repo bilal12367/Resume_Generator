@@ -18,9 +18,9 @@ from typing import Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from openai import OpenAI
-
+from service.logging_svc import LoggerService
 import logging, time
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 
 load_dotenv()
 from datetime import datetime
@@ -72,12 +72,13 @@ class LLMConfig:
 
 
 class LLM:
-
+    
     def __init__(self, config: Optional[LLMConfig] = None):
         # ── Credentials from environment ───────────────────────────────
         self.api_key: str = settings.SILICONFLOW_API_KEY  # raises if missing
         self.base_url: str = settings.SILICONFLOW_BASE_URL
         self.model: str = settings.MODEL_ID
+        
 
         self.usage = None
 
@@ -101,8 +102,21 @@ class LLM:
                     'total_tokens': self.usage.total_tokens
                 }
             )
-            # exec_time = f"{end_time-start_time:.4f} seconds"
-            return resp
+            exec_time = f"{end_time-start_time:.4f} seconds"
+            
+            record = {
+                'metrics': {
+                    'execution_time': exec_time,
+                    'completion_tokens': self.usage.completion_tokens,
+                    'prompt_tokens': self.usage.prompt_tokens,
+                    'total_tokens': self.usage.total_tokens
+                },
+                'output': resp
+            }
+            
+            
+            
+            return record
         return wrapper
 
 

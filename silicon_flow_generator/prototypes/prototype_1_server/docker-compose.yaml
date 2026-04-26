@@ -17,5 +17,20 @@ services:
     networks:
       - loki-net
 
+  file-manager-api:
+    image: jandrop/file-manager-api:latest
+    container_name: file-manager-api
+    ports:
+      - "8000:8000"
+    environment:
+      - BASE_PATH=/mnt/user
+      - API_KEY=your_secret_key_here
+      - MAX_UPLOAD_SIZE=10737418240  # 10GB
+      - ENABLE_FILE_DELETION=true
+      - ENABLE_RECURSIVE_DELETE=true
+    volumes:
+      - /mnt/user:/mnt/user
+    restart: unless-stopped
+
 networks:
   loki-net:

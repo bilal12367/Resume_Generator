@@ -4,10 +4,11 @@ import json
 import time
 from typing import Literal, Any
 from config.env_settings import AppSettings
-
+from uuid import uuid4 as uid
 class LoggerService:
     def __init__(
         self, 
+        id: str = str(uid()),
         app_name: str = 'resume_service', 
         name: str = "", 
         mode: Literal['text', 'json'] = 'json', 
@@ -15,6 +16,7 @@ class LoggerService:
     ):
         # 1. Merge core tags with any extra tags you pass during initialization
         tags = {
+            "workflow_id": id,
             "application": app_name,
             "mode": mode,
             "name": name,

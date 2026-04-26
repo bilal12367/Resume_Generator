@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+prototypes/prototype_1_server/html
+
+**/*.html

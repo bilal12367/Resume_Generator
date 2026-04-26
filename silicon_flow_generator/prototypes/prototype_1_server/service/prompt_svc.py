@@ -27,7 +27,7 @@ class PromptService:
         try:
             # cache_ttl=600 (10 minutes) ensures your microservice is fast 
             # and doesn't hit Langfuse API limits on every request.
-            prompt_client = self.langfuse.get_prompt(prompt_name)
+            prompt_client = self.langfuse.get_prompt(prompt_name, cache_ttl_seconds=0)
             
             # compile() swaps out {{variable_name}} with values from your dict
             return prompt_client.compile(**variables)

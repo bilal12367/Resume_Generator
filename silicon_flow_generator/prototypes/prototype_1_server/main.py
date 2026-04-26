@@ -1,43 +1,24 @@
-# from prompts.inputs import one_shot_prompt
-# # from db.connection import engine, get_db
-# from sqlalchemy.orm import DeclarativeBase, sessionmaker
-# from config.jpa_repository import JpaRepository
-# from sqlalchemy import create_engine, Column, UUID, Integer, String
-# from db.connection import Base, get_db, engine
-# from service.log_svc import LoggingService
-# from sqlalchemy.orm import sessionmaker, declarative_base
-# from workflow_agent.agent_workflow import main
-# import asyncio as aio
-## Example JPA Usage
-from workflow_agent.agent_workflow_2 import main
-import asyncio
-# from service.logging_svc import LoggerService
-asyncio.run(main())
-# class Base(DeclarativeBase):
-#     pass
+import uvicorn
+from fastapi import FastAPI
+import socketio
 
-# class User(Base):
-#     __tablename__ = 'test_users'
-#     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-#     name: str = Column(String)
-#     email: str = Column(String)
+from db.connection import Base, engine
+from controller.workflow_controller import WorkflowController
+from controller.socket_controller import sio
 
-    
-#     def __repr__(self):
-#         return f"<User id={self.id} name={self.name!r} email={self.email!r}>"
-# Base.metadata.create_all(engine)
+# 1. Initialize Database Tables
+Base.metadata.create_all(bind=engine)
 
+# 2. Initialize FastAPI Application
+app = FastAPI(title="Resume Generator API", description="API and WebSocket server for Resume Generation")
 
-# class UserRepository(JpaRepository[User]):
-#     pass
+# 3. Include Controllers/Routers
+workflow_controller = WorkflowController()
+app.include_router(workflow_controller.router)
 
-# session = sessionmaker(bind=engine)()
+# 4. Wrap FastAPI app with Socket.IO ASGIApp
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app)
 
-# user_repo = UserRepository(User,session )
-# bilal = user_repo.save(User(name='bilal', email='test1@gmail.com'))
-
-# print(f"Created User: {bilal}")
-
-
-
-
+if __name__ == "__main__":
+    # Note: Running socket_app instead of app, allowing uvicorn to serve HTTP and WS traffic via ASGI
+    uvicorn.run("main:socket_app", host="0.0.0.0", port=8000, reload=True)

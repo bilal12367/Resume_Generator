@@ -8,10 +8,11 @@ import dotenv, os
 from .log_test import log_to_jsonl
 from service.prompt_svc import PromptService
 
-import json
+import json, secrets
 from datetime import datetime
 from pathlib import Path
 from service.logging_svc import LoggerService
+from uuid import uuid4 as uid
 logging.basicConfig(level=logging.INFO)
 dotenv.load_dotenv()
 
@@ -76,7 +77,9 @@ class ResumeDoneEvent(Event):
 # ---------------------------------------------------------------------------
 
 class MyWorkflow(Workflow):
-    logger = LoggerService(app_name='resume_service', name='workflow_one_shot')
+    workflow_id = str(uid())
+    logger = LoggerService(id=workflow_id, app_name='resume_service', name='workflow_one_shot')
+    llm_metric_logger = LoggerService(id=workflow_id, app_name='llm_metrics', name='llm_call')
     # ------------------------------------------------------------------
     # Node 1 — start: validates inputs, fires color + layout in parallel
     # ------------------------------------------------------------------
@@ -92,6 +95,12 @@ class MyWorkflow(Workflow):
         user_data: dict = ev.get("user_data")
         layout_user_input: str = ev.get('layout_user_input')
         color_user_input: str = ev.get('color_user_input')
+        run_id = ev.get("run_id", None)
+        if run_id is not None:
+            self.workflow_id = run_id
+            self.logger = LoggerService(id=run_id, app_name='resume_service', name='workflow_one_shot')
+            self.llm_metric_logger = LoggerService(id=run_id, app_name='llm_metrics', name='llm_call')
+        
 
         # if prompts is None:
         #     raise ValueError("StartEvent is missing 'prompts' (dict).")
@@ -99,6 +108,7 @@ class MyWorkflow(Workflow):
             raise ValueError("StartEvent is missing 'user_data' (dict).")
 
         # await ctx.store.set("prompts",   prompts)
+        
         await ctx.store.set('color_prompt', color_prompt)
         await ctx.store.set('color_user_input', color_user_input)
         await ctx.store.set('layout_user_input', layout_user_input)
@@ -131,12 +141,14 @@ class MyWorkflow(Workflow):
             self.logger.log("Color Generator Node Initialized: Calling LLM...")
             llm = LLM()
             self.logger.log({'type':'llm_call_init', 'input_prompt': color_prompt, 'user_input': color_input} )
-            result = llm.call(
+            response = llm.call(
                 system_prompt=color_prompt,
                 user_prompt=color_input,
                 # user_prompt="Need a emerald green kind of set of colours for professional color set",
                 max_tokens=512
             )
+            self.llm_metric_logger.log(response['metrics'])
+            result = response['output']
             self.logger.log({'type':'llm_call_complete', 'result': result} )
 
             ctx.write_event_to_stream(LogEvent(
@@ -167,10 +179,12 @@ class MyWorkflow(Workflow):
             self.logger.log("Layout Generator Node Initialized: Calling LLM...")
             llm = LLM()
             self.logger.log({'type':'llm_call_init', 'input_prompt': layout_prompt, 'user_input': None} )
-            result = llm.call(
+            response = llm.call(
                 user_prompt=layout_prompt,
                 max_tokens=4096
             )
+            self.llm_metric_logger.log(response['metrics'])
+            result = response['output']
             self.logger.log({'type':'llm_call_complete', 'result': result} )
 
             ctx.write_event_to_stream(LogEvent(
@@ -234,7 +248,9 @@ class MyWorkflow(Workflow):
             self.logger.log("Resume Generator Node Initialized: Calling LLM...")
             llm = LLM()
             self.logger.log({'type':'llm_call_init', 'input_prompt': filled_prompt, 'user_input': user_data} )
-            result = llm.call(user_prompt=filled_prompt, max_tokens=10000)
+            response = llm.call(user_prompt=filled_prompt, max_tokens=10000)
+            self.llm_metric_logger.log(response['metrics'])
+            result = response['output']
             self.logger.log({'type':'llm_call_complete', 'result': result} )
             self.logger.log("Resume Generator Node Finished")
             ctx.write_event_to_stream(LogEvent(
@@ -249,6 +265,8 @@ class MyWorkflow(Workflow):
             raise
 
     
+    
+
     # ------------------------------------------------------------------
     # Node 5 — final collector: waits for header + experience, returns both
     # ------------------------------------------------------------------
@@ -261,94 +279,70 @@ class MyWorkflow(Workflow):
             object=ev.html
         ))
         self.logger.log("Final Collector Node")
-        
-
+        html = ev.html
+        svc = PromptService()
+        final_html = svc.get_prompt('html_template',{'final_html': html})
+        final_html = final_html.replace('\n', '')
+        file_name =f"test_{secrets.token_hex(6)}.html"
+        self.logger.log(f"File Generated at html/{file_name} ::")
+        with open(f'html/{file_name}','w', encoding='utf-8') as f:
+            f.write(final_html)
         return StopEvent(result={
-            "resume": ev.html
+            "resume": final_html
         })
     
-
 def save_output(data: dict, output_dir: str = "outputs", mode: str = "json"):
-    """
-    Save workflow result to file.
- 
-    Args:
-        data       : the result dict from StopEvent
-        output_dir : folder to save into (created if missing)
-        mode       : "json"  → one pretty-printed file per run
-                     "jsonl" → appends one line per run to a shared file
-    """
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
- 
-    payload = {
-        "timestamp": timestamp,
-        **data,
-    }
- 
-    if mode == "jsonl":
-        path = Path(output_dir) / "results.jsonl"
-        with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
-    else:
-        path = Path(output_dir) / f"result_{timestamp}.json"
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2, ensure_ascii=False)
- 
-    logging.info(f"[save_output] Saved → {path}")
-    return path
-
+        """
+        Save workflow result to file.
+    
+        Args:
+            data       : the result dict from StopEvent
+            output_dir : folder to save into (created if missing)
+            mode       : "json"  → one pretty-printed file per run
+                        "jsonl" → appends one line per run to a shared file
+        """
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+        payload = {
+            "timestamp": timestamp,
+            **data,
+        }
+    
+        if mode == "jsonl":
+            path = Path(output_dir) / "results.jsonl"
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        else:
+            path = Path(output_dir) / f"result_{timestamp}.json"
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2, ensure_ascii=False)
+    
+        logging.info(f"[save_output] Saved → {path}")
+        return path
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 
-async def main():
-    wf      = MyWorkflow(timeout=None, verbose=True)
-    # color_prompt: str = ev.get('color_prompt')
-    # color_user_input: str = ev.get('color_user_input')
-    # layout_user_input: str = ev.get('layout_user_input')
-    # layout_prompt: str = ev.get('layout_prompt')
-    # resume_prompt: str = ev.get('resume_generation_prompt')
+# async def main():
+#     wf = MyWorkflow(timeout=None, verbose=True)
+
+#     handler = wf.run(
+#         user_data=inputs['user_data'], 
+#         color_user_input="Need a navy blue, professional color set, with contrast colours",
+#         layout_user_input=""
+#     )
+
+#     async for ev in handler.stream_events():
+#         # log_to_jsonl("Event", ev.__dict__)
+#         print(ev.__dict__)
+
+#     final_result = await handler
+#     html = str(final_result.get('resume', '')).replace('\n', '')
     
-    # user_data: dict = ev.get("user_data")
-    handler = wf.run(
-        user_data=inputs['user_data'], 
-        # color_prompt=inputs['prompts']['color_prompt'],
-        # layout_prompt=inputs['prompts']['layout_prompt'],
-        # resume_generation_prompt=inputs['prompts']['resume_generation'],
-        color_user_input="Need a navy blue, professional color set, with contrast colours",
-        layout_user_input=""
-    )
-
-    async for ev in handler.stream_events():
-        # log_to_jsonl("Event", ev.__dict__)
-        print(ev.__dict__)
-
-    final_result = await handler
-    html = str(final_result.get('resume', '')).replace('\n', '')
     
-
-    logging.info(f"[main] resume preview    → {str(final_result.get('resume', ''))}")
-    # logging.info(f"[main] header preview    → {str(final_result.get('header', ''))}")
-    # logging.info(f"[main] experience preview → {str(final_result.get('experience', ''))}")
-
-    final_html_template = '''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    {final_html}
-</body>
-</html>'''
-
-    final_html = final_html_template.replace('{final_html}', html)
-    with open('index.html','w', encoding='utf-8') as f:
-        f.write(final_html)
-    save_output(final_result, output_dir="outputs", mode="json")
+#     logging.info(f"[main] resume preview    → {html}")
 
 
 

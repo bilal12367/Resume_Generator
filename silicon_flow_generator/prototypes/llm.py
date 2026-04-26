@@ -96,16 +96,29 @@ class LLM:
             start_time = time.perf_counter()
             resp = func(self, *args, **kwargs)
             end_time = time.perf_counter()
-            log(
-                {
+            record = {
+                'metrics': {
                     'execution_time': f"{end_time - start_time:.6f} seconds",
                     'completion_tokens': self.usage.completion_tokens,
                     'prompt_tokens': self.usage.prompt_tokens,
                     'total_tokens': self.usage.total_tokens
+                },
+                'output': resp
+            }
+            log(
+                {
+                    'metrics': {
+                        'execution_time': f"{end_time - start_time:.6f} seconds",
+                        'completion_tokens': self.usage.completion_tokens,
+                        'prompt_tokens': self.usage.prompt_tokens,
+                        'total_tokens': self.usage.total_tokens
+                    },
+                    'output': resp
                 }
             )
-            exec_time = f"{end_time-start_time:.4f} seconds"
-            return resp
+            # exec_time = f"{end_time-start_time:.4f} seconds"
+            
+            return record
         return wrapper
 
 

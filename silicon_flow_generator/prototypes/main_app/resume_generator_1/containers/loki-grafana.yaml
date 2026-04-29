@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   loki:
     image: grafana/loki:2.9.0
@@ -6,8 +8,6 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - loki-net
-
-  
 
   # Loki And Grafana for log aggregation and visualization
   grafana:
@@ -47,35 +47,3 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  keycloak:
-      image: quay.io/keycloak/keycloak:latest
-      command: start-dev
-      environment:
-        KC_DB: postgres
-        KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-        KC_DB_USERNAME: keycloak
-        KC_DB_PASSWORD: password
-        KEYCLOAK_ADMIN: admin
-        KEYCLOAK_ADMIN_PASSWORD: admin
-        KC_HEALTH_ENABLED: "true"
-        KC_METRICS_ENABLED: "true"
-        KC_MAIL_SERVER_HOST: "smtp.gmail.com"
-        KC_MAIL_SERVER_PORT: "587"
-        KC_MAIL_SERVER_FROM: "sk.bilal.md@gmail.com"
-        KC_MAIL_SERVER_FROM_DISPLAY_NAME: "Auth Service"
-        KC_MAIL_SERVER_AUTH: "true"
-        KC_MAIL_SERVER_USER: "sk.bilal.md@gmail.com"
-        KC_MAIL_SERVER_PASSWORD: "imqq yuyf oiuz tbsz"
-        KC_MAIL_SERVER_STARTTLS: "true"
-      ports:
-        - "8001:8080"
-      depends_on:
-        postgres:
-          condition: service_healthy
-
-volumes:
-  postgres_data:
-
-networks:
-  loki-net:

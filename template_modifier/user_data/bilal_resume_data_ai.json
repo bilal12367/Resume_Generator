@@ -1,0 +1,122 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "AI & Full Stack Developer",
+    "location": "Hyderabad, Telangana, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367"
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven AI and Full Stack Developer with over 4 years of experience architecting end-to-end web applications, generative AI workflows, and machine learning integrations. Proven expertise in building token-efficient LLM pipelines, intelligent RAG agents, and secure blockchain networks. Passionate about bridging the gap between advanced data science and scalable production engineering to deliver high-impact enterprise solutions."
+  },
+  "experience": [
+    {
+      "role": "AI & Full Stack Developer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2024 – Present",
+      "highlights": [
+        "Architected an intelligent document processing pipeline utilizing LangGraph and LlamaIndex workflows to ingest, parse, and structure complex financial contracts.",
+        "Developed a robust visual redaction workflow utilizing PyMuPDF to permanently scrub PII prior to data storage, ensuring strict data privacy and compliance.",
+        "Built a highly capable AI agent on the Endor platform with dynamic tool-calling to autonomously automate IT support, user onboarding, and access requests.",
+        "Engineered an intelligent Text-to-SQL RAG engine that dynamically reads database schemas to execute optimized SQL queries based on user prompts."
+      ]
+    },
+    {
+      "role": "Full Stack & Machine Learning Developer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2023 – Oct 2024",
+      "highlights": [
+        "Spearheaded the development of a robust unstructured data processing pipeline using Java and React to parse and analyze varied banking transaction documents.",
+        "Designed advanced Regex-based extraction algorithms to isolate, validate, and pull critical financial information from highly unstructured text formats.",
+        "Deployed a predictive Artificial Neural Network (ANN) deep learning model to recommend highly tailored financial products based on customer activity.",
+        "Architected the backend parameterization layer, transforming raw transactional data into optimized feature sets for neural network inference."
+      ]
+    },
+    {
+      "role": "Full Stack & Blockchain Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Dec 2021 – 2023",
+      "highlights": [
+        "Architected and delivered a full-stack, decentralized web application for the Rainforest Foundation to facilitate transparent global charitable giving.",
+        "Designed and maintained a production-grade Hyperledger Fabric blockchain network, deploying custom chaincode to govern donation processing logic.",
+        "Integrated the PayPal Advanced payment gateway using hosted fields, enabling secure fiat transactions seamlessly through the React/Java frontend."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "AI-Driven Financial Document Pipeline",
+      "tech_stack": "LangGraph, LlamaIndex, OpenAI API, PyMuPDF, Python",
+      "highlights": [
+        "Designed an automated, token-efficient ingestion pipeline to process complex financial PDFs into structured databases.",
+        "Implemented a context-aware highlighting and PII redaction mechanism to ensure data privacy before downstream storage."
+      ]
+    },
+    {
+      "name": "Agentic Enterprise Operations Chatbot",
+      "tech_stack": "Endor Platform, LLMs, Text-to-SQL, Quip, Box APIs",
+      "highlights": [
+        "Built an autonomous chatbot capable of dynamic tool discovery to interface with enterprise platforms like Box and Quip.",
+        "Implemented a Role-Based Access Control (RBAC) architecture to securely restrict tool execution and data visibility."
+      ]
+    },
+    {
+      "name": "Intelligent Banking Product Recommender",
+      "tech_stack": "React, Java, Deep Learning (ANN), SQL",
+      "highlights": [
+        "Developed a predictive ANN model that analyzes complex user behaviors to recommend tailored financial products.",
+        "Bridged data science and production engineering by deploying the model within a highly available enterprise Java backend."
+      ]
+    },
+    {
+      "name": "Decentralized Charitable Donation Platform",
+      "tech_stack": "React, Java, Hyperledger Fabric, PayPal Advanced",
+      "highlights": [
+        "Engineered the synchronization bridge between a traditional web application and a decentralized Hyperledger network.",
+        "Established verifiable, auditable transaction trails on the blockchain for global donation tracking."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Languages & Frameworks",
+      "items": [
+        "Python",
+        "Java",
+        "JavaScript (ES6+)",
+        "React.js",
+        "Spring Boot",
+        "LangGraph",
+        "LlamaIndex"
+      ]
+    },
+    {
+      "category": "Tools & Infrastructure",
+      "items": [
+        "OpenAI APIs",
+        "Hyperledger Fabric",
+        "Docker Compose",
+        "Keycloak",
+        "Grafana",
+        "Loki",
+        "MySQL",
+        "PyMuPDF",
+        "Git/GitHub"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineer)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 – 2021"
+    }
+  ],
+  "certifications": []
+}

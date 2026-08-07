@@ -1,0 +1,111 @@
+{
+  "personal_details": {
+    "name": "Alex R. Morgan",
+    "title": "Senior Full Stack Software Engineer",
+    "location": "San Francisco, CA",
+    "phone": "(555) 019-2834",
+    "email": "alex.morgan@email.com",
+    "linkedin": "https://linkedin.com/in/alexmorgan",
+    "github": "https://github.com/alexmorgan"
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven Senior Software Engineer with over 6 years of experience engineering scalable web applications, microservices, and modern frontend systems. Passionate about leveraging robust architectures, automated workflows, and modern cloud technologies to drive organizational growth. Seeking to apply high-impact full-stack expertise and technical leadership to create elegant, performant solutions for forward-thinking engineering teams."
+  },
+  "experience": [
+    {
+      "role": "Senior Full Stack Engineer",
+      "company": "TechSphere Solutions",
+      "location": "San Francisco, CA",
+      "dates": "2023 – Present",
+      "highlights": [
+        "Architected cloud-native backend APIs using Node.js and TypeScript, serving 500k+ daily active users with 99.98% uptime.",
+        "Led migration of legacy monolith frontend to Next.js & Bootstrap 5 design system, improving page load speed by 42%.",
+        "Mentored a team of 5 junior/mid-level developers and introduced automated CI/CD pipelines reducing deployment friction by 35%."
+      ]
+    },
+    {
+      "role": "Software Engineer",
+      "company": "Apex Global Cloud",
+      "location": "Austin, TX",
+      "dates": "2020 – 2023",
+      "highlights": [
+        "Engineered real-time data analytics dashboards utilizing React, RxJS, and WebSockets for enterprise clients.",
+        "Optimized PostgreSQL database query performance and caching strategies, reducing server latency by 28%.",
+        "Collaborated closely with product managers and UX designers to deliver 15+ core features across sprint cycles."
+      ]
+    },
+    {
+      "role": "Junior Web Developer",
+      "company": "Nexus Interactive",
+      "location": "Austin, TX",
+      "dates": "2018 – 2020",
+      "highlights": [
+        "Developed responsive UI components using standard HTML5, CSS3, JavaScript, and Bootstrap.",
+        "Integrated RESTful third-party APIs and payment gateway integrations (Stripe, PayPal)."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Resume & Document Builder Platform",
+      "tech_stack": "React, TypeScript, Bootstrap, Node.js",
+      "highlights": [
+        "Designed a dynamic document generation tool allowing users to build live PDF resumes with custom themes.",
+        "Implemented client-side PDF rendering engine with custom layout modifier support and live layout previews."
+      ]
+    },
+    {
+      "name": "Enterprise Task Streamer",
+      "tech_stack": "Python, FastAPI, Redis, Docker",
+      "highlights": [
+        "Created an asynchronous background job processing engine capable of processing 10k messages/minute."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Languages & Frameworks",
+      "items": [
+        "JavaScript (ES6+)",
+        "TypeScript",
+        "HTML5",
+        "CSS3",
+        "Bootstrap 5",
+        "React.js",
+        "Next.js",
+        "Node.js",
+        "Python"
+      ]
+    },
+    {
+      "category": "Tools & Infrastructure",
+      "items": [
+        "Git",
+        "GitHub",
+        "REST APIs",
+        "GraphQL",
+        "Docker",
+        "PostgreSQL",
+        "MongoDB",
+        "AWS (S3, EC2)",
+        "CI/CD",
+        "Agile/Scrum"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.S. in Computer Science",
+      "institution": "University of Texas at Austin",
+      "dates": "2014 – 2018"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "dates": "2024 – 2027"
+    }
+  ]
+}

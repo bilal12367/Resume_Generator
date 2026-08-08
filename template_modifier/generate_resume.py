@@ -255,21 +255,31 @@ def generate_pdf(html_path, pdf_path):
         from pyppeteer import launch
         async def render_pyppeteer():
             browser = await launch(headless=True, args=['--no-sandbox'])
-            page = await browser.newPage()
-            await page.goto(f"file://{html_path}", {'waitUntil': 'networkidle0'})
-            await page.pdf({
-                'path': pdf_path,
-                'format': 'A4',
-                'printBackground': True,
-                'margin': {
-                    'top': '15mm',
-                    'right': '15mm',
-                    'bottom': '15mm',
-                    'left': '15mm'
-                }
-            })
-            await browser.close()
-        asyncio.run(render_pyppeteer())
+            try:
+                page = await browser.newPage()
+                await page.goto(f"file://{html_path}", {'waitUntil': 'networkidle0'})
+                await page.pdf({
+                    'path': pdf_path,
+                    'format': 'A4',
+                    'printBackground': True,
+                    'margin': {
+                        'top': '15mm',
+                        'right': '15mm',
+                        'bottom': '15mm',
+                        'left': '15mm'
+                    }
+                })
+            finally:
+                await browser.close()
+        # Use get_event_loop() instead of asyncio.run() to avoid closing the
+        # loop before pyppeteer's atexit callback can clean up Chrome.
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(render_pyppeteer())
+        finally:
+            # Do NOT close the loop here — pyppeteer's atexit handler needs it.
+            pass
         if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
             return True
     except Exception:
@@ -298,6 +308,7 @@ def generate_pdf(html_path, pdf_path):
 
     # 3. Try Playwright
     try:
+        # pyrefly: ignore [missing-import]
         from playwright.sync_api import sync_playwright
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -312,6 +323,7 @@ def generate_pdf(html_path, pdf_path):
 
     # 4. Try WeasyPrint
     try:
+        # pyrefly: ignore [missing-import]
         from weasyprint import HTML
         HTML(html_path).write_pdf(pdf_path)
         if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:

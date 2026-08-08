@@ -15,3 +15,6 @@ pyppeteer_test/test-notebooks/.env
 */**/index.html
 silicon_flow_generator/prototypes/index.html
 silicon_flow_generator/prototypes/prototype_1_server/index.html
+
+
+.env

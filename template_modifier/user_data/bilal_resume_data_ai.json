@@ -2,7 +2,7 @@
   "personal_details": {
     "name": "Shaik Mohammed Bilal",
     "title": "AI & Full Stack Developer",
-    "location": "Hyderabad, Telangana, India",
+    "location": "Vijayawada, Andhra Pradesh, India",
     "phone": "+91 7981266312",
     "email": "sk.bilal.md@gmail.com",
     "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
@@ -19,10 +19,26 @@
       "location": "Remote / Hybrid",
       "dates": "2024 – Present",
       "highlights": [
-        "Architected an intelligent document processing pipeline utilizing LangGraph and LlamaIndex workflows to ingest, parse, and structure complex financial contracts.",
-        "Developed a robust visual redaction workflow utilizing PyMuPDF to permanently scrub PII prior to data storage, ensuring strict data privacy and compliance.",
-        "Built a highly capable AI agent on the Endor platform with dynamic tool-calling to autonomously automate IT support, user onboarding, and access requests.",
-        "Engineered an intelligent Text-to-SQL RAG engine that dynamically reads database schemas to execute optimized SQL queries based on user prompts."
+        "Architected an intelligent document processing pipeline utilizing LangGraph and LlamaIndex workflows to ingest, parse, and structure complex financial contracts and PDFs.",
+        "Integrated OpenAI APIs to drive the NLP engine, enabling the automated extraction of critical financial data, transaction details, and contextual insights from unstructured text.",
+        "Engineered a highly accurate Personally Identifiable Information (PII) detection system using AI to dynamically identify sensitive entities across varied document layouts.",
+        "Developed robust visual redaction workflows utilizing PyMuPDF (fitz) and PyPDF to permanently scrub PII prior to data storage, ensuring strict data privacy and compliance.",
+        "Designed token-efficient agentic workflows by leveraging Knowledge Graphs and optimizing LlamaIndex routing, significantly reducing LLM API latency and operational costs.",
+        "Implemented context-aware highlighting mechanisms that visually isolate and annotate key transaction data directly within the processed PDFs for downstream human review.",
+        "Orchestrated complex state machines using LangGraph's conditional edges to handle multi-step document validation, chunking, and extraction processes dynamically.",
+        "Built resilient data ingestion infrastructure capable of transforming and loading extracted, unstructured financial contexts into normalized relational database schemas.",
+        "Improved extraction fidelity by designing custom prompting strategies and evaluation loops tailored specifically to complex financial nomenclature and transaction histories.",
+        "Deployed the end-to-end NLP pipeline within a highly available enterprise architecture, drastically reducing the manual overhead required for financial document analysis.",
+        "Developed a highly capable AI agent on the Endor platform, designed to automate IT support, user onboarding, and access request workflows through a conversational interface.",
+        "Implemented dynamic tool-calling and discovery functionality, empowering the AI agent to autonomously interface with and execute actions across integrated enterprise platforms like Box and Quip.",
+        "Designed a comprehensive Role-Based Access Control (RBAC) architecture, guaranteeing that the chatbot restricts tool execution and data visibility strictly to authorized personnel.",
+        "Engineered an intelligent Text-to-SQL Retrieval-Augmented Generation (RAG) engine that dynamically reads database schemas to construct, optimize, and execute SQL queries based on user prompts.",
+        "Integrated enterprise ticketing systems directly with the agentic workflow, enabling zero-touch automation for raising, tracking, and resolving IT and HR service requests.",
+        "Built automated onboarding sequences where the chatbot autonomously provisions user accounts, verifies permissions, and allocates cross-platform access based on conversational inputs.",
+        "Utilized advanced custom agent executors to orchestrate complex, multi-step tool interactions, implementing intelligent fallback mechanisms for enhanced system reliability.",
+        "Secured all backend integrations and API connections, ensuring that automated operations—such as document retrieval and ticket generation—adhered to stringent enterprise security protocols.",
+        "Created self-healing database query mechanisms where the agent iteratively refines its SQL syntax against schema constraints if initial data retrieval attempts fail.",
+        "Delivered a streamlined user experience that unified disparate enterprise applications into a single, intelligent chat interface, significantly reducing manual administrative bottlenecks."
       ]
     },
     {
@@ -31,10 +47,25 @@
       "location": "Remote / Hybrid",
       "dates": "2023 – Oct 2024",
       "highlights": [
-        "Spearheaded the development of a robust unstructured data processing pipeline using Java and React to parse and analyze varied banking transaction documents.",
-        "Designed advanced Regex-based extraction algorithms to isolate, validate, and pull critical financial information from highly unstructured text formats.",
-        "Deployed a predictive Artificial Neural Network (ANN) deep learning model to recommend highly tailored financial products based on customer activity.",
-        "Architected the backend parameterization layer, transforming raw transactional data into optimized feature sets for neural network inference."
+        "Spearheaded the development of an internal workplace application for Bank of America as a Full Stack React and Java developer focused on customer document generation.",
+        "Engineered a robust unstructured data processing pipeline designed to ingest, parse, and analyze varied banking transaction documents at scale.",
+        "Designed advanced Regex-based extraction algorithms to accurately isolate, validate, and pull critical financial information from highly unstructured text formats.",
+        "Built the backend data ingestion architecture using Java to reliably transform parsed textual data and load it into structured relational database tables.",
+        "Developed a rigorous evaluation framework to continuously benchmark extraction accuracy, allowing for iterative refinement of parsing logic and pattern matching.",
+        "Implemented automated data validation and cleaning layers to ensure zero data corruption during the unstructured-to-structured transformation phase.",
+        "Optimized high-throughput document processing services, significantly reducing the manual overhead previously required for transaction logging and reporting.",
+        "Architected resilient database schemas optimized for fast querying and retrieval of massive volumes of extracted transactional data.",
+        "Ensured strict data fidelity and compliance with internal banking standards throughout the end-to-end document lifecycle.",
+        "Served as a Full Stack React and Java developer focused on banking product recommendations.",
+        "Designed and deployed a predictive Artificial Neural Network (ANN) deep learning model to recommend highly tailored financial products based on complex customer activity sequences.",
+        "Handled end-to-end full-stack responsibilities, seamlessly integrating the machine learning recommendation engine into the core enterprise workplace portal.",
+        "Engineered robust backend data pipelines to continuously track, aggregate, and process multi-channel customer activities and interaction histories.",
+        "Architected the parameterization layer in the backend, actively calculating, transforming, and formatting raw transactional data into optimized feature sets for the neural network.",
+        "Implemented sophisticated data encoding strategies, converting varied categorical and numerical customer parameters into tensor-ready formats for model inference.",
+        "Developed a real-time recommendation API that feeds the ANN's predictive outputs directly to the React front-end, empowering banking associates with actionable cross-sell suggestions.",
+        "Bridged the gap between data science and production engineering, ensuring the complex deep learning architecture ran securely within a highly available enterprise environment.",
+        "Optimized backend computational efficiency to handle high-velocity data processing, ensuring low-latency product recommendations even under heavy user load.",
+        "Drove measurable improvements in targeted product visibility by surfacing data-driven insights that directly aligned with individual customer financial profiles."
       ]
     },
     {
@@ -44,42 +75,96 @@
       "dates": "Dec 2021 – 2023",
       "highlights": [
         "Architected and delivered a full-stack, decentralized web application for the Rainforest Foundation to facilitate transparent global charitable giving.",
-        "Designed and maintained a production-grade Hyperledger Fabric blockchain network, deploying custom chaincode to govern donation processing logic.",
-        "Integrated the PayPal Advanced payment gateway using hosted fields, enabling secure fiat transactions seamlessly through the React/Java frontend."
+        "Designed, deployed, and maintained a production-grade Hyperledger Fabric blockchain network to record charitable transactions on an immutable, decentralized ledger.",
+        "Authored and deployed custom chaincode (smart contracts) to govern donation processing logic and ensure absolute data integrity across all network nodes.",
+        "Integrated the PayPal Advanced payment gateway using hosted fields, enabling secure fiat transactions seamlessly through the front-end application.",
+        "Engineered the synchronization bridge between the traditional React/Java application layer and the decentralized Hyperledger network, optimizing for low-latency transaction processing.",
+        "Implemented rigorous security protocols, combining PayPal's hosted field tokenization with Fabric's private chaincode features to protect sensitive donor financial data.",
+        "Developed comprehensive access control mechanisms within the chaincode to ensure that only authorized network participants could validate and commit transactions to the ledger.",
+        "Managed the end-to-end chaincode lifecycle (packaging, installing, approving, and committing) to facilitate seamless, zero-downtime upgrades of the blockchain business logic.",
+        "Successfully transitioned from an intensive initial technical training cohort (Dec 2021 – Mar 2022) directly into high-impact contributions on the core engineering team.",
+        "Established verifiable, auditable transaction trails on the blockchain, providing donors with transparent proof of how and where their funds were allocated."
       ]
     }
   ],
   "projects": [
     {
-      "name": "AI-Driven Financial Document Pipeline",
+      "name": "AI-Driven Financial Document Pipeline & Contract Analyzer",
       "tech_stack": "LangGraph, LlamaIndex, OpenAI API, PyMuPDF, Python",
       "highlights": [
-        "Designed an automated, token-efficient ingestion pipeline to process complex financial PDFs into structured databases.",
-        "Implemented a context-aware highlighting and PII redaction mechanism to ensure data privacy before downstream storage."
+        "Architected an intelligent document processing pipeline utilizing LangGraph and LlamaIndex workflows to ingest, parse, and structure complex financial contracts and PDFs.",
+        "Integrated OpenAI APIs to drive the NLP engine, enabling the automated extraction of critical financial data, transaction details, and contextual insights from unstructured text.",
+        "Engineered a highly accurate Personally Identifiable Information (PII) detection system using AI to dynamically identify sensitive entities across varied document layouts.",
+        "Developed robust visual redaction workflows utilizing PyMuPDF (fitz) and PyPDF to permanently scrub PII prior to data storage, ensuring strict data privacy and compliance.",
+        "Designed token-efficient agentic workflows by leveraging Knowledge Graphs and optimizing LlamaIndex routing, significantly reducing LLM API latency and operational costs.",
+        "Implemented context-aware highlighting mechanisms that visually isolate and annotate key transaction data directly within the processed PDFs for downstream human review.",
+        "Orchestrated complex state machines using LangGraph's conditional edges to handle multi-step document validation, chunking, and extraction processes dynamically.",
+        "Built resilient data ingestion infrastructure capable of transforming and loading extracted, unstructured financial contexts into normalized relational database schemas.",
+        "Improved extraction fidelity by designing custom prompting strategies and evaluation loops tailored specifically to complex financial nomenclature and transaction histories.",
+        "Deployed the end-to-end NLP pipeline within a highly available enterprise architecture, drastically reducing the manual overhead required for financial document analysis."
       ]
     },
     {
       "name": "Agentic Enterprise Operations Chatbot",
       "tech_stack": "Endor Platform, LLMs, Text-to-SQL, Quip, Box APIs",
       "highlights": [
-        "Built an autonomous chatbot capable of dynamic tool discovery to interface with enterprise platforms like Box and Quip.",
-        "Implemented a Role-Based Access Control (RBAC) architecture to securely restrict tool execution and data visibility."
+        "Developed a highly capable AI agent on the Endor platform, designed to automate IT support, user onboarding, and access request workflows through a conversational interface.",
+        "Implemented dynamic tool-calling and discovery functionality, empowering the AI agent to autonomously interface with and execute actions across integrated enterprise platforms like Box and Quip.",
+        "Designed a comprehensive Role-Based Access Control (RBAC) architecture, guaranteeing that the chatbot restricts tool execution and data visibility strictly to authorized personnel.",
+        "Engineered an intelligent Text-to-SQL Retrieval-Augmented Generation (RAG) engine that dynamically reads database schemas to construct, optimize, and execute SQL queries based on user prompts.",
+        "Integrated enterprise ticketing systems directly with the agentic workflow, enabling zero-touch automation for raising, tracking, and resolving IT and HR service requests.",
+        "Built automated onboarding sequences where the chatbot autonomously provisions user accounts, verifies permissions, and allocates cross-platform access based on conversational inputs.",
+        "Utilized advanced custom agent executors to orchestrate complex, multi-step tool interactions, implementing intelligent fallback mechanisms for enhanced system reliability.",
+        "Secured all backend integrations and API connections, ensuring that automated operations—such as document retrieval and ticket generation—adhered to stringent enterprise security protocols.",
+        "Created self-healing database query mechanisms where the agent iteratively refines its SQL syntax against schema constraints if initial data retrieval attempts fail.",
+        "Delivered a streamlined user experience that unified disparate enterprise applications into a single, intelligent chat interface, significantly reducing manual administrative bottlenecks."
       ]
     },
     {
-      "name": "Intelligent Banking Product Recommender",
+      "name": "Unstructured Transaction Data Pipeline & Document Generation",
+      "tech_stack": "Java, React, Regex, SQL",
+      "highlights": [
+        "Spearheaded the development of an internal workplace application for Bank of America as a Full Stack React and Java developer focused on customer document generation.",
+        "Engineered a robust unstructured data processing pipeline designed to ingest, parse, and analyze varied banking transaction documents at scale.",
+        "Designed advanced Regex-based extraction algorithms to accurately isolate, validate, and pull critical financial information from highly unstructured text formats.",
+        "Built the backend data ingestion architecture using Java to reliably transform parsed textual data and load it into structured relational database tables.",
+        "Developed a rigorous evaluation framework to continuously benchmark extraction accuracy, allowing for iterative refinement of parsing logic and pattern matching.",
+        "Implemented automated data validation and cleaning layers to ensure zero data corruption during the unstructured-to-structured transformation phase.",
+        "Optimized high-throughput document processing services, significantly reducing the manual overhead previously required for transaction logging and reporting.",
+        "Architected resilient database schemas optimized for fast querying and retrieval of massive volumes of extracted transactional data.",
+        "Ensured strict data fidelity and compliance with internal banking standards throughout the end-to-end document lifecycle."
+      ]
+    },
+    {
+      "name": "AI-Driven Banking Product Recommender",
       "tech_stack": "React, Java, Deep Learning (ANN), SQL",
       "highlights": [
-        "Developed a predictive ANN model that analyzes complex user behaviors to recommend tailored financial products.",
-        "Bridged data science and production engineering by deploying the model within a highly available enterprise Java backend."
+        "Served as a Full Stack React and Java developer focused on banking product recommendations.",
+        "Designed and deployed a predictive Artificial Neural Network (ANN) deep learning model to recommend highly tailored financial products based on complex customer activity sequences.",
+        "Handled end-to-end full-stack responsibilities, seamlessly integrating the machine learning recommendation engine into the core enterprise workplace portal.",
+        "Engineered robust backend data pipelines to continuously track, aggregate, and process multi-channel customer activities and interaction histories.",
+        "Architected the parameterization layer in the backend, actively calculating, transforming, and formatting raw transactional data into optimized feature sets for the neural network.",
+        "Implemented sophisticated data encoding strategies, converting varied categorical and numerical customer parameters into tensor-ready formats for model inference.",
+        "Developed a real-time recommendation API that feeds the ANN's predictive outputs directly to the React front-end, empowering banking associates with actionable cross-sell suggestions.",
+        "Bridged the gap between data science and production engineering, ensuring the complex deep learning architecture ran securely within a highly available enterprise environment.",
+        "Optimized backend computational efficiency to handle high-velocity data processing, ensuring low-latency product recommendations even under heavy user load.",
+        "Drove measurable improvements in targeted product visibility by surfacing data-driven insights that directly aligned with individual customer financial profiles."
       ]
     },
     {
       "name": "Decentralized Charitable Donation Platform",
       "tech_stack": "React, Java, Hyperledger Fabric, PayPal Advanced",
       "highlights": [
-        "Engineered the synchronization bridge between a traditional web application and a decentralized Hyperledger network.",
-        "Established verifiable, auditable transaction trails on the blockchain for global donation tracking."
+        "Architected and delivered a full-stack, decentralized web application for the Rainforest Foundation to facilitate transparent global charitable giving.",
+        "Designed, deployed, and maintained a production-grade Hyperledger Fabric blockchain network to record charitable transactions on an immutable, decentralized ledger.",
+        "Authored and deployed custom chaincode (smart contracts) to govern donation processing logic and ensure absolute data integrity across all network nodes.",
+        "Integrated the PayPal Advanced payment gateway using hosted fields, enabling secure fiat transactions seamlessly through the front-end application.",
+        "Engineered the synchronization bridge between the traditional React/Java application layer and the decentralized Hyperledger network, optimizing for low-latency transaction processing.",
+        "Implemented rigorous security protocols, combining PayPal's hosted field tokenization with Fabric's private chaincode features to protect sensitive donor financial data.",
+        "Developed comprehensive access control mechanisms within the chaincode to ensure that only authorized network participants could validate and commit transactions to the ledger.",
+        "Managed the end-to-end chaincode lifecycle (packaging, installing, approving, and committing) to facilitate seamless, zero-downtime upgrades of the blockchain business logic.",
+        "Successfully transitioned from an intensive initial technical training cohort (Dec 2021 – Mar 2022) directly into high-impact contributions on the core engineering team.",
+        "Established verifiable, auditable transaction trails on the blockchain, providing donors with transparent proof of how and where their funds were allocated."
       ]
     }
   ],

@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Run Current File as Module",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "${fileBasenameNoExtension}",
+      "cwd": "${fileDirname}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

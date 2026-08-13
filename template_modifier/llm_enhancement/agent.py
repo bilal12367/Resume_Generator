@@ -43,7 +43,7 @@ class Agent(Subject):
             base_url = getattr(provider_settings, "OPENROUTER_BASE_URL", "")
             api_key = getattr(provider_settings, "OPENROUTER_API_KEY", "")
             model_id = getattr(provider_settings, "OPENROUTER_MODEL_ID", "")
-
+        
         if not api_key:
             raise ValueError(f"Agent Config Error: API key is missing for provider {provider}.")
         if not base_url:
@@ -78,6 +78,11 @@ class Agent(Subject):
 
         self.chat_store = SQLiteChatStore.from_uri(uri=self.db_uri, table_name=table_name)
         super().__init__()
+
+        if self.db_uri.startswith("sqlite:///"):
+            self.db_path = self.db_uri[len("sqlite:///"):]
+        else:
+            self.db_path = self.db_uri
 
         Settings.llm = self.llm
         self.system_prompt = agent_config.system_prompt
@@ -156,6 +161,33 @@ class Agent(Subject):
         else:
             self._log(f"Continuing existing session {session_id} with {len(existing_history)} messages.")
 
+    def _save_tool_event(self, session_id: str, event_type: str, tool_name: str, content: str):
+        """Save a tool call or result to the database."""
+        import sqlite3
+        import datetime
+        try:
+            conn = sqlite3.connect(self.db_path, timeout=10)
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tool_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT,
+                    event_type TEXT,
+                    tool_name TEXT,
+                    content TEXT,
+                    timestamp TEXT
+                )
+            """)
+            timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            cursor.execute("""
+                INSERT INTO tool_events (session_id, event_type, tool_name, content, timestamp)
+                VALUES (?, ?, ?, ?, ?)
+            """, (session_id, event_type, tool_name, content, timestamp))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            self._log(f"Failed to save tool event to DB: {e}")
+
     def get_time_elapsed(self) -> float:
         if getattr(self, "start_time", None) is not None:
             return time.time() - self.start_time
@@ -175,7 +207,7 @@ class Agent(Subject):
             prompt_tokens = chat_history_tokens + new_message_tokens
             completion_tokens = 0
             self.total_tokens = 0
-            message_type = "Answering"
+            message_type = "Thinking"
 
             async for event in handler.stream_events():
                 event_type = type(event).__name__
@@ -189,7 +221,7 @@ class Agent(Subject):
                         message_type = "Tool_Call"
                     elif "Observation" in delta:
                         message_type = "Tool_Result_Thinking"
-                    elif "Answer" in delta:
+                    elif "Answer" in delta or "Final Answer" in delta:
                         message_type = "Answering"
                     delta_evt = DeltaEvent(
                         delta=delta,
@@ -215,6 +247,13 @@ class Agent(Subject):
                             "time_elapsed": self.get_time_elapsed(),
                         },
                     )
+                    import json
+                    self._save_tool_event(
+                        session_id=self.run_id,
+                        event_type="tool_call",
+                        tool_name=getattr(event, "tool_name", "unknown"),
+                        content=json.dumps(getattr(event, "tool_kwargs", {}))
+                    )
                     self.notify_all(tool_call_evt.model_dump_json())
                     yield tool_call_evt
 
@@ -229,6 +268,12 @@ class Agent(Subject):
                             "tokens_elapsed": self.total_tokens,
                             "time_elapsed": self.get_time_elapsed(),
                         },
+                    )
+                    self._save_tool_event(
+                        session_id=self.run_id,
+                        event_type="tool_result",
+                        tool_name=getattr(event, "tool_name", "unknown"),
+                        content=str(getattr(event.tool_output, "content", ""))
                     )
                     self.notify_all(tool_result_evt.model_dump_json())
                     yield tool_result_evt

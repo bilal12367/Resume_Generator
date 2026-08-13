@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  centrifugo:
+    image: centrifugo/centrifugo:latest
+    container_name: centrifugo
+    ports:
+      - "8002:8000"
+    volumes:
+      # Mount the config file into the container
+      - ./centrifugo_config.json:/centrifugo/config.json
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    command: centrifugo -c config.json

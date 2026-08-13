@@ -1,0 +1,178 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "AI & Full Stack Developer",
+    "location": "Vijayawada, Andhra Pradesh, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367"
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven AI Engineer with 5+ years of experience designing, developing, and deploying scalable AI/ML solutions on the Azure platform. Proven expertise in Python, PySpark, and Databricks, with a strong focus on supervised and unsupervised ML, predictive analytics, and feature generation. Highly proficient in Big Data technologies, relational database querying (Azure SQL, Synapse), and implementing automated CI/CD DevOps pipelines. Passionate about applying computational algorithms to unstructured data, managing Azure infrastructure via Terraform, and communicating actionable insights through rich data visualizations."
+  },
+  "experience": [
+    {
+      "role": "AI Engineer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Nov 2024 – Present",
+      "highlights": [
+        "Designed, developed, and deployed enterprise-grade AI solutions on the Azure platform, utilizing Azure Machine Learning and Databricks for advanced predictive analytics.",
+        "Applied complex computational algorithms and statistical methods to process massive volumes of structured and unstructured data using Python and PySpark.",
+        "Developed and maintained scalable data pipelines and CI/CD DevOps workflows using Azure DevOps, GitHub branching, and Terraform scripting for Azure IaaS.",
+        "Executed supervised and unsupervised ML modeling for document processing, driving feature generation through extensive data exploration and specific SME requirements.",
+        "Managed critical cloud infrastructure including Azure Key Vault, Storage Accounts, and WebApps, strictly adhering to RBAC maintenance for Azure roles and enterprise security.",
+        "Performed complex relational database querying and optimization using Azure SQL Server and Azure Synapse to support large-scale AI data ingestion and transformation.",
+        "Communicated complex AI model results and predictive analytics to SMEs and non-technical stakeholders through interactive, high-fidelity data visualizations."
+      ]
+    },
+    {
+      "role": "Machine Learning & Big Data Engineer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Jan 2024 – Oct 2024",
+      "highlights": [
+        "Spearheaded the development of machine learning products using Azure ML Studio, applying supervised and unsupervised ML techniques for targeted banking product recommendations.",
+        "Built robust big data pipelines utilizing Spark with PySpark and Azure Data Factory (ADF) to ingest and process high-volume unstructured banking transactions.",
+        "Architected scalable relational databases (Azure SQL Server, Synapse) and executed advanced database querying for high-throughput feature storage and transaction logging.",
+        "Bridged data science and DevOps by utilizing Azure DevOps, Azure Logic Apps, and Function Apps to deploy resilient, scalable AI models into production environments.",
+        "Optimized computational algorithms and feature generation processes based on SME requirements to handle high-velocity data and ensure low-latency ML inferences.",
+        "Collaborated with cross-functional teams, managing GitHub branching strategies and deploying cloud infrastructure programmatically via Terraform scripting."
+      ]
+    },
+    {
+      "role": "Full Stack & Cloud AI Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "July 2021 – Dec 2023",
+      "highlights": [
+        "Delivered full-stack cloud-native applications utilizing Python, deploying backend microservices alongside predictive ML models on Azure and GCP environments.",
+        "Implemented secure backend infrastructure and automated CI/CD pipelines, integrating GCP services (Big Query, DataProc, Cloud Storage) for relational data storage and analytics.",
+        "Applied statistical methods and predictive analytics to donor data, communicating impact results to stakeholders through intuitive data visualizations and reporting dashboards.",
+        "Queried relational databases and applied computational algorithms to ensure data integrity across decentralized and cloud-hosted platforms."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Azure-Driven Financial Document Pipeline & ML Analyzer",
+      "tech_stack": "Python, Azure ML Studio, Databricks, PySpark, Azure DevOps, Terraform",
+      "highlights": [
+        "Designed, developed, and deployed enterprise-grade AI solutions on the Azure platform, utilizing Azure Machine Learning and Databricks for advanced predictive analytics.",
+        "Applied complex computational algorithms and statistical methods to process massive volumes of structured and unstructured data using Python and PySpark.",
+        "Developed and maintained scalable data pipelines and CI/CD DevOps workflows using Azure DevOps, GitHub branching, and Terraform scripting for Azure IaaS.",
+        "Executed supervised and unsupervised ML modeling for document processing, driving feature generation through extensive data exploration and specific SME requirements.",
+        "Managed critical cloud infrastructure including Azure Key Vault, Storage Accounts, and WebApps, strictly adhering to RBAC maintenance for Azure roles and enterprise security.",
+        "Implemented big data transformations using Databricks and PySpark to clean and encode financial data for model inference.",
+        "Built high-fidelity data visualizations to communicate model accuracy and extraction results to non-technical stakeholders."
+      ]
+    },
+    {
+      "name": "Enterprise AI Operations & Logic Workflow Orchestrator",
+      "tech_stack": "Python, Azure Function App, Logic App, Azure SQL Server, Synapse, Data Visualizations",
+      "highlights": [
+        "Orchestrated automated enterprise AI workflows utilizing Azure Logic Apps and Azure Function Apps to streamline cloud-native IT operations.",
+        "Performed complex relational database querying and optimization using Azure SQL Server and Azure Synapse to support large-scale AI data ingestion.",
+        "Bridged data science and DevOps by utilizing Azure DevOps to deploy resilient, scalable conversational AI models into production environments.",
+        "Communicated complex AI model results, tool-calling logs, and predictive analytics to SMEs through interactive data visualizations.",
+        "Maintained robust GitHub branching and version control while deploying infrastructural updates via automated CI/CD pipelines.",
+        "Applied computational algorithms to unstructured enterprise support data to dynamically route and resolve service requests.",
+        "Provisioned cloud infrastructure programmatically using Terraform scripting, ensuring strict adherence to Azure RBAC protocols."
+      ]
+    },
+    {
+      "name": "Big Data Unstructured Transaction Microservices",
+      "tech_stack": "Spark with PySpark, Python, Azure Data Factory (ADF), Azure DevOps, Github",
+      "highlights": [
+        "Built robust big data pipelines utilizing Spark with PySpark and Azure Data Factory (ADF) to ingest and process high-volume unstructured banking transactions.",
+        "Managed massive volumes of banking transaction data using Azure Storage Accounts, ensuring high availability and fault tolerance.",
+        "Extracted features through deep data exploration, applying computational algorithms to parse and validate critical financial information.",
+        "Developed automated CI/CD DevOps pipelines and managed GitHub branching strategies to facilitate seamless collaboration across engineering teams.",
+        "Queried relational databases (Azure Synapse) extensively to generate structured datasets for downstream reporting and analytics.",
+        "Utilized statistical methods to analyze unstructured text, creating scalable models for transaction categorization.",
+        "Applied strict RBAC maintenance for Azure roles to ensure that sensitive financial data remained secure during processing."
+      ]
+    },
+    {
+      "name": "Azure ML Banking Product Recommender",
+      "tech_stack": "Azure ML Studio, Python, Supervised/Unsupervised ML, Relational Database Querying",
+      "highlights": [
+        "Spearheaded the development of machine learning products using Azure ML Studio, applying supervised and unsupervised ML techniques for targeted product recommendations.",
+        "Architected scalable relational databases and executed advanced database querying for high-throughput feature storage and transaction logging.",
+        "Optimized computational algorithms and feature generation processes based on SME requirements to handle high-velocity data.",
+        "Implemented Databricks for distributed training of predictive analytics models, scaling performance across massive customer datasets.",
+        "Used Python and PySpark to engineer robust pipelines that aggregate multi-channel customer activities into tensor-ready formats.",
+        "Automated infrastructure provisioning using Terraform, ensuring the machine learning recommendation engine ran securely on Azure.",
+        "Created comprehensive data visualizations to track ML model performance, directly aligning insights with business impact."
+      ]
+    },
+    {
+      "name": "Cloud-Native Predictive Analytics Platform",
+      "tech_stack": "Python, GCP (Big Query, DataProc, Cloud Storage), CI/CD, Statistical Methods",
+      "highlights": [
+        "Implemented secure backend infrastructure and automated CI/CD pipelines for a decentralized web application.",
+        "Applied statistical methods and predictive analytics to donor data to optimize charitable outreach and global giving trends.",
+        "Integrated GCP services (Big Query, DataProc, Cloud Storage) alongside Azure environments for cross-cloud data analytics and relational storage.",
+        "Developed custom feature generation pipelines using Python to structure unstructured donation logs into actionable ML datasets.",
+        "Executed relational database querying on Azure SQL Server to maintain verifiable, auditable transaction trails.",
+        "Managed cloud resource configurations via Terraform, applying Infrastructure as Code principles to minimize deployment overhead.",
+        "Communicated non-profit impact results to stakeholders through interactive data visualizations and automated reports."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "AI, Machine Learning & Analytics",
+      "items": [
+        "AI/ML on Databricks",
+        "Azure ML Studio & Azure Machine Learning",
+        "Supervised & Unsupervised ML",
+        "Predictive Analytics",
+        "Computational Algorithms",
+        "Statistical Methods",
+        "Feature Generation & Data Exploration"
+      ]
+    },
+    {
+      "category": "Big Data & Programming",
+      "items": [
+        "Python",
+        "Spark with PySpark",
+        "Relational Database Querying",
+        "Structured & Unstructured Data Processing",
+        "Data Visualizations"
+      ]
+    },
+    {
+      "category": "Azure Cloud Technologies",
+      "items": [
+        "Azure Data Factory (ADF)",
+        "Azure Synapse & SQL Server",
+        "Azure WebApp & Key Vault",
+        "Azure Logic App & Function App",
+        "Azure Storage Accounts",
+        "RBAC Maintenance for Azure Roles"
+      ]
+    },
+    {
+      "category": "DevOps, CI/CD & Multi-Cloud",
+      "items": [
+        "Azure DevOps",
+        "Terraform Scripting for Azure IaaS",
+        "GitHub Branching & Management",
+        "CI/CD Pipelines",
+        "GCP (Big Query, DataProc, Cloud Storage)"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineer)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 – 2021"
+    }
+  ],
+  "certifications": []
+}

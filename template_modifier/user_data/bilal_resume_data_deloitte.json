@@ -1,0 +1,159 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "AI & Full Stack Developer",
+    "location": "Vijayawada, Andhra Pradesh, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367"
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven Software and AI Engineer with 5+ years of experience architecting end-to-end cloud-native applications, generative AI workflows, and machine learning solutions. Proven expertise in building token-efficient agentic applications using Python, LangGraph, and LangChain, alongside robust LLM integrations (OpenAI, Anthropic). Highly proficient with modern full-stack development (React, Java, NodeJS, Python), OOP/OOD principles, and scalable cloud deployments across Azure and AWS. Passionate about leveraging AI-augmented development, RAG pipelines, and DevSecOps methodologies to deliver high-quality, cost-aware enterprise solutions."
+  },
+  "experience": [
+    {
+      "role": "AI & Full Stack Developer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Nov 2024 – Present",
+      "highlights": [
+        "Architected agentic applications and GenAI products using Python, LangGraph, and LangChain, orchestrating complex LLM integrations via Azure OpenAI and Anthropic.",
+        "Engineered advanced RAG pipelines with vector databases (pgvector, Qdrant) and utilized LangSmith/LangFuse for rigorous AI evaluation and prompt engineering optimization.",
+        "Designed token-efficient, cloud-native microservices using FaaS and PaaS, applying FinOps cost-aware engineering principles to significantly reduce LLM API latency.",
+        "Implemented Computer Vision and Document AI workflows using PyMuPDF to dynamically redact PII, adhering to DevSecOps and strict enterprise security protocols.",
+        "Evaluated AI models and LLM agent orchestration continuously, applying AI-augmented spec-driven development to ensure high-fidelity unstructured data extraction.",
+        "Engineered an intelligent Text-to-SQL RAG engine utilizing PostgreSQL that dynamically reads database schemas to construct, optimize, and execute SQL queries based on user prompts.",
+        "Communicated complex AI architectures, Business Context Diagrams (BCD), and system metrics to non-technical stakeholders to align product development with enterprise goals."
+      ]
+    },
+    {
+      "role": "Full Stack & Machine Learning Developer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Jan 2024 – Oct 2024",
+      "highlights": [
+        "Spearheaded the development of machine learning products and predictive Artificial Neural Networks using Python, PyTorch, and TensorFlow for tailored banking recommendations.",
+        "Built robust cloud-native APIs and React/NodeJS frontends, leveraging OOP/OOD, advanced Data Structures, and Algorithms for optimal text parsing and unstructured data processing.",
+        "Architected scalable SQL/NoSQL databases and data flow diagrams for high-throughput transaction logging, seamlessly integrating with MLflow for continuous model tracking.",
+        "Bridged data science and engineering by utilizing AI-augmented spec-driven development and unit testing frameworks to deploy resilient, enterprise-grade solutions.",
+        "Optimized backend computational efficiency and memory management, utilizing SRE methodologies to handle high-velocity data processing and ensure low-latency ML inferences.",
+        "Collaborated with cross-functional teams to define entity relationship models and sequence diagrams, ensuring ML products directly aligned with complex customer activity profiles."
+      ]
+    },
+    {
+      "role": "Full Stack & Blockchain Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "July 2021 – Dec 2023",
+      "highlights": [
+        "Delivered a full-stack, cloud-native web application utilizing React, Java, and C# (.NET) to synchronize traditional backend microservices with decentralized ledgers.",
+        "Implemented secure backend infrastructure utilizing PostgreSQL (SQL) and entity relationship modeling, deployed on AWS following Lean and DevSecOps methodologies.",
+        "Integrated payment gateways and optimized backend data synchronization processes, applying deep knowledge of algorithms and data structures for low-latency charitable transactions."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Agentic Financial Document Pipeline & Contract Analyzer",
+      "tech_stack": "Python, LangGraph, LangChain, Azure OpenAI, RAG, pgvector, LangSmith",
+      "highlights": [
+        "Architected agentic applications and GenAI products using Python, LangGraph, and LangChain, orchestrating complex LLM integrations via Azure OpenAI and Anthropic.",
+        "Engineered advanced RAG pipelines with vector databases (pgvector, Qdrant) and utilized LangSmith/LangFuse for rigorous AI evaluation and prompt engineering optimization.",
+        "Designed token-efficient, cloud-native microservices using FaaS and PaaS, applying FinOps cost-aware engineering principles to significantly reduce LLM API latency.",
+        "Implemented Computer Vision and Document AI workflows using PyMuPDF to dynamically redact PII, adhering to DevSecOps and strict enterprise security protocols.",
+        "Evaluated AI models and LLM agent orchestration continuously, applying AI-augmented spec-driven development to ensure high-fidelity unstructured data extraction."
+      ]
+    },
+    {
+      "name": "Enterprise AI Operations Orchestrator",
+      "tech_stack": "Python, FastAPI, LLMs (Anthropic/OpenAI), Text-to-SQL, OOP/OOD, MLflow",
+      "highlights": [
+        "Engineered an intelligent Text-to-SQL RAG engine utilizing PostgreSQL that dynamically reads database schemas to construct, optimize, and execute SQL queries based on user prompts.",
+        "Implemented dynamic multi-agent tool-calling functionality, empowering the AI agent to autonomously execute cloud-native actions across integrated platforms.",
+        "Utilized AI-augmented spec-driven development and unit testing frameworks to ensure reliable, scalable multi-agent orchestration."
+      ]
+    },
+    {
+      "name": "Unstructured Transaction Data Microservices",
+      "tech_stack": "Python, Java, NodeJS, React, SQL/NoSQL, Data Structures",
+      "highlights": [
+        "Built robust cloud-native APIs and Angular/NodeJS frontends, leveraging OOP/OOD, advanced Data Structures, and Algorithms for optimal text parsing.",
+        "Architected scalable SQL/NoSQL databases and data flow diagrams for high-throughput transaction logging, deployed on AWS following DevSecOps best practices."
+      ]
+    },
+    {
+      "name": "AI-Driven Banking Product Recommender",
+      "tech_stack": "Python, PyTorch, TensorFlow, FastAPI, SQL, React",
+      "highlights": [
+        "Spearheaded the development of machine learning products and predictive Artificial Neural Networks using Python, PyTorch, and TensorFlow.",
+        "Architected backend infrastructure seamlessly integrating with MLflow for continuous model tracking, evaluations, and hyperparameter tuning.",
+        "Deployed ML models via scalable cloud APIs to empower banking associates with real-time insights, applying SRE and FinOps principles."
+      ]
+    },
+    {
+      "name": "Decentralized Charitable Donation Platform",
+      "tech_stack": "React, Java, NodeJS, C# (.NET), AWS, DevSecOps",
+      "highlights": [
+        "Delivered a full-stack, cloud-native web application utilizing React, Java, and C# (.NET) to synchronize backend systems with blockchain ledgers.",
+        "Implemented secure backend infrastructure utilizing PostgreSQL (SQL) and entity relationship modeling, deployed on AWS following Lean methodologies."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Artificial Intelligence & Machine Learning",
+      "items": [
+        "GenAI & LLM Integration (OpenAI, Anthropic)",
+        "AI Agent Orchestration",
+        "RAG Pipelines & Prompt Engineering",
+        "PyTorch & TensorFlow",
+        "Computer Vision",
+        "Model Evaluations (MLflow, LangSmith, LangFuse)"
+      ]
+    },
+    {
+      "category": "Languages & Frameworks",
+      "items": [
+        "Python",
+        "Java",
+        "JavaScript / NodeJS",
+        "React.js & Angular",
+        "C# / .NET",
+        "LangChain & LangGraph",
+        "LlamaIndex"
+      ]
+    },
+    {
+      "category": "Cloud & Infrastructure",
+      "items": [
+        "Cloud-Native (AWS, Azure, GCP)",
+        "Azure OpenAI & AWS Bedrock",
+        "DevSecOps & SRE",
+        "Micro-services & FaaS / PaaS",
+        "FinOps & Cost-Aware Engineering",
+        "Docker & GitHub"
+      ]
+    },
+    {
+      "category": "Core Engineering & Databases",
+      "items": [
+        "OOP / OOD",
+        "Data Structures & Algorithms",
+        "SQL / NoSQL (PostgreSQL)",
+        "Vector Databases (pgvector, Qdrant)",
+        "Business Context & Data Flow Diagrams",
+        "Unit Testing Frameworks"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineer)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 – 2021"
+    }
+  ],
+  "certifications": []
+}

@@ -217,10 +217,10 @@
                     <div>
                         <span class="item-name">{{ project.name }}</span>
                     </div>
-                    {% if project.tech_stack %}
-                    <div class="item-date-location">{{ project.tech_stack }}</div>
-                    {% endif %}
                 </div>
+                {% if project.tech_stack %}
+                <div class="item-date-location">{{ project.tech_stack }}</div>
+                {% endif %}
                 {% if project.highlights %}
                 <ul class="condensed-bullets">
                     {% for item in project.highlights %}

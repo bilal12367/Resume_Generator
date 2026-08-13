@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Scraper — AI-Powered Job Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(31, 41, 55, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-pink: #ec4899;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #ffffff, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .metrics-bar {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 130px;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: #60a5fa;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .status-pill.connected {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .status-pill.connected .status-dot {
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+        }
+
+        /* Input Section */
+        .input-section {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .input-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-card h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .input-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .input-row textarea {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 60px;
+            transition: border-color 0.2s;
+        }
+
+        .input-row textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #60a5fa, var(--accent-blue));
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-process {
+            background: linear-gradient(135deg, var(--accent-green), #059669);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+            padding: 0.85rem 2rem;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+
+        .btn-process:hover {
+            background: linear-gradient(135deg, #34d399, var(--accent-green));
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Settings */
+        .config-drawer {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .config-drawer.hidden {
+            display: none;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .input-group input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem 0.75rem;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            width: 240px;
+        }
+
+        /* Main Container */
+        main {
+            max-width: 1100px;
+            margin: 0 auto 2rem;
+            padding: 0 1.5rem;
+        }
+
+        /* Timeline */
+        .timeline-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 20px;
+            bottom: 20px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), transparent);
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .event-card {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-left: 3.5rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.3s ease-out forwards;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .event-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .event-icon {
+            position: absolute;
+            left: -3.5rem;
+            top: 1.25rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-main);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .event-card:hover .event-icon {
+            transform: scale(1.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .type-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-thinking {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+        }
+
+        .badge-tool_call {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .badge-tool_result {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .badge-answering {
+            background: rgba(236, 72, 153, 0.2);
+            color: #f472b6;
+            border: 1px solid rgba(236, 72, 153, 0.4);
+        }
+
+        .badge-completion {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .badge-human_input {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .card-tool-name {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .meta-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .card-body {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.825rem;
+            overflow-x: auto;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+
+        .streaming-text {
+            line-height: 1.6;
+            color: #f3f4f6;
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--accent-blue);
+            margin-left: 3px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        /* Job Selection Panel */
+        .job-selection-panel {
+            display: none;
+            animation: slideUp 0.4s ease-out forwards;
+        }
+
+        .job-selection-panel.visible {
+            display: block;
+        }
+
+        .job-selection-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .job-selection-header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #34d399, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .selection-count {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .job-cards-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .job-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .job-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .job-card.selected {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.08);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+
+        .job-card-checkbox {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+            color: transparent;
+        }
+
+        .job-card.selected .job-card-checkbox {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: white;
+        }
+
+        .job-card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            padding-right: 2.5rem;
+        }
+
+        .job-card-company {
+            font-size: 0.95rem;
+            color: #60a5fa;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .job-card-location {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .job-card-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .skill-tag {
+            padding: 0.2rem 0.55rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: #c084fc;
+        }
+
+        .job-card-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            max-height: 80px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .job-card-desc::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(transparent, rgba(17, 24, 39, 0.95));
+        }
+
+        .job-card-id {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo">🔍</div>
+            <div>
+                <div class="brand-title">Job Scraper Agent</div>
+                <div class="brand-subtitle">AI-Powered Job Search & Selection</div>
+            </div>
+        </div>
+
+        <div class="metrics-bar">
+            <div id="statusPill" class="status-pill">
+                <span class="status-dot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Tokens Elapsed</span>
+                <span id="metricTokens" class="metric-value">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Time Elapsed</span>
+                <span id="metricTime" class="metric-value">0.00s</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Tools Executed</span>
+                <span id="metricTools" class="metric-value">0</span>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;">
+            <button class="btn" onclick="toggleConfigDrawer()">⚙️ Settings</button>
+            <button class="btn" onclick="clearAll()">🗑️ Clear</button>
+        </div>
+    </header>
+
+    <!-- Settings Drawer -->
+    <div id="configDrawer" class="config-drawer hidden">
+        <div class="input-group">
+            <label for="wsUrl">WebSocket URL:</label>
+            <input type="text" id="wsUrl" value="ws://localhost:8002/connection/websocket">
+        </div>
+        <div class="input-group">
+            <label for="channelInput">Channel:</label>
+            <input type="text" id="channelInput" value="workflow">
+        </div>
+        <div class="input-group">
+            <label for="secretInput">HMAC Secret:</label>
+            <input type="text" id="secretInput" value="a45131f8882de49f3e">
+        </div>
+        <div class="input-group">
+            <label for="apiUrl">Scraper API:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8080">
+        </div>
+    </div>
+
+    <!-- User Input Section -->
+    <section class="input-section" id="inputSection">
+        <div class="input-card">
+            <h2>🚀 What jobs are you looking for?</h2>
+            <p>Describe your ideal role — include technologies, experience level, location preferences, and time range.
+            </p>
+            <div class="input-row">
+                <textarea id="userQuery" rows="3"
+                    placeholder="e.g. I'm looking for Python AI Engineer roles, 5 years experience, posted in the last 7 days, remote or Bangalore..."></textarea>
+            </div>
+            <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+                <button id="submitBtn" class="btn btn-primary" onclick="submitQuery()">
+                    🔍 Search Jobs
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Agent Timeline -->
+        <div id="timelineSection" style="display:none;">
+            <div id="timeline" class="timeline-container">
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">🛰️</div>
+                    <h3>Agent Working...</h3>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem;">The agent is searching for jobs matching your
+                        criteria. Live tool calls and results will appear below.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Selection Panel -->
+        <div id="jobSelectionPanel" class="job-selection-panel">
+            <div class="job-selection-header">
+                <h2>📋 Select Jobs to Process</h2>
+                <span id="selectionCount" class="selection-count">0 selected</span>
+            </div>
+            <div id="jobCardsGrid" class="job-cards-grid"></div>
+            <button id="processBtn" class="btn btn-process" onclick="processSelected()">
+                ✅ Process Selected Jobs
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        Job Scraper Agent • AI-Powered Job Search & Selection • Centrifugo Real-time Stream
+    </footer>
+
+    <script>
+        /* ---- State ---- */
+        let ws = null;
+        let isConnected = false;
+        let totalTokens = 0;
+        let totalTime = 0.0;
+        let toolCallsCount = 0;
+        let activeAnsweringCardId = null;
+        let activeThinkingCardId = null;
+        let manualDisconnect = false;
+        let reconnectAttempts = 0;
+        let reconnectTimer = null;
+        const MAX_RECONNECT_ATTEMPTS = 20;
+        const BASE_RECONNECT_DELAY_MS = 1000;
+        let receivedJobs = [];
+        let selectedJobIds = new Set();
+        let currentSessionId = null;
+
+        /* ---- Init ---- */
+        window.addEventListener('DOMContentLoaded', () => {
+            connectWS();
+        });
+
+        /* ---- Settings ---- */
+        function toggleConfigDrawer() {
+            document.getElementById('configDrawer').classList.toggle('hidden');
+        }
+
+        /* ---- JWT for Centrifugo ---- */
+        function base64url(source) {
+            let encoded = CryptoJS.enc.Base64.stringify(source);
+            encoded = encoded.replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+            return encoded;
+        }
+
+        function generateJwtToken(secret) {
+            const header = { alg: "HS256", typ: "JWT" };
+            const payload = { sub: "job_scraper_ui", exp: Math.floor(Date.now() / 1000) + 3600 };
+            const encodedHeader = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(header)));
+            const encodedPayload = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(payload)));
+            const token = encodedHeader + "." + encodedPayload;
+            const signature = CryptoJS.HmacSHA256(token, secret);
+            return token + "." + base64url(signature);
+        }
+
+        /* ---- WebSocket ---- */
+        function updateStatus(status, text) {
+            const pill = document.getElementById('statusPill');
+            const statusText = document.getElementById('statusText');
+            pill.className = 'status-pill ' + (status === 'connected' ? 'connected' : '');
+            statusText.innerText = text;
+        }
+
+        function scheduleReconnect() {
+            if (manualDisconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
+            const delay = Math.min(BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttempts), 30000);
+            reconnectAttempts++;
+            updateStatus('disconnected', `Reconnecting in ${(delay / 1000).toFixed(0)}s (#${reconnectAttempts})...`);
+            reconnectTimer = setTimeout(() => connectWS(), delay);
+        }
+
+        function connectWS() {
+            const wsUrl = document.getElementById('wsUrl').value.trim();
+            const channel = document.getElementById('channelInput').value.trim();
+            const secret = document.getElementById('secretInput').value.trim();
+
+            if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+            manualDisconnect = false;
+            updateStatus('connecting', 'Connecting...');
+            const token = generateJwtToken(secret);
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    ws.send(JSON.stringify({ id: 1, connect: { token } }));
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const rawData = event.data;
+                        if (rawData === '{}' || rawData === '{"ping":{}}') {
+                            ws.send('{}');
+                            return;
+                        }
+                        const msg = JSON.parse(rawData);
+
+                        if (msg.id === 1 && msg.connect) {
+                            ws.send(JSON.stringify({ id: 2, subscribe: { channel } }));
+                            isConnected = true;
+                            reconnectAttempts = 0;
+                            updateStatus('connected', `Live: #${channel}`);
+                        }
+
+                        if (msg.push && msg.push.pub && msg.push.pub.data) {
+                            handleIncomingEvent(msg.push.pub.data);
+                        }
+                    } catch (err) {
+                        console.error("WS message error:", err);
+                    }
+                };
+
+                ws.onerror = () => updateStatus('disconnected', 'Error');
+
+                ws.onclose = () => {
+                    isConnected = false;
+                    if (manualDisconnect) {
+                        updateStatus('disconnected', 'Disconnected');
+                    } else {
+                        updateStatus('disconnected', 'Connection lost');
+                        scheduleReconnect();
+                    }
+                };
+            } catch (err) {
+                updateStatus('disconnected', 'Failed');
+                scheduleReconnect();
+            }
+        }
+
+        /* ---- Submit Query ---- */
+        async function submitQuery() {
+            const queryEl = document.getElementById('userQuery');
+            const query = queryEl.value.trim();
+            if (!query) return;
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Searching...';
+
+            // Show timeline section
+            document.getElementById('timelineSection').style.display = 'block';
+            document.getElementById('jobSelectionPanel').classList.remove('visible');
+
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+
+            try {
+                const bodyPayload = { message: query };
+                if (currentSessionId) {
+                    bodyPayload.session_id = currentSessionId;
+                }
+
+                const resp = await fetch(`${apiUrl}/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyPayload)
+                });
+                const data = await resp.json();
+                console.log("Scraper response:", data);
+                if (data.session_id) {
+                    currentSessionId = data.session_id;
+                }
+                queryEl.value = ''; // clear text box for follow-up message
+            } catch (err) {
+                console.error("API error:", err);
+                appendErrorCard("Failed to reach Job Scraper API: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Send Message';
+            }
+        }
+
+        /* ---- Event Handling ---- */
+        function escapeHtml(str) {
+            if (typeof str !== 'string') str = String(str || '');
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function updateMetrics(tokens, time, toolsCount) {
+            if (tokens !== undefined && tokens !== null) {
+                totalTokens = Number(tokens) || 0;
+                document.getElementById('metricTokens').innerText = totalTokens.toLocaleString();
+            }
+            if (time !== undefined && time !== null) {
+                totalTime = Number(time) || 0;
+                document.getElementById('metricTime').innerText = totalTime.toFixed(2) + 's';
+            }
+            if (toolsCount !== undefined && toolsCount !== null) {
+                document.getElementById('metricTools').innerText = toolsCount;
+            }
+        }
+
+        function removeEmptyState() {
+            const el = document.getElementById('emptyState');
+            if (el) el.remove();
+        }
+
+        function handleIncomingEvent(evt) {
+            if (!evt) return;
+            if (typeof evt === 'string') {
+                try { evt = JSON.parse(evt); } catch (e) { return; }
+            }
+
+            // Check for human_input / process_jobs event
+            if (evt.type === 'human_input' && evt.event === 'process_jobs' && evt.jobs) {
+                showJobSelectionPanel(evt.jobs);
+                return;
+            }
+
+            removeEmptyState();
+
+            const rawTokens = evt.tokens_elapsed || (evt.content && evt.content.tokens_elapsed) || 0;
+            const rawTime = evt.time_elapsed || (evt.content && evt.content.time_elapsed) || 0;
+            const tokens = Number(rawTokens) || 0;
+            const timeElapsed = Number(rawTime) || 0;
+            updateMetrics(tokens, timeElapsed);
+
+            const timeline = document.getElementById('timeline');
+            const evtType = evt.type || '';
+
+            // Tool Call
+            if (evtType === 'tool_call' || evt.tool_kwargs !== undefined || (evt.content && evt.content.tool_kwargs !== undefined)) {
+                toolCallsCount++;
+                updateMetrics(undefined, undefined, toolCallsCount);
+                activeAnsweringCardId = null;
+                activeThinkingCardId = null;
+
+                const toolName = evt.tool_name || (evt.content && evt.content.tool_name) || 'MCP Tool';
+                const toolArgs = evt.tool_kwargs || (evt.content && evt.content.tool_kwargs) || {};
+
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.innerHTML = `
+                    <div class="event-icon" style="border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;">🛠️</div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="type-badge badge-tool_call">Tool Call</span>
+                            <span class="card-tool-name">${escapeHtml(toolName)}</span>
+                        </div>
+                        <div class="meta-group">
+                            <div class="meta-item">🪙 ${tokens} tokens</div>
+                            <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">JSON Arguments: ${escapeHtml(JSON.stringify(toolArgs, null, 2))}</div>
+                    </div>
+                `;
+                timeline.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+
+            // Tool Result
+            if (evtType === 'tool_result' || evt.tool_result !== undefined || (evt.content && evt.content.tool_result !== undefined)) {
+                activeAnsweringCardId = null;
+                activeThinkingCardId = null;
+
+                const toolName = evt.tool_name || (evt.content && evt.content.tool_name) || 'MCP Tool';
+                let rawResult = evt.tool_result !== undefined ? evt.tool_result : (evt.content ? evt.content.tool_result : '');
+                if (rawResult && typeof rawResult === 'object' && rawResult.result !== undefined) rawResult = rawResult.result;
+
+                let resultText = '';
+                if (typeof rawResult === 'object') {
+                    resultText = JSON.stringify(rawResult, null, 2);
+                } else if (typeof rawResult === 'string') {
+                    try { resultText = JSON.stringify(JSON.parse(rawResult), null, 2); } catch (e) { resultText = rawResult; }
+                } else {
+                    resultText = String(rawResult || '');
+                }
+
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.innerHTML = `
+                    <div class="event-icon" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">📥</div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="type-badge badge-tool_result">Tool Result</span>
+                            <span class="card-tool-name">${escapeHtml(toolName)}</span>
+                        </div>
+                        <div class="meta-group">
+                            <div class="meta-item">🪙 ${tokens} tokens</div>
+                            <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">${escapeHtml(resultText)}</div>
+                    </div>
+                `;
+                timeline.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+
+            // Delta (Thinking / Answering)
+            if (evt.delta !== undefined) {
+                const msgType = evt.messageType || 'Thinking';
+                const deltaText = evt.delta || '';
+
+                if (msgType !== 'Answering') {
+                    activeAnsweringCardId = null;
+                    let card = activeThinkingCardId ? document.getElementById(activeThinkingCardId) : null;
+
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = 'thinking_' + Date.now();
+                        activeThinkingCardId = card.id;
+                        card.className = 'event-card';
+                        card.innerHTML = `
+                            <div class="event-icon" style="border-color: rgba(139, 92, 246, 0.4); color: #c084fc;">🧠</div>
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <span class="type-badge badge-thinking">${escapeHtml(msgType)}</span>
+                                </div>
+                                <div class="meta-group">
+                                    <div class="meta-item">🪙 <span class="card-tokens">${tokens}</span> tokens</div>
+                                    <div class="meta-item">⏱️ <span class="card-time">${timeElapsed.toFixed(2)}s</span></div>
+                                </div>
+                            </div>
+                            <div class="card-body streaming-text" style="color: #c084fc; font-style: italic;">
+                                <span class="thinking-span"></span><span class="cursor-blink"></span>
+                            </div>
+                        `;
+                        timeline.appendChild(card);
+                    }
+
+                    const ts = card.querySelector('.thinking-span');
+                    if (ts) ts.innerText += deltaText;
+                    const ct = card.querySelector('.card-tokens');
+                    if (ct) ct.innerText = tokens;
+                    const ctm = card.querySelector('.card-time');
+                    if (ctm) ctm.innerText = timeElapsed.toFixed(2) + 's';
+                    card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    return;
+                }
+
+                // Answering
+                activeThinkingCardId = null;
+                let card = activeAnsweringCardId ? document.getElementById(activeAnsweringCardId) : null;
+
+                if (!card) {
+                    card = document.createElement('div');
+                    card.id = 'answering_' + Date.now();
+                    activeAnsweringCardId = card.id;
+                    card.className = 'event-card';
+                    card.innerHTML = `
+                        <div class="event-icon" style="border-color: rgba(236, 72, 153, 0.4); color: #f472b6;">💬</div>
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="type-badge badge-answering">Agent Output</span>
+                            </div>
+                            <div class="meta-group">
+                                <div class="meta-item">🪙 <span class="card-tokens">${tokens}</span> tokens</div>
+                                <div class="meta-item">⏱️ <span class="card-time">${timeElapsed.toFixed(2)}s</span></div>
+                            </div>
+                        </div>
+                        <div class="card-body streaming-text"><span class="content-span"></span><span class="cursor-blink"></span></div>
+                    `;
+                    timeline.appendChild(card);
+                }
+
+                const cs = card.querySelector('.content-span');
+                if (cs) cs.innerText += deltaText;
+                const ct2 = card.querySelector('.card-tokens');
+                if (ct2) ct2.innerText = tokens;
+                const ctm2 = card.querySelector('.card-time');
+                if (ctm2) ctm2.innerText = timeElapsed.toFixed(2) + 's';
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+
+            // Run Completion
+            if (evtType === 'run_completion' || (evt.content !== undefined && !evt.delta && !evt.tool_kwargs && !evt.tool_result)) {
+                activeThinkingCardId = null;
+                if (activeAnsweringCardId) {
+                    const cur = document.getElementById(activeAnsweringCardId);
+                    if (cur) { const b = cur.querySelector('.cursor-blink'); if (b) b.remove(); }
+                    activeAnsweringCardId = null;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                const contentText = typeof evt.content === 'object' ? JSON.stringify(evt.content, null, 2) : String(evt.content || '');
+                card.innerHTML = `
+                    <div class="event-icon" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">✨</div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="type-badge badge-completion">Run Completed</span>
+                        </div>
+                        <div class="meta-group">
+                            <div class="meta-item">🪙 ${tokens} tokens</div>
+                            <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                        </div>
+                    </div>
+                    <div class="card-body streaming-text" style="font-weight: 500;">
+                        ${escapeHtml(contentText)}
+                    </div>
+                `;
+                timeline.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }
+
+        function appendErrorCard(message) {
+            removeEmptyState();
+            const timeline = document.getElementById('timeline');
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            card.innerHTML = `
+                <div class="event-icon" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">⚠️</div>
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <span class="type-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);">ERROR</span>
+                    </div>
+                </div>
+                <div class="card-body" style="color:#fca5a5;">${escapeHtml(message)}</div>
+            `;
+            timeline.appendChild(card);
+        }
+
+        /* ---- Job Selection Panel ---- */
+        function showJobSelectionPanel(jobs) {
+            receivedJobs = jobs;
+            selectedJobIds.clear();
+
+            // Hide timeline, show selection panel
+            document.getElementById('timelineSection').style.display = 'none';
+            document.getElementById('inputSection').style.display = 'none';
+            const panel = document.getElementById('jobSelectionPanel');
+            panel.classList.add('visible');
+
+            const grid = document.getElementById('jobCardsGrid');
+            grid.innerHTML = '';
+
+            jobs.forEach((job, idx) => {
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                card.dataset.jobId = job.job_id || '';
+                card.onclick = () => toggleJobSelection(card, job.job_id);
+
+                const skills = (job.skills_required || []).slice(0, 8);
+                const skillsHtml = skills.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('');
+
+                const desc = job.minimal_description || job.raw_description || '';
+                const descPreview = desc.length > 250 ? desc.substring(0, 250) + '...' : desc;
+
+                card.innerHTML = `
+                    <div class="job-card-checkbox">✓</div>
+                    <div class="job-card-title">${escapeHtml(job.title || 'Untitled Position')}</div>
+                    <div class="job-card-company">${escapeHtml(job.company_name || 'Unknown Company')}</div>
+                    <div class="job-card-location">📍 ${escapeHtml(job.location || 'Location not specified')}</div>
+                    <div class="job-card-skills">${skillsHtml}</div>
+                    <div class="job-card-desc">${escapeHtml(descPreview)}</div>
+                    <div class="job-card-id">Job ID: ${escapeHtml(job.job_id || 'N/A')}</div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            updateSelectionCount();
+        }
+
+        function toggleJobSelection(cardEl, jobId) {
+            if (selectedJobIds.has(jobId)) {
+                selectedJobIds.delete(jobId);
+                cardEl.classList.remove('selected');
+            } else {
+                selectedJobIds.add(jobId);
+                cardEl.classList.add('selected');
+            }
+            updateSelectionCount();
+        }
+
+        function updateSelectionCount() {
+            document.getElementById('selectionCount').innerText = `${selectedJobIds.size} selected`;
+        }
+
+        function processSelected() {
+            if (selectedJobIds.size === 0) {
+                alert('Please select at least one job to process.');
+                return;
+            }
+
+            const selectedJobs = receivedJobs.filter(j => selectedJobIds.has(j.job_id));
+            console.log("Selected jobs for processing:", selectedJobs);
+
+            // For now, just log — the next step will be defined by the user
+            alert(`Processing ${selectedJobs.length} selected job(s). Check console for data.`);
+        }
+
+        /* ---- Clear All ---- */
+        function clearAll() {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = `
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">🛰️</div>
+                    <h3>Agent Working...</h3>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem;">The agent is searching for jobs matching your criteria.</p>
+                </div>
+            `;
+            totalTokens = 0; totalTime = 0.0; toolCallsCount = 0;
+            activeAnsweringCardId = null; activeThinkingCardId = null;
+            updateMetrics(0, 0, 0);
+
+            document.getElementById('timelineSection').style.display = 'none';
+            document.getElementById('jobSelectionPanel').classList.remove('visible');
+            document.getElementById('inputSection').style.display = 'block';
+            receivedJobs = [];
+            selectedJobIds.clear();
+        }
+    </script>
+</body>
+
+</html>

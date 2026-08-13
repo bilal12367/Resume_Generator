@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centrifugo Authenticated Sandbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/centrifuge/5.4.0/centrifuge.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <header class="border-b border-gray-800 pb-4 mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-indigo-400">Centrifugo Pipeline Playground</h1>
+                <p class="text-xs text-gray-400 mt-1">Target Cluster: <code class="text-yellow-400">ws://localhost:8002/connection/websocket</code></p>
+            </div>
+            <div>
+                <span id="connection-badge" class="px-3 py-1 text-xs font-semibold rounded-full bg-red-900 text-red-300 border border-red-700">Disconnected</span>
+            </div>
+        </header>
+
+        <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-md mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-indigo-300">🔒 Token Authentication</h2>
+                <span id="auth-status" class="text-xs font-semibold text-gray-400 bg-gray-900 px-3 py-1 rounded">Status: Idle</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">API Base URL</label>
+                    <input id="api-host" type="text" value="http://localhost:9000" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 font-mono text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">User ID</label>
+                    <div class="flex space-x-2">
+                        <input id="auth-userid" type="text" value="test" class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-indigo-500 font-mono text-xs">
+                        <button id="btn-run-auth" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 rounded transition shrink-0">Get Token & Connect</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-gray-700/50 hidden" id="token-tray">
+                <label class="block text-xs text-emerald-400 font-semibold mb-1">✓ Active Centrifugo Connection Token Received:</label>
+                <div id="display-token" class="w-full bg-gray-950 p-2 rounded text-xs font-mono text-gray-400 break-all border border-emerald-900 max-h-16 overflow-y-auto select-all"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-md flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">1. Subscriptions Management</h2>
+                    <div class="space-y-3">
+                        <div class="flex space-x-2">
+                            <input id="input-channel" type="text" placeholder="e.g., user_test" class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                            <button id="btn-subscribe" class="bg-emerald-600 hover:bg-emerald-500 font-medium px-4 py-2 rounded text-sm transition">Listen</button>
+                        </div>
+                        <div class="text-xs text-gray-400 pt-1">Currently Monitored Channels:</div>
+                        <ul id="active-channels-list" class="space-y-1 max-h-48 overflow-y-auto text-xs font-mono">
+                            <li class="text-gray-500 italic py-1">No channels currently monitored...</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-gray-700/50 mt-4">
+                    <button id="btn-disconnect" class="w-full bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 font-medium py-2 rounded text-xs transition hidden">Sever WebSocket Stream</button>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-md">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-2">2. Event Broadcaster</h2>
+                <p class="text-xs text-gray-400 mb-4">Simulate events pushing down the streaming pipe.</p>
+                
+                <div class="space-y-4 text-sm">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Target Channel</label>
+                        <input id="pub-channel" type="text" placeholder="e.g., user_test" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">JSON Payload</label>
+                        <textarea id="pub-payload" rows="6" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 font-mono text-xs focus:outline-none focus:border-indigo-500 text-emerald-400">{
+  "event": "WORKFLOW_STATUS_UPDATE",
+  "data": {
+    "status": "SUCCESS"
+  }
+}</textarea>
+                    </div>
+                    <button id="btn-publish" class="w-full bg-amber-600 hover:bg-amber-500 font-medium py-2 rounded transition text-sm">Broadcast Message</button>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 shadow-md flex flex-col h-[440px]">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">3. Traffic Terminal</h2>
+                    <button id="btn-clear-logs" class="text-xs text-gray-500 hover:text-gray-300 underline">Clear</button>
+                </div>
+                
+                <div id="traffic-logs" class="flex-1 bg-gray-900 p-3 rounded border border-gray-700 font-mono text-xs overflow-y-auto space-y-2 select-text">
+                    <div class="text-gray-500 italic">[System]: Playground initialized. Fetch token to begin flow.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let centrifugeInstance = null;
+        let activeCentrifugoToken = null;
+        const activeSubscriptions = {};
+
+        // DOM Element Cache
+        const apiHostInput = document.getElementById('api-host');
+        const userIdInput = document.getElementById('auth-userid');
+        const runAuthBtn = document.getElementById('btn-run-auth');
+        const authStatusLabel = document.getElementById('auth-status');
+        const tokenTray = document.getElementById('token-tray');
+        const displayTokenDiv = document.getElementById('display-token');
+        
+        const badge = document.getElementById('connection-badge');
+        const subChannelInput = document.getElementById('input-channel');
+        const subscribeBtn = document.getElementById('btn-subscribe');
+        const activeChannelsList = document.getElementById('active-channels-list');
+        const disconnectBtn = document.getElementById('btn-disconnect');
+        
+        const pubChannelInput = document.getElementById('pub-channel');
+        const pubPayloadInput = document.getElementById('pub-payload');
+        const publishBtn = document.getElementById('btn-publish');
+        
+        const logsContainer = document.getElementById('traffic-logs');
+        const clearLogsBtn = document.getElementById('btn-clear-logs');
+
+        function appendLog(type, channel, rawMessage) {
+            const row = document.createElement('div');
+            const time = new Date().toLocaleTimeString();
+            let typeColor = "text-blue-400";
+            
+            if (type === "EVENT") typeColor = "text-emerald-400 font-bold";
+            if (type === "SYSTEM") typeColor = "text-indigo-400";
+            if (type === "ERROR") typeColor = "text-red-400 font-bold";
+            if (type === "OUTBOUND") typeColor = "text-amber-400";
+
+            row.innerHTML = `
+                <span class="text-gray-600">[${time}]</span> 
+                <span class="${typeColor}">[${type}]</span> 
+                ${channel ? `<span class="text-purple-400 font-semibold">${channel}:</span>` : ''} 
+                <span class="text-gray-300">${typeof rawMessage === 'object' ? JSON.stringify(rawMessage) : rawMessage}</span>
+            `;
+            logsContainer.appendChild(row);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // ==========================================
+        // 🔐 FETCH TOKEN & AUTHENTICATE
+        // ==========================================
+        runAuthBtn.addEventListener('click', async () => {
+            let host = apiHostInput.value.trim();
+            // Remove trailing slash if user added it
+            if (host.endsWith('/')) host = host.slice(0, -1);
+            
+            const userId = encodeURIComponent(userIdInput.value.trim());
+            
+            if (!userId) {
+                alert("User ID is required!");
+                return;
+            }
+            
+            authStatusLabel.className = "text-xs font-semibold text-yellow-400 bg-gray-900 px-3 py-1 rounded";
+            authStatusLabel.innerText = "Status: Fetching Token...";
+            appendLog("SYSTEM", null, `Requesting token for user: ${userId}...`);
+
+            try {
+                // Construct the exact URL structure requested
+                const tokenUrl = `${host}/workflow/token/${userId}`;
+                appendLog("SYSTEM", null, `GET ${tokenUrl}`);
+                
+                const tokenResponse = await fetch(tokenUrl, { method: 'GET' });
+
+                if (!tokenResponse.ok) {
+                    throw new Error(`Endpoint failed with status code ${tokenResponse.status}`);
+                }
+
+                // Parse the JSON response from FastAPI {"user_id": "...", "token": "..."}
+                const tokenData = await tokenResponse.json();
+                
+                if (!tokenData || !tokenData.token) {
+                    throw new Error("Response JSON did not contain a valid 'token' field.");
+                }
+
+                activeCentrifugoToken = tokenData.token.trim();
+                
+                // Show tracking UI transformations
+                authStatusLabel.className = "text-xs font-semibold text-emerald-400 bg-gray-900 px-3 py-1 rounded";
+                authStatusLabel.innerText = "Status: Authenticated";
+                displayTokenDiv.innerText = activeCentrifugoToken;
+                tokenTray.classList.remove('hidden');
+                
+                appendLog("SYSTEM", null, "Token fetched successfully! Initiating Centrifugo WebSocket connection...");
+                
+                // Fire up WebSocket Pipeline
+                connectToCentrifugo();
+
+            } catch (error) {
+                authStatusLabel.className = "text-xs font-semibold text-red-400 bg-gray-900 px-3 py-1 rounded";
+                authStatusLabel.innerText = "Status: Authentication Failed";
+                tokenTray.classList.add('hidden');
+                appendLog("ERROR", null, `TOKEN FETCH FAILED: ${error.message}`);
+                alert(`Authentication Flow Failed:\n${error.message}\n\nVerify server is running and CORS is correctly configured.`);
+            }
+        });
+
+        // ==========================================
+        // 🌐 CENTRIFUGO STREAM CONNECTION
+        // ==========================================
+        function connectToCentrifugo() {
+            if (centrifugeInstance) {
+                centrifugeInstance.disconnect();
+            }
+
+            const wsEndpoint = 'ws://localhost:8002/connection/websocket';
+            appendLog("SYSTEM", null, `Opening connection to: ${wsEndpoint}`);
+
+            centrifugeInstance = new Centrifuge(wsEndpoint, {
+                token: activeCentrifugoToken
+            });
+
+            centrifugeInstance.on('connected', (ctx) => {
+                badge.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-950 text-emerald-300 border border-emerald-700";
+                badge.innerText = "Connected";
+                disconnectBtn.classList.remove('hidden');
+                appendLog("SYSTEM", null, `WebSocket Pipe Connected. Client Session Hash: ${ctx.client}`);
+                
+                // Automatically suggest their personal channel based on User ID
+                subChannelInput.value = `user_${userIdInput.value.trim()}`;
+                pubChannelInput.value = `user_${userIdInput.value.trim()}`;
+            });
+
+            centrifugeInstance.on('disconnected', (ctx) => {
+                badge.className = "px-3 py-1 text-xs font-semibold rounded-full bg-red-900 text-red-300 border border-red-700";
+                badge.innerText = "Disconnected";
+                disconnectBtn.classList.add('hidden');
+                appendLog("SYSTEM", null, `WebSocket Disconnected. Reason: ${ctx.reason}`);
+                clearSubscriptionsContext();
+            });
+
+            centrifugeInstance.connect();
+        }
+
+        // ==========================================
+        // 📡 SUBSCRIPTION HANDLING
+        // ==========================================
+        subscribeBtn.addEventListener('click', () => {
+            if (!centrifugeInstance || centrifugeInstance.state !== 'connected') {
+                alert("Cannot bind channel paths while stream context is offline. Fetch a token first.");
+                return;
+            }
+
+            const channel = subChannelInput.value.trim();
+            if (!channel) return;
+
+            if (activeSubscriptions[channel]) {
+                appendLog("SYSTEM", channel, "Already monitoring this endpoint.");
+                return;
+            }
+
+            appendLog("SYSTEM", channel, "Injecting active listener pipeline thread...");
+            const sub = centrifugeInstance.newSubscription(channel);
+
+            sub.on('publication', (ctx) => {
+                appendLog("EVENT", channel, ctx.data);
+            });
+
+            sub.on('subscribed', () => {
+                appendLog("SYSTEM", channel, "Streaming pipeline active.");
+                activeSubscriptions[channel] = sub;
+                updateChannelsUI();
+                subChannelInput.value = '';
+            });
+
+            sub.on('error', (ctx) => {
+                appendLog("ERROR", channel, `Subscription rejected: ${ctx.error.message}`);
+            });
+
+            sub.subscribe();
+        });
+
+        window.leaveChannel = function(channelName) {
+            if (activeSubscriptions[channelName]) {
+                appendLog("SYSTEM", channelName, "Tearing down listener context...");
+                activeSubscriptions[channelName].unsubscribe();
+                delete activeSubscriptions[channelName];
+                updateChannelsUI();
+            }
+        };
+
+        function updateChannelsUI() {
+            const channels = Object.keys(activeSubscriptions);
+            if (channels.length === 0) {
+                activeChannelsList.innerHTML = `<li class="text-gray-500 italic py-1">No channels currently monitored...</li>`;
+                return;
+            }
+            activeChannelsList.innerHTML = channels.map(chan => `
+                <li class="flex justify-between items-center bg-gray-900 px-2 py-1 rounded border border-gray-700 text-gray-300 text-xs">
+                    <span># ${chan}</span>
+                    <button onclick="leaveChannel('${chan}')" class="text-red-400 hover:text-red-300 hover:underline px-1">Drop</button>
+                </li>
+            `).join('');
+        }
+
+        function clearSubscriptionsContext() {
+            Object.keys(activeSubscriptions).forEach(chan => delete activeSubscriptions[chan]);
+            updateChannelsUI();
+        }
+
+        // ==========================================
+        // ✉️ PUBLICATION BROADCASTER
+        // ==========================================
+        publishBtn.addEventListener('click', async () => {
+            const channel = pubChannelInput.value.trim();
+            const rawPayload = pubPayloadInput.value.trim();
+
+            if (!channel || !rawPayload) {
+                alert("Target channel and payload are required.");
+                return;
+            }
+
+            let parsedJson;
+            try {
+                parsedJson = JSON.parse(rawPayload);
+            } catch (err) {
+                alert("Invalid payload parsing configuration: Verify JSON syntax is clean.");
+                return;
+            }
+
+            if (activeSubscriptions[channel]) {
+                appendLog("OUTBOUND", channel, `Broadcasting custom test payload...`);
+                try {
+                    await activeSubscriptions[channel].publish(parsedJson);
+                    appendLog("SYSTEM", channel, "Broadcast validation callback confirmed.");
+                } catch (err) {
+                    appendLog("ERROR", channel, `Broadcast aborted by engine: ${err.message || err}`);
+                }
+            } else {
+                alert(`You must actively Listen to channel "${channel}" inside this UI setup first to evaluate broadcasts.`);
+            }
+        });
+
+        disconnectBtn.addEventListener('click', () => {
+            if (centrifugeInstance) centrifugeInstance.disconnect();
+        });
+
+        clearLogsBtn.addEventListener('click', () => {
+            logsContainer.innerHTML = `<div class="text-gray-500 italic">[Terminal Traces Purged]...</div>`;
+        });
+    </script>
+</body>
+</html>

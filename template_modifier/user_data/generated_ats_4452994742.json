@@ -1,0 +1,166 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "AI & Data Science Engineer",
+    "location": "Hyderabad, Telangana, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367",
+    "points_to_user": "Based on the modifications made to align with the Deloitte AI and Data Science Engineer II role, you should focus on strengthening your knowledge in the following areas for technical interviews:\n1.  **Core Data Science & Machine Learning**: Deepen your understanding of Classification, Regression, Time Series forecasting, Decision Trees, and Optimization algorithms. Be prepared to discuss model selection, evaluation metrics (Precision, Recall, F1-Score, RMSE, MAE), and hyperparameter tuning.\n2.  **Python Data Science Stack**: Ensure you are highly proficient with the specific libraries mentioned in the JD: NumPy, Pandas, and Scikit-learn. Practice data manipulation, feature engineering, and building end-to-end ML pipelines using these tools.\n3.  **Cloud & Big Data Platforms**: Familiarize yourself with Databricks, Snowflake, and at least one major hyperscaler (AWS SageMaker, Azure ML, or GCP Vertex AI). Understand the concepts of model deployment and serving on these platforms.\n4.  **Model Deployment & MLOps**: Study Docker containerization for packaging models and Git for version control. Be ready to discuss CI/CD pipelines for ML, model monitoring, and A/B testing.\n5.  **End-to-End Project Delivery**: Practice articulating your experience in delivering large-scale DS/ML projects from inception to implementation, covering requirements gathering, data engineering, modeling, deployment, and stakeholder collaboration.\n6.  **Statistics & Mathematics**: Brush up on core statistical concepts (distributions, hypothesis testing) and linear algebra fundamentals that underpin ML algorithms.\n7.  **Data Visualization**: While not heavily emphasized in your resume, be prepared to discuss your experience with or knowledge of Tableau or PowerBI for creating dashboards and presenting insights."
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven AI and Data Science Engineer with over 4 years of hands-on experience in designing, developing, and deploying end-to-end machine learning solutions and data platforms. Proven expertise in statistical modeling, Python programming, and the full software development lifecycle. Passionate about leveraging data science, AI, and cloud technologies to drive operational efficiency, generate actionable insights, and deliver high-impact enterprise solutions for clients across sectors."
+  },
+  "experience": [
+    {
+      "role": "AI & Data Science Engineer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2024 \u2013 Present",
+      "highlights": [
+        "Applied statistical modeling and machine learning techniques to design and implement an intelligent document processing pipeline for financial contracts, utilizing Python, PySpark, and Scikit-learn for data extraction and classification.",
+        "Engineered a production-grade PII detection system using classification algorithms (Decision Trees, NLP models) to identify sensitive entities, ensuring compliance with data governance standards.",
+        "Built and deployed scalable data ingestion and transformation pipelines on cloud infrastructure, integrating structured and unstructured data sources to generate insights.",
+        "Leveraged Docker for containerizing ML models and orchestrated end-to-end workflows, collaborating with data engineers and DevOps teams for seamless deployment.",
+        "Implemented rigorous model evaluation frameworks to benchmark extraction accuracy, driving continuous improvement in prediction fidelity for financial data.",
+        "Actively participated in Agile ceremonies, including sprint planning and retrospectives, to deliver high-quality work products within project timelines.",
+        "Mentored junior team members on Python programming, ML best practices, and the use of frameworks like Pandas and NumPy for efficient data analysis.",
+        "Proposed and implemented process automation for document validation and data cleaning, significantly reducing manual overhead and improving project efficiency.",
+        "Worked with onsite teams to gather requirements and translate complex business problems into technical specifications for AI/ML solutions.",
+        "Utilized SQL and PySpark for querying and processing large-scale datasets, feeding cleaned data into machine learning models for scenario prediction."
+      ]
+    },
+    {
+      "role": "Data Science & Machine Learning Developer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2023 \u2013 Oct 2024",
+      "highlights": [
+        "Spearheaded the development of a large-scale ML end-to-end project: an AI-driven banking product recommender system using deep learning (ANN) for classification and regression tasks.",
+        "Designed and deployed predictive models using Scikit-learn and custom neural networks to analyze customer activity sequences and recommend financial products, improving cross-sell metrics.",
+        "Engineered robust backend data pipelines in Python and PySpark to aggregate, clean, and process multi-channel customer data, creating optimized feature sets for model training.",
+        "Built a real-time recommendation API, integrating the ML model with a React front-end and Java backend, demonstrating full-stack delivery capabilities.",
+        "Applied time series analysis and optimization techniques to model customer behavior and enhance the precision of product affinity predictions.",
+        "Utilized SQL extensively for data extraction, transformation, and loading (ETL) processes, ensuring data was accessible for analytics and model inference.",
+        "Conducted peer code reviews and contributed to project knowledge management, documenting ML pipelines and model architectures for team training.",
+        "Collaborated with data engineers to manage and upgrade the data ecosystem, ensuring the platform supported high-velocity data processing and continuous model insights.",
+        "Implemented model evaluation and monitoring to track performance drift and maintain recommendation quality across different customer segments.",
+        "Liaised with client teams to understand business requirements, ensuring the ML solution aligned with sector-specific needs for the banking industry."
+      ]
+    },
+    {
+      "role": "Full Stack & Data Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Dec 2021 \u2013 2023",
+      "highlights": [
+        "Architected a full-stack application with a focus on data integrity, designing secure data flows and transaction recording mechanisms.",
+        "Developed and maintained backend services using Java and Python, ensuring reliable data processing and API functionality for the donation platform.",
+        "Implemented data validation and logging systems using SQL databases, creating auditable trails for all transactional data.",
+        "Utilized Git for version control and collaborative development, following Agile methodologies for project delivery.",
+        "Gained experience in requirements gathering and analysis for a data-centric application, translating non-profit sector needs into technical specifications.",
+        "Built foundational skills in software development lifecycle, from design and coding to deployment and defect resolution.",
+        "Contributed to a team environment, working alongside other developers to deliver a project from inception to implementation.",
+        "Developed an understanding of data platform management, ensuring the application's data layer was scalable and maintainable."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "End-to-End Financial Document AI Pipeline",
+      "tech_stack": "Python, PySpark, Scikit-learn, Docker, SQL, OpenAI API, LangGraph",
+      "highlights": [
+        "Designed and implemented a large-scale ML pipeline for classifying and extracting data from unstructured financial documents using Python and Scikit-learn.",
+        "Applied Classification algorithms and NLP techniques to build a high-accuracy PII detection system, ensuring data privacy and governance compliance.",
+        "Engineered token-efficient workflows and optimized model inference to reduce operational costs and API latency.",
+        "Containerized the ML application using Docker for consistent deployment across environments.",
+        "Utilized SQL and PySpark for transforming extracted data into structured schemas, enabling analytics and insight generation.",
+        "Deployed the pipeline within a cloud-ready architecture, demonstrating end-to-end project delivery from data ingestion to insight presentation."
+      ]
+    },
+    {
+      "name": "AI-Powered Banking Product Recommendation Engine",
+      "tech_stack": "Python, Deep Learning (ANN), Scikit-learn, React, Java, SQL, Docker",
+      "highlights": [
+        "Developed a predictive machine learning model using Artificial Neural Networks (ANN) and Scikit-learn for classification and regression tasks on customer data.",
+        "Engineered feature pipelines to process customer activity sequences, applying statistical and optimization techniques for model training.",
+        "Built a full-stack application with a React front-end and Java/Python backend, integrating the real-time ML recommendation API.",
+        "Focused on model evaluation, using metrics like precision and recall to iteratively improve recommendation accuracy.",
+        "Gained experience in the end-to-end ML project lifecycle, from business problem understanding to model deployment and monitoring.",
+        "Collaborated in a cross-functional team with data engineers to ensure robust data feeding and model serving infrastructure."
+      ]
+    },
+    {
+      "name": "Unstructured Data Processing & Transaction Analytics",
+      "tech_stack": "Java, Python, Regex, SQL, PySpark",
+      "highlights": [
+        "Engineered a data processing pipeline to ingest and parse unstructured banking transaction documents at scale.",
+        "Applied advanced pattern matching and data validation techniques to extract critical financial information with high fidelity.",
+        "Transformed unstructured text into structured SQL databases, enabling complex querying and reporting for business insights.",
+        "Built an evaluation framework to benchmark data extraction accuracy, allowing for continuous refinement of parsing logic.",
+        "Optimized data processing services for high throughput, significantly reducing manual effort for transaction logging."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Programming & Data Science",
+      "items": [
+        "Python",
+        "PySpark",
+        "SQL",
+        "Java",
+        "JavaScript",
+        "NumPy",
+        "Pandas",
+        "Scikit-learn"
+      ]
+    },
+    {
+      "category": "Machine Learning & AI",
+      "items": [
+        "Statistical Modeling",
+        "Classification",
+        "Regression",
+        "Time Series",
+        "Decision Trees",
+        "Optimization",
+        "Deep Learning (ANN)",
+        "Natural Language Processing (NLP)"
+      ]
+    },
+    {
+      "category": "Tools & Platforms",
+      "items": [
+        "Docker",
+        "Git",
+        "Databricks",
+        "AWS/Azure/GCP (Hyperscalers)",
+        "Tableau/PowerBI",
+        "Snowflake",
+        "React",
+        "Spring Boot"
+      ]
+    },
+    {
+      "category": "Methodologies",
+      "items": [
+        "End-to-End ML Project Delivery",
+        "Agile/Scrum",
+        "Data Pipeline Design",
+        "Model Deployment",
+        "Cloud Architecture"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineering)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 \u2013 2021"
+    }
+  ],
+  "certifications": []
+}

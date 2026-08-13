@@ -7,10 +7,11 @@ import subprocess
 import sys
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate PDF Resume from HTML template and JSON data.")
-    parser.add_argument("-t", "--template", help="Name or path of template file in template/ directory")
+    parser = argparse.ArgumentParser(description="Generate PDF Resumes from HTML templates and JSON data.")
+    parser.add_argument("-t", "--template", help="Name or path of template file in template/ directory (optional: to run a single template)")
     parser.add_argument("-d", "--data", help="Name or path of data file in user_data/ directory")
-    parser.add_argument("-o", "--output", help="Output PDF file path (default: output/index.pdf)")
+    parser.add_argument("-o", "--output", help="Parent output directory path (default: output/)")
+    parser.add_argument("-p", "--prefix", help="Prefix name for folder and PDFs")
     parser.add_argument("-y", "--yes", action="store_true", help="Non-interactive mode (auto-select defaults)")
     args = parser.parse_args()
 
@@ -19,14 +20,21 @@ def main():
     user_data_dir = os.path.join(base_dir, "user_data")
     output_dir = os.path.join(base_dir, "output")
 
-    # Select Template
-    if args.template:
-        if os.path.isabs(args.template) or os.path.exists(args.template):
-            template_file = args.template
-        else:
-            template_file = os.path.join(template_dir, args.template)
+    # Ask for Prefix
+    prefix = ""
+    if args.prefix:
+        prefix = args.prefix.strip()
+    elif args.yes:
+        prefix = "resume"
     else:
-        template_file = select_file(template_dir, ".html", "Template", auto_select=args.yes)
+        while not prefix:
+            try:
+                prefix = input("Enter prefix name for folder and PDFs: ").strip()
+                if not prefix:
+                    print("Prefix cannot be empty. Please enter a valid prefix.")
+            except (KeyboardInterrupt, EOFError):
+                print("\nOperation cancelled.")
+                sys.exit(0)
 
     # Select Data JSON
     if args.data:
@@ -37,15 +45,37 @@ def main():
     else:
         json_file = select_file(user_data_dir, ".json", "JSON Data File", auto_select=args.yes)
 
-    # Output PDF path
-    if args.output:
-        output_pdf = args.output
+    # Check input data file exists
+    if not os.path.exists(json_file):
+        print(f"Error: JSON data file not found at {json_file}")
+        sys.exit(1)
+
+    # Find templates to process
+    if args.template:
+        if os.path.isabs(args.template) or os.path.exists(args.template):
+            template_files = [args.template]
+        else:
+            template_files = [os.path.join(template_dir, args.template)]
     else:
-        output_pdf = os.path.join(output_dir, "index.pdf")
+        if not os.path.exists(template_dir):
+            print(f"Error: Template directory '{template_dir}' does not exist.")
+            sys.exit(1)
+        templates = sorted([f for f in os.listdir(template_dir) if f.endswith(".html") and not f.startswith(".")])
+        if not templates:
+            print(f"Error: No HTML templates found in '{template_dir}'.")
+            sys.exit(1)
+        template_files = [os.path.join(template_dir, f) for f in templates]
 
-    temp_html = os.path.join(output_dir, "_temp_resume.html")
+    # Target directory path
+    if args.output:
+        parent_out_dir = args.output
+    else:
+        parent_out_dir = output_dir
 
-    # Remove legacy HTML file if present
+    target_dir = os.path.join(parent_out_dir, prefix)
+    os.makedirs(target_dir, exist_ok=True)
+
+    # Remove legacy HTML file if present in output_dir
     legacy_html = os.path.join(output_dir, "index.html")
     if os.path.exists(legacy_html):
         try:
@@ -53,56 +83,67 @@ def main():
         except Exception:
             pass
 
-    # Check input files exist
-    if not os.path.exists(json_file):
-        print(f"Error: JSON data file not found at {json_file}")
-        sys.exit(1)
-        
-    if not os.path.exists(template_file):
-        print(f"Error: HTML template file not found at {template_file}")
-        sys.exit(1)
-
-    print(f"\n--- Processing ---")
-    print(f"Template: {os.path.basename(template_file)}")
-    print(f"Data:     {os.path.basename(json_file)}")
+    print(f"\n--- Processing Templates ---")
+    print(f"Data File:        {os.path.basename(json_file)}")
+    print(f"Target Directory: {target_dir}\n")
 
     # Load JSON data
     with open(json_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Read template HTML
-    with open(template_file, "r", encoding="utf-8") as f:
-        template_content = f.read()
+    success_count = 0
+    total_count = len(template_files)
 
-    # Try Jinja2 rendering first
-    try:
-        from jinja2 import Template
-        template = Template(template_content)
-        rendered_html = template.render(**data)
-    except ImportError:
-        rendered_html = render_simple_template(template_content, data)
+    for template_file in template_files:
+        if not os.path.exists(template_file):
+            print(f"Warning: HTML template file not found at {template_file}. Skipping.")
+            continue
 
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+        template_basename = os.path.basename(template_file)
+        template_name, _ = os.path.splitext(template_basename)
+        
+        output_pdf = os.path.join(target_dir, f"{prefix}_{template_name}.pdf")
+        temp_html = os.path.join(target_dir, f"_temp_{prefix}_{template_name}.html")
 
-    # Write temporary HTML file for renderer
-    with open(temp_html, "w", encoding="utf-8") as f:
-        f.write(rendered_html)
+        print(f"Processing Template: {template_basename}")
 
-    # Render PDF into output directory
-    pdf_success = generate_pdf(temp_html, output_pdf)
+        # Read template HTML
+        with open(template_file, "r", encoding="utf-8") as f:
+            template_content = f.read()
 
-    # Clean up temporary HTML file
-    if os.path.exists(temp_html):
+        # Try Jinja2 rendering first
         try:
-            os.remove(temp_html)
-        except Exception:
-            pass
+            from jinja2 import Template
+            template = Template(template_content)
+            rendered_html = template.render(**data)
+        except ImportError:
+            rendered_html = render_simple_template(template_content, data)
 
-    if pdf_success:
-        print(f"\nSuccessfully generated PDF resume at:\n -> {output_pdf}\n")
-    else:
-        print(f"\nFailed to generate PDF resume.")
+        # Write temporary HTML file for renderer
+        with open(temp_html, "w", encoding="utf-8") as f:
+            f.write(rendered_html)
+
+        # Render PDF into output directory
+        pdf_success = generate_pdf(temp_html, output_pdf)
+
+        # Clean up temporary HTML file
+        if os.path.exists(temp_html):
+            try:
+                os.remove(temp_html)
+            except Exception:
+                pass
+
+        if pdf_success:
+            print(f"  ✓ Successfully generated PDF resume at:\n    -> {output_pdf}")
+            success_count += 1
+        else:
+            print(f"  ✗ Failed to generate PDF resume for template: {template_basename}")
+
+    print(f"\n--- Summary ---")
+    print(f"Generated {success_count} of {total_count} PDF resumes successfully.")
+    print(f"Outputs are stored in: {target_dir}\n")
+
+    if success_count == 0:
         sys.exit(1)
 
 

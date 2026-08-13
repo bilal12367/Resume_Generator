@@ -1,0 +1,109 @@
+{
+  "personal_details": {
+    "name": "Bala Sai Sudheer Puppala",
+    "title": "DevOps Engineer",
+    "location": "Andhra Pradesh, India",
+    "phone": "+91 7032404639",
+    "email": "balasaisudheer.p@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/balasaisudheer-puppala",
+    "github": ""
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven DevOps Engineer with 4.6 years of IT experience, including 3.6 years of hands-on experience building and managing CI/CD pipelines, administering Kubernetes clusters, and provisioning cloud infrastructure using Terraform. Experienced in automating deployments, improving infrastructure reliability, and supporting scalable, secure cloud environments."
+  },
+  "experience": [
+    {
+      "role": "DevOps Engineer",
+      "company": "Accenture",
+      "location": "Hyderabad, India",
+      "dates": "07/2024 \u2013 Present",
+      "highlights": [
+        "Developed reusable Terraform modules for core AWS primitives (VPC, EC2, RDS, S3, Load Balancing), enabling consistent environment provisioning across dev, staging, and production and virtually eliminating config drift.",
+        "Built Jenkins CI/CD pipelines integrated with GitHub to automate build, test, and deployment workflows for multiple application teams, introduced Shared Libraries to standardize pipeline logic and reduce duplication.",
+        "Provisioned and managed Amazon EKS clusters with managed node groups deployed workloads via Helm and handled day-2 operations including node upgrades, resource quotas, and horizontal pod autoscaling.",
+        "Implemented Auto Scaling groups with ALB target-group health checks to absorb traffic spikes without manual intervention, improving application reliability during peak load events.",
+        "Deployed Prometheus and Grafana for EKS cluster and application-level monitoring, building dashboards that gave engineering teams real-time visibility into latency, error rates, and infrastructure saturation.",
+        "Stood up ELK Stack for centralized log aggregation across EC2 instances and Lambda functions, cutting average root-cause analysis time from hours to under 20 minutes during production incidents.",
+        "Automated OS patching, package installation, and compliance-baseline enforcement across 10+ EC2 instances with Ansible playbooks, reducing manual remediation work by approximately 60%.",
+        "Authored IAM policies, security group rules, and VPC network ACLs aligned with least-privilege principles, passing two internal security audits without critical findings.",
+        "Participated in on-call rotation and led post-incident reviews for four Severity-1 events, producing runbooks that measurably reduced recurrence rates for each class of incident."
+      ]
+    },
+    {
+      "role": "DevOps Engineer",
+      "company": "Accenture",
+      "location": "Bengaluru, India",
+      "dates": "01/2023 \u2013 07/2024",
+      "highlights": [
+        "Provisioned and managed Azure Virtual Machines, Virtual Networks, and Storage Accounts for a distributed application platform supporting 500+ internal users, maintaining a 99.9% availability SLA throughout the year.",
+        "Configured Azure Application Gateway with WAF rules and Azure Load Balancer for the web tier, enabling zero-downtime deployments and significantly improving the team's resilience to traffic spikes.",
+        "Centralized secrets management with Azure Key Vault, removing hardcoded credentials from five development teams' repositories and bringing the organization into compliance with internal security policy.",
+        "Deployed containerized microservices to Azure Kubernetes Service (AKS); managed Helm chart releases and integrated Azure Container Registry (ACR) into the image build pipeline for consistent artifact promotion.",
+        "Designed and maintained multi-stage Azure DevOps CI/CD pipelines with approval gates and automated test steps, shrinking deployment cycles from two days to under four hours.",
+        "Partnered with the security team to implement Azure Active Directory RBAC across resource groups and enforce least-privilege access for developers, operators, and service principals."
+      ]
+    },
+    {
+      "role": "PLSQL Developer",
+      "company": "Accenture",
+      "location": "Pune, India",
+      "dates": "01/2022 \u2013 12/2022",
+      "highlights": [
+        "Created and optimized PLSQL Packages, Procedures, Functions, Triggers, Views with robust exception handling to retrieve, manipulate, validate and migrate complex datasets in Oracle, automating routine tasks and improving operational efficiency.",
+        "Built interactive reports and RESTful APIs using Oracle APEX and ORDS to enhance system functionality and user experience.",
+        "Collaborated closely with cross-functional teams, including DBAs and ETL teams to coordinate code deployments, resolve dependencies, and optimize integrated workflows. Basic experience with Oracle forms and Reports for legacy system enhancements."
+      ]
+    }
+  ],
+  "projects": [],
+  "skills": [
+    {
+      "category": "Languages & Frameworks",
+      "items": [
+        "Shell",
+        "Python",
+        "SQL"
+      ]
+    },
+    {
+      "category": "Tools & Infrastructure",
+      "items": [
+        "Ansible",
+        "AWS",
+        "Azure",
+        "Linux",
+        "Windows",
+        "Ubuntu",
+        "Jenkins",
+        "ArgoCD",
+        "Azure DevOps",
+        "Docker",
+        "Kubernetes",
+        "Helm",
+        "Terraform",
+        "GIT",
+        "Github",
+        "Bitbucket",
+        "Prometheus",
+        "Grafana",
+        "Maven",
+        "SonarQube",
+        "Nexus",
+        "Apache Tomcat",
+        "ServiceNow",
+        "Remedy",
+        "JIRA",
+        "Confluence"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Bachelor of Technology (Electronics and Communications Engineering)",
+      "institution": "SRK Institute of Technology",
+      "dates": "2017 \u2013 2021"
+    }
+  ],
+  "certifications": []
+}

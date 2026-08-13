@@ -1,0 +1,161 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "Senior AI & Full Stack Developer",
+    "location": "Vijayawada, Andhra Pradesh, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367",
+    "points_to_user": "To excel in the interview for this Senior AI & Full Stack Developer role, you should focus on deepening your expertise in the following areas, based on the modifications made to your resume:\n\n1.  **LangGraph and Agentic Workflows**: Review the core concepts of state machines, conditional edges, and multi-agent orchestration using LangGraph. Be prepared to discuss how you design complex, multi-step workflows for document processing and chatbots.\n2.  **LlamaIndex for Advanced RAG**: Study LlamaIndex's advanced features like query routing, knowledge graphs, and custom retrievers. Understand how to optimize retrieval for Text-to-SQL systems and improve token efficiency.\n3.  **Text-to-SQL RAG Systems**: Practice explaining the end-to-end architecture of a Text-to-SQL RAG engine. Be ready to discuss schema understanding, SQL query generation, optimization, and self-healing/refinement mechanisms when queries fail.\n4.  **FastAPI and Python Backend Development**: Since FastAPI is a key JD requirement, ensure you can discuss building production-grade APIs, handling async operations, and integrating with LLM services and databases.\n5.  **OpenAI API Advanced Usage**: Go beyond basic completions. Be prepared to discuss function calling, tool use, custom prompting strategies for domain-specific tasks (like finance), and cost/latency optimization techniques.\n6.  **System Design for AI Pipelines**: Be ready to whiteboard the design of a scalable, fault-tolerant document processing or agentic chatbot system, covering data ingestion, processing, storage, and API layers.\n\nStudy these topics thoroughly, as the technical interview will likely probe your hands-on experience and architectural decisions in these specific domains."
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Senior AI & Full Stack Developer with over 4 years of specialized experience in architecting and deploying intelligent agentic workflows using LangGraph and LlamaIndex. Proven expertise in building high-performance Text-to-SQL RAG search systems, designing token-efficient LLM pipelines with OpenAI APIs, and developing scalable backend services with Python and FastAPI. Passionate about engineering end-to-end AI solutions that bridge advanced data processing with robust, production-ready full-stack applications."
+  },
+  "experience": [
+    {
+      "role": "Senior AI & Full Stack Developer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2024 – Present",
+      "highlights": [
+        "Architected and deployed enterprise-grade agentic workflows using LangGraph to orchestrate complex, stateful document processing pipelines for financial contracts.",
+        "Engineered intelligent Text-to-SQL RAG search systems using LlamaIndex, enabling dynamic schema reading, SQL query construction, and optimized data retrieval from relational databases.",
+        "Designed and implemented a FastAPI-based backend service layer to host LLM pipelines, manage agent states, and provide RESTful endpoints for frontend integration.",
+        "Integrated OpenAI APIs extensively for NLP tasks, employing advanced function calling and custom prompting to achieve high-fidelity data extraction from unstructured financial text.",
+        "Optimized LlamaIndex retrievers and LangGraph agent executors to create token-efficient workflows, significantly reducing latency and operational costs for high-volume processing.",
+        "Built a self-healing Text-to-SQL mechanism where the agent iteratively refines queries based on database schema constraints and execution feedback.",
+        "Developed context-aware RAG agents capable of routing user queries to the most relevant data sources or tools using LlamaIndex's query routing capabilities.",
+        "Orchestrated multi-step validation and extraction processes using LangGraph's conditional edges and state management for robust document analysis.",
+        "Secured all AI agent integrations with enterprise systems (Box, Quip, ticketing) by implementing robust authentication and Role-Based Access Control (RBAC).",
+        "Deployed the end-to-end AI pipeline within a containerized, highly available architecture, ensuring scalability and reliability for enterprise workloads."
+      ]
+    },
+    {
+      "role": "AI & Full Stack Developer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2023 – Oct 2024",
+      "highlights": [
+        "Led the development of AI-driven data pipelines, incorporating early RAG concepts to process and query unstructured banking transaction documents at scale.",
+        "Built backend services with Python and Java to transform raw text into structured feature sets, serving as foundational work for later advanced RAG implementations.",
+        "Developed evaluation frameworks for NLP extraction tasks, a precursor to rigorous RAG system evaluation metrics like precision and recall.",
+        "Architected database schemas and SQL optimization strategies that later informed the design of performant Text-to-SQL RAG engines.",
+        "Integrated machine learning models (ANN) into full-stack applications, demonstrating the ability to productionize AI components within enterprise systems.",
+        "Engineered real-time APIs to serve model predictions, showcasing backend development skills applicable to building FastAPI services for LLM agents.",
+        "Optimized data processing for low latency, a critical skill for ensuring responsive agentic workflows and RAG query systems."
+      ]
+    },
+    {
+      "role": "Full Stack & Blockchain Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Dec 2021 – 2023",
+      "highlights": [
+        "Designed and maintained complex distributed systems (Hyperledger Fabric), demonstrating architectural skills applicable to orchestrating decentralized agentic networks.",
+        "Authored and deployed chaincode (smart contracts), highlighting proficiency in defining deterministic logic and state transitions—concepts parallel to defining agent tools and actions in LangGraph.",
+        "Engineered secure synchronization layers between application and blockchain, showcasing API integration and data flow design skills crucial for connecting AI agents to external tools.",
+        "Implemented comprehensive access control and security protocols, directly relevant to securing AI agent permissions and tool execution in enterprise environments.",
+        "Managed full lifecycle deployments of core system logic, demonstrating operational rigor applicable to maintaining and versioning LangGraph workflows and LlamaIndex applications."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Enterprise Agentic Document Processor with Text-to-SQL RAG",
+      "tech_stack": "LangGraph, LlamaIndex, OpenAI API, FastAPI, Python, PyMuPDF, SQL",
+      "highlights": [
+        "Designed and implemented a production-ready agentic workflow using LangGraph to manage the state of multi-step financial document parsing, validation, and data extraction.",
+        "Built a core Text-to-SQL RAG engine with LlamaIndex that dynamically interprets database schemas to generate and execute accurate SQL queries from natural language prompts.",
+        "Developed the backend service layer using FastAPI and Python to host the LangGraph agents, manage workflow execution, and provide API endpoints for document ingestion and querying.",
+        "Integrated OpenAI APIs with advanced prompting and function calling to power NLP extraction and query understanding within the agentic pipeline.",
+        "Optimized retrieval performance and token usage by implementing custom LlamaIndex node parsers, query routers, and knowledge graph-based indexing strategies.",
+        "Created a self-correcting mechanism where the RAG agent refines failed SQL queries by analyzing schema errors and generating improved alternatives.",
+        "Engineered a secure and scalable deployment architecture for the end-to-end system, ensuring high availability for enterprise document processing workloads."
+      ]
+    },
+    {
+      "name": "Intelligent Operations Chatbot with Dynamic Tool Calling",
+      "tech_stack": "LangGraph, LlamaIndex, OpenAI API, FastAPI, Text-to-SQL, Box APIs, Quip APIs",
+      "highlights": [
+        "Architected a conversational AI agent using LangGraph to orchestrate complex IT support and onboarding workflows through a stateful, multi-turn dialogue manager.",
+        "Implemented dynamic tool-calling and discovery, allowing the agent to autonomously select and execute actions across integrated platforms like Box, Quip, and ticketing systems.",
+        "Engineered a dedicated Text-to-SQL RAG module using LlamaIndex to enable the chatbot to answer data-related questions by querying backend databases directly.",
+        "Built the chatbot's backend services with FastAPI, handling agent execution, tool integration, and conversation session management.",
+        "Designed a comprehensive RBAC system integrated within the LangGraph workflow to enforce strict authorization checks before any tool execution.",
+        "Developed intelligent fallback and error handling routines within the agentic graph to ensure system reliability and a smooth user experience."
+      ]
+    },
+    {
+      "name": "AI-Powered Banking Product Recommendation Engine",
+      "tech_stack": "Python, FastAPI, React, Deep Learning (ANN), SQL",
+      "highlights": [
+        "Developed a predictive ANN model and served it through a scalable FastAPI backend, demonstrating full-stack AI integration capabilities.",
+        "Engineered robust data pipelines to process customer activity sequences, creating feature sets that informed later RAG-based user profiling.",
+        "Built a real-time recommendation API, showcasing backend development skills directly applicable to serving LLM agents and RAG query endpoints."
+      ]
+    },
+    {
+      "name": "Unstructured Data to SQL Pipeline",
+      "tech_stack": "Python, Java, Regex, SQL",
+      "highlights": [
+        "Spearheaded the development of a data ingestion pipeline that transformed unstructured text into normalized SQL databases, a foundational process for RAG system knowledge bases.",
+        "Designed advanced parsing and validation logic, highlighting skills in data preparation crucial for building high-quality retrieval corpora for LlamaIndex."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "AI & Agent Development",
+      "items": [
+        "LangGraph",
+        "LlamaIndex",
+        "OpenAI APIs",
+        "Agentic Workflows",
+        "Text-to-SQL RAG",
+        "Retrieval-Augmented Generation",
+        "Prompt Engineering"
+      ]
+    },
+    {
+      "category": "Backend & API Development",
+      "items": [
+        "Python",
+        "FastAPI",
+        "Java",
+        "Spring Boot",
+        "RESTful APIs",
+        "Microservices",
+        "SQL"
+      ]
+    },
+    {
+      "category": "Frontend & Full Stack",
+      "items": [
+        "JavaScript (ES6+)",
+        "React.js",
+        "Full Stack Integration"
+      ]
+    },
+    {
+      "category": "Tools & Infrastructure",
+      "items": [
+        "Docker",
+        "Git/GitHub",
+        "MySQL",
+        "PyMuPDF",
+        "Enterprise API Integration (Box, Quip)",
+        "System Architecture"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineer)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 – 2021"
+    }
+  ],
+  "certifications": []
+}

@@ -1,0 +1,258 @@
+{
+  "session_1786655202320": {
+    "id": "session_1786655202320",
+    "title": "Show me top tier-1 MNC job IDs...",
+    "created_at": "2026-08-13T22:06:42.321321Z",
+    "updated_at": "2026-08-13T21:06:51.146552+00:00",
+    "messages": [
+      {
+        "id": "e393cbb5-2403-44b6-9859-cf0664b0eb35",
+        "role": "user",
+        "content": "Show me top tier-1 MNC job IDs for Fullstack Engineer",
+        "timestamp": "2026-08-13T22:06:42.321321Z"
+      },
+      {
+        "id": "6bf0e179-a2de-412a-8b06-247d112a72ad",
+        "role": "assistant",
+        "content": "I'd be happy to help you find top tier-1 MNC job IDs for Fullstack Engineer positions. To give you the most relevant results, I need a few more details:\n\n1. **Locations**: Where are you looking for jobs? (e.g., Remote, San Francisco, New York, Bangalore, etc.)\n2. **Experience Level**: What's your experience level? (Entry Level, Mid-Senior, Director, etc.)\n3. **Time Range**: How recently should the jobs have been posted? (e.g., past 24 hours, 3 days, 7 days, 1 month)\n\nOnce you provide these details, I can search for Fullstack Engineer positions at top tier-1 MNCs like Google, Microsoft, Amazon, Apple, Meta, etc.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 648,
+        "time_taken_ms": 8824.74,
+        "timestamp": "2026-08-13T21:06:51.146535+00:00"
+      }
+    ],
+    "total_tokens": 648,
+    "total_time_ms": 8824.74,
+    "job_ids": [],
+    "jobs": []
+  },
+  "4211d74a-5227-46e5-9fbe-43c2ff075fca": {
+    "id": "4211d74a-5227-46e5-9fbe-43c2ff075fca",
+    "title": "Job Search Session #2",
+    "created_at": "2026-08-13T21:06:58.378980+00:00",
+    "updated_at": "2026-08-13T21:12:01.959175+00:00",
+    "messages": [
+      {
+        "id": "bc796f90-7f4c-41ee-9035-d3ebe5a12dc2",
+        "role": "user",
+        "content": "Search for jobs in python and machine learning for 5 years experience in Hyderabad location and jobs should be from past 15 days",
+        "timestamp": "2026-08-13T22:07:18.788250Z"
+      },
+      {
+        "id": "0a618acf-59e7-43f4-8745-6f3156c748d0",
+        "role": "assistant",
+        "content": "Here are the filtered jobs from top MNCs that match your search for Python and Machine Learning jobs in Hyderabad:\n\n1. **Job ID**: 4448347272\n   **Title**: AI / ML Engineer\n   **Company**: Accenture in India\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 1 week ago\n   **Applicants**: 78 applicants\n   **Seniority**: Not Applicable\n\n2. **Job ID**: 4452994742\n   **Title**: Machine Learning-AI and Data Science Engineer II\n   **Company**: Deloitte\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 5 hours ago\n   **Applicants**: 47 applicants\n   **Seniority**: Not Applicable\n\n3. **Job ID**: 4451114657\n   **Title**: Developer\n   **Company**: Tata Consultancy Services\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 3 days ago\n   **Applicants**: Not specified\n   **Seniority**: Associate\n\n4. **Job ID**: 4441752676\n   **Title**: Python-AWS Bedrock Developer\n   **Company**: Infosys\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 4 days ago\n   **Applicants**: 133 applicants\n   **Seniority**: Not Applicable\n\nPlease review these jobs and **select which Job IDs you want to proceed with**. You can choose one, multiple, or all of them. Once you provide your selected Job IDs, I will process them further.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 2150,
+        "time_taken_ms": 73177.78,
+        "timestamp": "2026-08-13T21:08:31.966580+00:00"
+      },
+      {
+        "id": "f7b99c3d-1de5-4cdf-ba00-257c2028da6a",
+        "role": "user",
+        "content": "Can you search 2 more jobs for the configuration I've given",
+        "timestamp": "2026-08-13T22:09:38.794872Z"
+      },
+      {
+        "id": "adfc1cd2-4eda-4ea9-867b-6528269e93b6",
+        "role": "assistant",
+        "content": "Here are the 6 jobs I've found that match your configuration (Python and Machine Learning, Hyderabad, posted within 15 days):\n\n1. **Job ID**: 4448347272\n   **Title**: AI / ML Engineer\n   **Company**: Accenture in India\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 1 week ago\n   **Applicants**: 78 applicants\n   **Seniority**: Not Applicable\n\n2. **Job ID**: 4452994742\n   **Title**: Machine Learning-AI and Data Science Engineer II\n   **Company**: Deloitte\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 5 hours ago\n   **Applicants**: 47 applicants\n   **Seniority**: Not Applicable\n\n3. **Job ID**: 4451114657\n   **Title**: Developer\n   **Company**: Tata Consultancy Services\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 3 days ago\n   **Applicants**: Not specified\n   **Seniority**: Associate\n\n4. **Job ID**: 4441752676\n   **Title**: Python-AWS Bedrock Developer\n   **Company**: Infosys\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 4 days ago\n   **Applicants**: 133 applicants\n   **Seniority**: Not Applicable\n\n5. **Job ID**: 4450781600\n   **Title**: AI/ML Engineer\n   **Company**: Optum India\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 5 days ago\n   **Applicants**: Not specified\n   **Seniority**: Not Applicable\n\n6. **Job ID**: 4450773545\n   **Title**: Gen AI, Python Engineer (AI/LLM | FastAPI | AWS)\n   **Company**: CGI\n   **Location**: Hyderabad, Telangana, India\n   **Posted**: 6 days ago\n   **Applicants**: Not specified\n   **Seniority**: Entry level\n\nPlease review these jobs and **select which Job IDs you want to proceed with**. You can choose one, multiple, or all of them. Once you provide your selected Job IDs, I will process them further.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 4858,
+        "time_taken_ms": 53949.51,
+        "timestamp": "2026-08-13T21:10:32.744507+00:00"
+      },
+      {
+        "id": "e1ccd03e-c25c-4027-a8c5-97e2c7adf4a2",
+        "role": "user",
+        "content": "Then I select all these 6 job ids",
+        "timestamp": "2026-08-13T22:11:20.313667Z"
+      },
+      {
+        "id": "bc7bccde-f639-4166-bb71-801a6bc7c79b",
+        "role": "assistant",
+        "content": "I have successfully processed all 6 job IDs you selected. The data has been sent to the UI for your final selection via Centrifuge. You can now review the complete job details and descriptions for these positions and proceed with your application choices.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 4728,
+        "time_taken_ms": 41645.4,
+        "timestamp": "2026-08-13T21:12:01.959160+00:00"
+      }
+    ],
+    "total_tokens": 11736,
+    "total_time_ms": 168772.69,
+    "job_ids": [],
+    "jobs": []
+  },
+  "ac5f3024-75a3-4909-ba88-25d1eca12369": {
+    "id": "ac5f3024-75a3-4909-ba88-25d1eca12369",
+    "title": "Job Search Session #3",
+    "created_at": "2026-08-13T21:51:29.469821+00:00",
+    "updated_at": "2026-08-13T21:59:55.674624+00:00",
+    "messages": [
+      {
+        "id": "c3f94e50-69a9-440c-8093-1ab7a44cf99a",
+        "role": "user",
+        "content": "Hi",
+        "timestamp": "2026-08-13T22:51:40.307402Z"
+      },
+      {
+        "id": "107d00f7-33b5-444d-a85d-093b777f2a49",
+        "role": "assistant",
+        "content": "Hi! Welcome to the job search assistant. I can help you find relevant job postings from top companies. To get started, could you please tell me:\n\n1. What job titles or keywords are you looking for? (e.g., Python Developer, AI Engineer, Data Scientist)\n2. Which locations are you interested in? (e.g., Remote, San Francisco, New York)\n3. What experience level are you targeting? (e.g., Entry Level, Mid Senior, Senior)\n4. How recently should the jobs be posted? (e.g., past 24 hours, past week, past month)\n\nOnce you provide these details, I'll search for matching jobs and guide you through the selection process.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 613,
+        "time_taken_ms": 8735.87,
+        "timestamp": "2026-08-13T21:51:49.043783+00:00"
+      },
+      {
+        "id": "e48f4ab5-8894-4718-82f7-d29340564bbf",
+        "role": "user",
+        "content": "Search for jobs in python and ML Engineer, with 5 years of experience and jobs should be within past 15 days, for location hyderabad",
+        "timestamp": "2026-08-13T22:53:02.192486Z"
+      },
+      {
+        "id": "60017d15-9889-4afa-81ca-2589799000f3",
+        "role": "assistant",
+        "content": "Here are the most relevant jobs I found based on your criteria (Python and ML Engineer, 5 years experience, posted within the past 15 days, location Hyderabad):\n\n1. **Job ID**: 4452994742  \n   **Title**: Machine Learning-AI and Data Science Engineer II  \n   **Company**: Deloitte  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 5 hours ago  \n   **Applicants**: 47 applicants  \n   **Seniority**: Not Applicable  \n\n2. **Job ID**: 4452427316  \n   **Title**: Product Development - Python - Software Engineer III  \n   **Company**: Deloitte  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 2 days ago  \n   **Applicants**: 69 applicants  \n   **Seniority**: Not Applicable  \n\n3. **Job ID**: 4441752676  \n   **Title**: Python-AWS Bedrock Developer  \n   **Company**: Infosys  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 4 days ago  \n   **Applicants**: 133 applicants  \n   **Seniority**: Not Applicable  \n\n4. **Job ID**: 4449575728  \n   **Title**: AI Engineer  \n   **Company**: Capgemini  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 3 days ago  \n   **Applicants**: Not specified  \n   **Seniority**: Associate  \n\n5. **Job ID**: 4450781600  \n   **Title**: AI/ML Engineer  \n   **Company**: Optum India  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 6 days ago  \n   **Applicants**: Not specified  \n   **Seniority**: Not Applicable  \n\n6. **Job ID**: 4450773545  \n   **Title**: Gen AI, Python Engineer (AI/LLM | FastAPI | AWS)  \n   **Company**: CGI  \n   **Location**: Hyderabad, Telangana, India  \n   **Posted**: 6 days ago  \n   **Applicants**: Not specified  \n   **Seniority**: Entry level  \n\n**HUMAN-IN-THE-LOOP STEP**: Please review the above jobs and select which Job IDs you would like to proceed with. You can choose one or multiple IDs (comma-separated). For example, you could say \"4452994742, 4452427316\" or \"all\". Once you provide your selection, I'll process those jobs further.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 2795,
+        "time_taken_ms": 102706.78,
+        "timestamp": "2026-08-13T21:54:44.899411+00:00"
+      },
+      {
+        "id": "0959c155-e7b1-40b4-8419-a0deb88cb59f",
+        "role": "user",
+        "content": "Ok, apply these 6 jobs",
+        "timestamp": "2026-08-13T22:55:43.456146Z"
+      },
+      {
+        "id": "99079571-7d46-46bc-90ee-34838a893f86",
+        "role": "assistant",
+        "content": "Great! I have successfully processed and saved the details for the 6 selected jobs. \n\nTo proceed with applying to these jobs, I need one more piece of information: a candidate profile or resume identifier (`data_id`). This is required to initiate the application flow on LinkedIn.\n\nCould you please provide the `data_id` for your candidate profile? Once you provide it, I can start the application process for each of these jobs.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 6873,
+        "time_taken_ms": 59650.07,
+        "timestamp": "2026-08-13T21:56:43.106315+00:00"
+      },
+      {
+        "id": "0a6fb46b-8863-48ce-84f1-6d0e025c6ff5",
+        "role": "user",
+        "content": "yes you can keep data_id or session_id as test_111_01",
+        "timestamp": "2026-08-13T22:58:58.112824Z"
+      },
+      {
+        "id": "5a249469-1c3f-498e-a1a8-107f41e17783",
+        "role": "assistant",
+        "content": "I have successfully initiated the application process for all 6 jobs using the candidate profile 'test_111_01'. Below are the details and links for each job where you can complete the application steps:\n\n1. **Job ID**: 4452994742 (Machine Learning-AI and Data Science Engineer II at Deloitte)  \n   Application Link: https://www.linkedin.com/jobs/view/4452994742/\n\n2. **Job ID**: 4452427316 (Product Development - Python - Software Engineer III at Deloitte)  \n   Application Link: https://www.linkedin.com/jobs/view/4452427316/\n\n3. **Job ID**: 4441752676 (Python-AWS Bedrock Developer at Infosys)  \n   Application Link: https://www.linkedin.com/jobs/view/4441752676/\n\n4. **Job ID**: 4449575728 (AI Engineer at Capgemini)  \n   Application Link: https://www.linkedin.com/jobs/view/4449575728/\n\n5. **Job ID**: 4450781600 (AI/ML Engineer at Optum India)  \n   Application Link: https://www.linkedin.com/jobs/view/4450781600/\n\n6. **Job ID**: 4450773545 (Gen AI, Python Engineer at CGI)  \n   Application Link: https://www.linkedin.com/jobs/view/4450773545/\n\nPlease visit each link to complete the remaining steps of the application. If you need to apply to more jobs or have any other requests, let me know!",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 8371,
+        "time_taken_ms": 57561.67,
+        "timestamp": "2026-08-13T21:59:55.674610+00:00"
+      }
+    ],
+    "total_tokens": 18652,
+    "total_time_ms": 228654.39,
+    "job_ids": [],
+    "jobs": []
+  },
+  "29411110-fd6f-4f94-bf80-edc604d640b4": {
+    "id": "29411110-fd6f-4f94-bf80-edc604d640b4",
+    "title": "Job Search Session #4",
+    "created_at": "2026-08-13T22:02:26.089257+00:00",
+    "updated_at": "2026-08-13T22:09:59.463371+00:00",
+    "messages": [
+      {
+        "id": "2da99d45-c708-4a14-b000-cb3840c3d504",
+        "role": "user",
+        "content": "Search for jobs in python and ML Engineer, with 5 years of experience and jobs should be within past 15 days, for location hyderabad",
+        "timestamp": "2026-08-13T23:04:00.439592Z"
+      },
+      {
+        "id": "22351827-b793-4e4a-9d12-17a5cf17bad2",
+        "role": "assistant",
+        "content": "Here are some jobs I found from top MNCs in Hyderabad related to Python and ML Engineer, posted within the past 15 days:\n\n1. **Job ID**: 4448347272  \n   **Title**: AI / ML Engineer  \n   **Company**: Accenture in India  \n   **Location**: Hyderabad, Telangana, India  \n   **Experience**: Not Applicable (seniority level)  \n   **Posted**: 1 week ago  \n   **Applicants**: 79 applicants\n\n2. **Job ID**: 4448375506  \n   **Title**: Custom Software Engineer  \n   **Company**: Accenture in India  \n   **Location**: Hyderabad, Telangana, India  \n   **Experience**: Not Applicable  \n   **Posted**: 1 week ago  \n   **Applicants**: Not specified\n\n3. **Job ID**: 4452994742  \n   **Title**: Machine Learning-AI and Data Science Engineer II  \n   **Company**: Deloitte  \n   **Location**: Hyderabad, Telangana, India  \n   **Experience**: Not Applicable  \n   **Posted**: 6 hours ago  \n   **Applicants**: 47 applicants\n\n4. **Job ID**: 4451114657  \n   **Title**: Developer  \n   **Company**: Tata Consultancy Services  \n   **Location**: Hyderabad, Telangana, India  \n   **Experience**: Associate  \n   **Posted**: 3 days ago  \n   **Applicants**: Not specified\n\nThese are from a larger list. Based on your requirements (Python and ML Engineer with 5 years experience), jobs #1 and #3 seem most relevant. However, I need your input for the Human-in-the-Loop step.\n\n**Please select which Job IDs you want to proceed with or process further.** You can choose one or multiple IDs from the above list, or if you want me to fetch details for other jobs from companies like Infosys, Capgemini, Qualcomm, etc., let me know. Once you provide the selected Job IDs, I will process them for you.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 1719,
+        "time_taken_ms": 59210.02,
+        "timestamp": "2026-08-13T22:04:59.650146+00:00"
+      },
+      {
+        "id": "3d080c2a-b500-4f34-ad9f-f229b68e89d5",
+        "role": "user",
+        "content": "Great, process these jobs",
+        "timestamp": "2026-08-13T23:05:09.213500Z"
+      },
+      {
+        "id": "eed49208-06a4-46c7-a7e6-567c3a881394",
+        "role": "assistant",
+        "content": "I need you to specify which Job IDs you want to process. From the list I provided, do you want to process all four Job IDs (4448347272, 4448375506, 4452994742, 4451114657), or only specific ones? Please confirm the exact Job IDs so I can proceed with the `process_jobs` tool.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 4101,
+        "time_taken_ms": 8389.91,
+        "timestamp": "2026-08-13T22:05:17.603511+00:00"
+      },
+      {
+        "id": "84582d70-b65b-4a55-90d0-99bd3fa2bfbd",
+        "role": "user",
+        "content": "All of them",
+        "timestamp": "2026-08-13T23:05:23.407479Z"
+      },
+      {
+        "id": "347187e1-c92e-4505-a61a-217a14aff353",
+        "role": "assistant",
+        "content": "I have successfully processed all four job IDs as requested. Here's a summary:\n\n1. **Job ID 4448347272** \u2013 AI / ML Engineer at Accenture in India, Hyderabad. Requires Python skills and 3+ years of experience.\n2. **Job ID 4448375506** \u2013 Custom Software Engineer at Accenture in India, Hyderabad. Focus on Machine Learning Operations with 5+ years of experience.\n3. **Job ID 4452994742** \u2013 Machine Learning-AI and Data Science Engineer II at Deloitte, Hyderabad. Requires 3-6 years of experience in Data Science/ML.\n4. **Job ID 4451114657** \u2013 Details were not fully retrieved (possibly an incomplete listing), but it was still processed.\n\nAll job descriptions have been saved to your session (Session ID: 29411110-fd6f-4f94-bf80-edc604d640b4). You can now review them or proceed with further actions like applying if needed.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 4614,
+        "time_taken_ms": 32629.96,
+        "timestamp": "2026-08-13T22:05:56.037815+00:00"
+      },
+      {
+        "id": "2a6285d8-d1ee-4068-b0b1-9784e2d293d5",
+        "role": "user",
+        "content": "Can you process them again, some error happened",
+        "timestamp": "2026-08-13T23:09:02.039905Z"
+      },
+      {
+        "id": "32502a4a-b855-4368-8c31-ef2f73c4a66a",
+        "role": "assistant",
+        "content": "To clarify, do you want me to re-process the same four Job IDs (4448347272, 4448375506, 4452994742, 4451114657) again? This might save duplicate entries. Or is there a specific error you encountered that needs fixing? Please confirm.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 12484,
+        "time_taken_ms": 10976.21,
+        "timestamp": "2026-08-13T22:09:13.016621+00:00"
+      },
+      {
+        "id": "8eb1d3f8-2c6d-49e7-b620-d784665fc0e8",
+        "role": "user",
+        "content": "yes, just reprocess it",
+        "timestamp": "2026-08-13T23:09:37.013158Z"
+      },
+      {
+        "id": "bd2cb9dd-85ed-4c1b-9c41-9146fd3cfb45",
+        "role": "assistant",
+        "content": "I have reprocessed the four job IDs as requested. This time, all job descriptions have been successfully saved with complete details. Here's a quick update:\n\n- **Job ID 4448347272**: AI / ML Engineer at Accenture \u2013 Python skills, 3+ years experience.\n- **Job ID 4448375506**: Custom Software Engineer at Accenture \u2013 Machine Learning Operations, 5+ years experience.\n- **Job ID 4452994742**: Machine Learning-AI and Data Science Engineer II at Deloitte \u2013 3-6 years experience in Data Science/ML.\n- **Job ID 4451114657**: Developer at Tata Consultancy Services \u2013 Gen AI Developer role, 4-8 years experience.\n\nAll data is now stored in your session (Session ID: 29411110-fd6f-4f94-bf80-edc604d640b4). You can proceed with further actions like reviewing or applying to these jobs.",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 12968,
+        "time_taken_ms": 22450.08,
+        "timestamp": "2026-08-13T22:09:59.463355+00:00"
+      }
+    ],
+    "total_tokens": 35886,
+    "total_time_ms": 133656.18,
+    "job_ids": [],
+    "jobs": []
+  }
+}

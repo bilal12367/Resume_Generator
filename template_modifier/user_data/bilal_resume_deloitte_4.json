@@ -1,0 +1,174 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "Lead AI Engineer",
+    "location": "Vijayawada, Andhra Pradesh, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367"
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven Lead AI Engineer with 7+ years of experience applying machine learning, deep learning, and statistical techniques to solve complex business problems. Proven track record of 3+ years leading teams in the development of AI/ML products and generative artificial intelligence applications. Highly proficient with 5+ years of Python programming and API development, alongside hands-on expertise with agent frameworks like LangGraph and LangChain, RAG implementation, and large language models (GPT, Claude, Llama, Mistral, Cohere). Adept at deploying scalable models using Docker and Kubernetes across AWS, GCP, and Microsoft Azure, backed by a strong foundation in vector, relational (PostgreSQL, MySQL), and NoSQL databases."
+  },
+  "experience": [
+    {
+      "role": "Lead AI Engineer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Nov 2023 – Present",
+      "highlights": [
+        "Led a team of AI engineers to architect agentic applications and GenAI products using Python, LangGraph, and LangChain, orchestrating complex LLM integrations via GPT, Claude, and Llama.",
+        "Engineered advanced RAG implementations with vector databases (pgvector) and applied deep learning techniques to optimize LLM evaluations and prompt engineering.",
+        "Designed token-efficient application programming interfaces (APIs) using Docker and Kubernetes on AWS, applying statistical techniques to significantly reduce LLM API latency.",
+        "Navigated complex projects by managing changing priorities, applying AI-augmented development to ensure high-fidelity data extraction and solve unstructured data business problems.",
+        "Implemented Computer Vision and model pre-training workflows to dynamically redact PII, leading the team through DevSecOps and strict enterprise security protocols.",
+        "Engineered an intelligent Text-to-SQL RAG engine utilizing PostgreSQL and MySQL that dynamically reads relational database schemas to construct and execute SQL queries.",
+        "Communicated complex deep learning architectures and Model Context Protocol (MCP) integrations to stakeholders, leveraging team leadership skills to align product goals."
+      ]
+    },
+    {
+      "role": "Machine Learning Team Lead (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Jan 2021 – Oct 2023",
+      "highlights": [
+        "Led the development of machine learning products, applying deep learning and statistical techniques using Python, PyTorch, and TensorFlow for tailored banking recommendations.",
+        "Built robust Python APIs and cloud-native applications, leveraging NoSQL databases and advanced algorithms to solve complex text parsing business problems.",
+        "Architected scalable relational databases (PostgreSQL, MySQL) for high-throughput transaction logging, seamlessly integrating with Kubernetes for continuous model tracking.",
+        "Bridged data science and engineering by utilizing fine-tuning techniques on Mistral and Cohere models to deploy resilient, enterprise-grade generative artificial intelligence solutions.",
+        "Collaborated with cross-functional teams to define entity relationship models, fostering an environment of continuous learning while guiding junior engineers in ML best practices.",
+        "Optimized backend computational efficiency and managed Docker containers on Microsoft Azure and GCP, handling high-velocity data processing for real-time ML inferences."
+      ]
+    },
+    {
+      "role": "AI & Full Stack Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Jan 2019 – Dec 2020",
+      "highlights": [
+        "Applied machine learning and statistical techniques to deliver a full-stack cloud application utilizing Python, synchronizing traditional backends with scalable cloud environments.",
+        "Implemented secure backend infrastructure utilizing PostgreSQL, MySQL, and NoSQL modeling, deployed on Amazon Web Services (AWS) following agile methodologies.",
+        "Led the team in integrating application programming interfaces (APIs) and optimizing data synchronization processes, solving data latency business problems for charitable transactions.",
+        "Designed early generative artificial intelligence pipelines and A2A frameworks to enhance platform analytics, rapidly delivering high-quality software products."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Agentic Financial Document Pipeline & Contract Analyzer",
+      "tech_stack": "Python, LangGraph, LangChain, GPT, Claude, Llama, Vector Databases, AWS",
+      "highlights": [
+        "Architected agentic applications and GenAI products using Python, LangGraph, and LangChain, orchestrating complex LLM integrations via GPT, Claude, and Llama.",
+        "Engineered advanced RAG implementations with vector databases and utilized fine-tuning techniques for rigorous AI evaluation and prompt optimization.",
+        "Designed token-efficient Python APIs using Docker and Kubernetes on AWS, applying statistical techniques to significantly reduce LLM API latency.",
+        "Implemented Model pre-training and Document AI workflows to dynamically redact PII, adhering to team-led security protocols and compliance standards.",
+        "Evaluated deep learning models and A2A frameworks continuously, applying machine learning algorithms to solve complex unstructured data extraction problems.",
+        "Demonstrated 3+ years of leadership by guiding cross-functional teams through changing priorities during multi-stage generative artificial intelligence product development.",
+        "Fostered strong interpersonal collaboration to integrate Cohere and Mistral models, leading to rapid, high-quality AI product delivery with care and precision."
+      ]
+    },
+    {
+      "name": "Enterprise AI Operations Orchestrator",
+      "tech_stack": "Python, LangGraph, PostgreSQL, MySQL, MCP, Kubernetes, Docker",
+      "highlights": [
+        "Engineered an intelligent Text-to-SQL RAG implementation utilizing PostgreSQL and MySQL to dynamically construct, optimize, and execute complex SQL queries.",
+        "Led the team in implementing dynamic multi-agent tool-calling using LangGraph, empowering the AI to autonomously execute cloud-native actions across platforms.",
+        "Utilized fine-tuning and Model Context Protocol (MCP) to ensure reliable, scalable multi-agent orchestration solving complex IT business problems.",
+        "Handled diverse enterprise support requirements by applying statistical techniques to iteratively refine conversation flows and API logic.",
+        "Designed secure workflows leveraging Python application programming interfaces and NoSQL databases to restrict data visibility strictly to authorized personnel.",
+        "Integrated enterprise systems seamlessly using Kubernetes and Docker on Google Cloud Platform (GCP) to resolve requests with minimal manual overhead.",
+        "Applied deep learning concepts to end-user design, creating a unified chat interface powered by BERT and Mistral."
+      ]
+    },
+    {
+      "name": "Unstructured Transaction Data Microservices",
+      "tech_stack": "Python, BERT, PostgreSQL, MySQL, NoSQL, Microsoft Azure, APIs",
+      "highlights": [
+        "Built robust Python APIs and cloud-native microservices, applying machine learning algorithms and advanced statistical techniques for optimal text parsing.",
+        "Architected scalable relational databases (PostgreSQL, MySQL) and NoSQL platforms for high-throughput logging, deployed on Microsoft Azure.",
+        "Engineered an unstructured data processing pipeline utilizing BERT and Python to ingest, parse, and analyze varied banking documents at scale.",
+        "Led teams in implementing continuous code instrumentations and Docker containerization to maintain high-quality GenAI data transformations.",
+        "Managed complex transaction reporting projects, utilizing 7+ years of applied ML experience to prioritize and deliver high-impact solutions.",
+        "Adapted to changing priorities within banking, swiftly adjusting vector databases and RAG implementations to meet new compliance standards.",
+        "Communicated data ingestion metrics and deep learning health statuses with stakeholders, ensuring collaboration throughout the development lifecycle."
+      ]
+    },
+    {
+      "name": "AI-Driven Banking Product Recommender",
+      "tech_stack": "Python, PyTorch, TensorFlow, A2A Frameworks, GPT, AWS, Kubernetes",
+      "highlights": [
+        "Led the development of AI/ML products and predictive models using Python, PyTorch, and TensorFlow to solve banking recommendation business problems.",
+        "Architected backend infrastructure integrating with vector databases for continuous model tracking, A2A frameworks, and hyperparameter tuning.",
+        "Deployed deep learning models via scalable cloud APIs on AWS using Kubernetes to empower associates with real-time insights.",
+        "Applied statistical techniques to translate complex categorical banking parameters into tensor-ready formats for accurate model inference.",
+        "Guided junior engineers and bridged the gap between abstract machine learning concepts and production engineering through effective leadership.",
+        "Iteratively refined product recommendation engines utilizing GPT and Claude, ensuring highly tailored generative artificial intelligence suggestions.",
+        "Optimized backend efficiency using Python and NoSQL to handle high-velocity data, employing robust data structures under heavy user load."
+      ]
+    },
+    {
+      "name": "Decentralized AI Analytics & Donation Platform",
+      "tech_stack": "Python, Machine Learning, PostgreSQL, MySQL, NoSQL, GCP, Docker",
+      "highlights": [
+        "Led a team to deliver a full-stack, cloud-native application utilizing Python APIs and machine learning to synchronize systems with cloud platforms.",
+        "Implemented secure infrastructure utilizing PostgreSQL, MySQL, and NoSQL modeling, deployed on GCP and AWS using Docker.",
+        "Orchestrated the synchronization bridge between traditional application layers and decentralized networks, prioritizing statistical optimization.",
+        "Applied rigorous model pre-training and unit testing frameworks to protect sensitive donor data during generative AI integrations.",
+        "Navigated complex project scopes and changing requirements to deliver a highly transparent AI/ML analytics portal on time.",
+        "Approached the platform development with deep learning expertise, directly aligning tech outputs with solving non-profit business problems.",
+        "Leveraged 3+ years of team leadership skills to transition rapidly from initial technical constraints into high-impact AI product deliveries."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Artificial Intelligence & Machine Learning",
+      "items": [
+        "Machine Learning & Deep Learning",
+        "Generative Artificial Intelligence (GenAI)",
+        "Statistical Techniques",
+        "Model Pre-training & Fine-Tuning",
+        "PyTorch & TensorFlow"
+      ]
+    },
+    {
+      "category": "LLMs & Agent Frameworks",
+      "items": [
+        "GPT, Llama, Claude",
+        "BERT, Mistral, Cohere",
+        "LangGraph & LangChain",
+        "RAG Implementation",
+        "MCP & A2A Frameworks"
+      ]
+    },
+    {
+      "category": "Languages & Core Engineering",
+      "items": [
+        "Python (5+ years)",
+        "Application Programming Interface (API) Development",
+        "Algorithm Design & Data Structures",
+        "Unit Testing Frameworks"
+      ]
+    },
+    {
+      "category": "Cloud, Infrastructure & Databases",
+      "items": [
+        "Amazon Web Services (AWS)",
+        "Microsoft Azure & Google Cloud Platform (GCP)",
+        "Docker & Kubernetes",
+        "Vector Databases",
+        "PostgreSQL, MySQL, NoSQL"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineer)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 – 2021"
+    }
+  ],
+  "certifications": []
+}

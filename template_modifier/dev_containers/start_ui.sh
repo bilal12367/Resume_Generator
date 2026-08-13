@@ -1,0 +1,1 @@
+browser.exe centrifugo_debug.html

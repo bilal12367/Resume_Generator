@@ -1,0 +1,166 @@
+{
+  "personal_details": {
+    "name": "Shaik Mohammed Bilal",
+    "title": "AI / ML Engineer",
+    "location": "Hyderabad, Telangana, India",
+    "phone": "+91 7981266312",
+    "email": "sk.bilal.md@gmail.com",
+    "linkedin": "https://www.linkedin.com/in/shaik-mohammed-bilal-2b4472155/",
+    "github": "https://github.com/bilal12367",
+    "points_to_user": "Based on the modifications made to align with the AI/ML Engineer JD, focus your interview preparation on the following areas: 1. Deepen your practical knowledge of core Machine Learning (ML) and Generative AI concepts beyond application integration. Be prepared to discuss model training, evaluation metrics (like precision, recall, F1-score), and fine-tuning techniques for generative models. 2. Study and practice explaining the architecture and implementation of AI Agents & Workflow Integration in detail, using LangGraph as a primary example. Understand state management, tool orchestration, and error handling in agentic systems. 3. Strengthen your understanding of cloud-based AI services (e.g., AWS SageMaker, GCP Vertex AI, Azure AI) and on-premises deployment strategies for ML models. Be ready to discuss MLOps practices, containerization with Docker, and model serving. 4. Review fundamental deep learning and neural network architectures (CNNs, RNNs, Transformers). You may be asked to design a simple network for a given problem like image processing or chatbots. 5. Practice articulating the end-to-end lifecycle of a production AI pipeline, from data ingestion and preprocessing to model deployment, monitoring, and optimization for scalability and reliability."
+  },
+  "cover_letter": {
+    "salutation": "Dear Hiring Manager,",
+    "objective": "Results-driven AI / ML Engineer with over 4 years of experience designing and building advanced applications and systems leveraging artificial intelligence, cloud AI services, and robust production pipelines. Proven expertise in developing and deploying machine learning models, integrating generative AI into workflows, and architecting scalable solutions using deep learning, neural networks, and agentic systems. Passionate about delivering high-performance, production-ready AI solutions that bridge innovative data science with enterprise-grade engineering."
+  },
+  "experience": [
+    {
+      "role": "AI / ML Engineer (Client: Apple)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2024 \u2013 Present",
+      "highlights": [
+        "Designed and built advanced AI applications and systems utilizing AI tools and Cloud AI services (OpenAI APIs) with production-ready application pipelines.",
+        "Developed and integrated generative AI models (LLMs) as core components of intelligent document processing and conversational agent solutions.",
+        "Architected end-to-end AI pipelines for financial document analysis, implementing deep learning components for PII detection and data extraction.",
+        "Engineered scalable AI agent workflows using LangGraph, optimizing for performance and integrating seamlessly with enterprise systems (Box, Quip).",
+        "Built and deployed a sophisticated Text-to-SQL RAG engine, enhancing AI model performance and retrieval accuracy for enterprise data.",
+        "Collaborated with cross-functional teams to align AI capabilities with business needs, contributing as an SME in team discussions on AI/ML solutions.",
+        "Continuously monitored and optimized AI applications for high performance and reliability, implementing evaluation frameworks for extraction fidelity.",
+        "Documented technical processes for knowledge sharing, supporting the guidance of junior team members on AI and machine learning concepts."
+      ]
+    },
+    {
+      "role": "AI / ML Engineer (Client: Bank of America)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "2023 \u2013 Oct 2024",
+      "highlights": [
+        "Applied Machine Learning (ML) and deep learning techniques to develop a predictive Artificial Neural Network (ANN) model for banking product recommendations.",
+        "Built and deployed the ML model within a cloud/on-prem application pipeline, ensuring production-ready quality and scalability.",
+        "Engineered robust backend data pipelines in Java to process multi-channel customer data into optimized feature sets for model inference.",
+        "Integrated the deep learning recommendation engine into the enterprise portal, developing a real-time API to serve predictions.",
+        "Developed applications utilizing AI tools for unstructured data processing, designing Regex and NLP-based extraction algorithms.",
+        "Optimized data processing services for high throughput, reducing manual overhead and improving system efficiency.",
+        "Contributed to solving work-related problems by bridging data science and production engineering for reliable model deployment.",
+        "Applied data encoding and transformation strategies to prepare data for neural network input, ensuring model performance."
+      ]
+    },
+    {
+      "role": "Full Stack & AI Developer (Client: Rainforest Foundation)",
+      "company": "Infosys",
+      "location": "Remote / Hybrid",
+      "dates": "Dec 2021 \u2013 2023",
+      "highlights": [
+        "Developed full-stack applications with a focus on integrating secure and scalable backend systems, demonstrating strong Python and Java programming skills.",
+        "Applied systematic engineering principles to architect a decentralized application, emphasizing data integrity and pipeline reliability.",
+        "Gained foundational experience in building and maintaining application infrastructure, supporting later work on AI/ML production pipelines.",
+        "Engineered synchronization layers between application and data layers, optimizing for processing efficiency.",
+        "Implemented comprehensive security and access control protocols relevant to securing AI model endpoints and data.",
+        "Managed deployment lifecycles, gaining experience relevant to deploying and updating AI model services.",
+        "Transitioned from training to core engineering, rapidly adapting to new technologies and complex system architectures."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "AI-Driven Financial Document Pipeline & Generative AI Analyzer",
+      "tech_stack": "Python, LangGraph, LlamaIndex, OpenAI API (Cloud AI Services), PyMuPDF, Machine Learning, Generative AI",
+      "highlights": [
+        "Designed and built an advanced AI application pipeline utilizing generative AI models (LLMs via OpenAI) for automated extraction of financial data from unstructured documents.",
+        "Implemented AI Agents & Workflow Integration using LangGraph to orchestrate multi-step document validation, chunking, and extraction processes dynamically.",
+        "Applied deep learning techniques to develop a highly accurate PII detection system, identifying sensitive entities across varied document layouts.",
+        "Engineered token-efficient agentic workflows by optimizing LlamaIndex routing and leveraging Knowledge Graphs, reducing LLM API costs and latency.",
+        "Deployed the end-to-end NLP pipeline as a production-ready system within a highly available enterprise architecture.",
+        "Built resilient data ingestion infrastructure to transform and load extracted contexts into normalized databases, showcasing robust pipeline management.",
+        "Improved AI model performance by designing custom prompting strategies and evaluation loops tailored to complex financial data."
+      ]
+    },
+    {
+      "name": "Enterprise AI Operations Agent with Workflow Integration",
+      "tech_stack": "Python, AI Agents (LangGraph/Endor), LLMs, Text-to-SQL RAG, Machine Learning, Generative AI",
+      "highlights": [
+        "Developed a highly capable AI agent designed to automate IT support and onboarding workflows through a conversational interface (chatbot).",
+        "Implemented sophisticated AI Agents & Workflow Integration, enabling dynamic tool-calling and autonomous execution across enterprise platforms (Box, Quip).",
+        "Engineered an intelligent Text-to-SQL Retrieval-Augmented Generation (RAG) engine, dynamically constructing and optimizing database queries based on user prompts.",
+        "Designed and deployed the AI agent with comprehensive RBAC, ensuring secure and authorized tool execution within the enterprise environment.",
+        "Integrated the agentic workflow with ticketing systems, enabling zero-touch automation for raising and resolving service requests.",
+        "Utilized custom agent executors to orchestrate complex, multi-step tool interactions with intelligent fallback mechanisms for reliability.",
+        "Created self-healing mechanisms for database queries, where the agent iteratively refines SQL syntax, demonstrating continuous optimization."
+      ]
+    },
+    {
+      "name": "ML-Powered Banking Product Recommender System",
+      "tech_stack": "Python, Java, Deep Learning (ANN), Machine Learning, React, SQL",
+      "highlights": [
+        "Designed and deployed a predictive deep learning model (Artificial Neural Network) to recommend tailored financial products based on customer activity sequences.",
+        "Applied Machine Learning (ML) techniques to engineer backend data pipelines for tracking, aggregating, and processing multi-channel customer interaction histories.",
+        "Implemented data encoding strategies to convert categorical and numerical parameters into tensor-ready formats for neural network inference.",
+        "Developed a real-time recommendation API, integrating the ML model into the core enterprise portal for actionable cross-sell suggestions.",
+        "Bridged data science and production engineering, ensuring the deep learning architecture ran securely in a high-availability environment.",
+        "Optimized backend computational efficiency for high-velocity data processing, ensuring low-latency recommendations under load.",
+        "Drove improvements in product visibility by surfacing data-driven insights aligned with customer financial profiles."
+      ]
+    },
+    {
+      "name": "Unstructured Data Processing & Document Generation Pipeline",
+      "tech_stack": "Python, Java, Regex, SQL, Data Pipeline",
+      "highlights": [
+        "Engineered a robust unstructured data processing pipeline to ingest, parse, and analyze banking transaction documents at scale.",
+        "Developed advanced extraction algorithms using Regex and NLP concepts to isolate and validate critical financial information.",
+        "Built backend data ingestion architecture to transform parsed textual data and load it into structured relational databases.",
+        "Implemented an automated data validation and cleaning layer to ensure zero corruption during data transformation.",
+        "Optimized high-throughput document processing services, significantly reducing manual overhead for transaction logging.",
+        "Architected resilient database schemas optimized for fast querying and retrieval of large volumes of extracted data."
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Core AI/ML & Programming",
+      "items": [
+        "Python (Programming Language)",
+        "Machine Learning (ML)",
+        "Generative AI",
+        "Deep Learning",
+        "Neural Networks",
+        "AI Agents & Workflow Integration",
+        "Java",
+        "JavaScript/React.js"
+      ]
+    },
+    {
+      "category": "AI Tools, Frameworks & Cloud Services",
+      "items": [
+        "LangGraph",
+        "LlamaIndex",
+        "OpenAI APIs (Cloud AI)",
+        "PyMuPDF/PyPDF",
+        "Text-to-SQL RAG",
+        "ANN/TensorFlow/PyTorch",
+        "Docker",
+        "Spring Boot"
+      ]
+    },
+    {
+      "category": "Infrastructure & DevOps",
+      "items": [
+        "Git/GitHub",
+        "MySQL",
+        "Keycloak",
+        "Grafana",
+        "Loki",
+        "Application Pipeline Management",
+        "Production Deployment"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B. Tech (Electronics and Communication Engineering)",
+      "institution": "SRK INSTITUTE OF TECHNOLOGY",
+      "dates": "2017 \u2013 2021"
+    }
+  ],
+  "certifications": []
+}

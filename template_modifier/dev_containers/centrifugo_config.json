@@ -1,0 +1,31 @@
+{
+  "client": {
+    "token": {
+      "hmac_secret_key": "a45131f8882de49f3e"
+    },
+    "allowed_origins": [
+      "*"
+    ]
+  },
+  "channel": {
+    "without_namespace": {
+      "allow_subscribe_for_client": true,
+      "allow_publish_for_client": true
+    },
+    "namespaces": [
+      {
+        "name": "chat",
+        "allow_subscribe_for_client": true,
+        "allow_publish_for_client": true
+      }
+    ]
+  },
+  "http_api": {
+    "key": "bcb3a1a3ad19f36fd95f49"
+  },
+  "admin": {
+    "enabled": true,
+    "password": "admin",
+    "secret": "544f5bd8c6c22e2af239d169f58f490826864e0f7d7a63ff"
+  }
+}

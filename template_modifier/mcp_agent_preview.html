@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Agent - Live Operation Preview</title>
+    <!-- Google Fonts & CryptoJS for Centrifugo JWT generation -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(31, 41, 55, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-pink: #ec4899;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        /* Top Header Navbar */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #ffffff, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Live Metrics Dashboard Bar */
+        .metrics-bar {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 130px;
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: #60a5fa;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .status-pill.connected {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .status-pill.connected .status-dot {
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.95); }
+        }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #60a5fa, var(--accent-blue));
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+        }
+
+        /* Configuration Panel */
+        .config-drawer {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .config-drawer.hidden {
+            display: none;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .input-group input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem 0.75rem;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            width: 240px;
+        }
+
+        /* Main Feed Container */
+        main {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .timeline-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 20px;
+            bottom: 20px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), transparent);
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        /* Timeline Event Cards */
+        .event-card {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-left: 3.5rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.3s ease-out forwards;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .event-card:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .event-icon {
+            position: absolute;
+            left: -3.5rem;
+            top: 1.25rem;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-main);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .event-card:hover .event-icon {
+            transform: scale(1.1);
+        }
+
+        /* Card Header */
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .type-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-thinking { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.4); }
+        .badge-tool_call { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+        .badge-tool_result { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .badge-answering { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
+        .badge-completion { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+        .card-tool-name {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .meta-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        /* Card Content Area */
+        .card-body {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.825rem;
+            overflow-x: auto;
+            color: #e2e8f0;
+            line-height: 1.4;
+        }
+
+        .streaming-text {
+            line-height: 1.6;
+            color: #f3f4f6;
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--accent-blue);
+            margin-left: 3px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo">⚡</div>
+            <div>
+                <div class="brand-title">MCPAgent Preview</div>
+                <div class="brand-subtitle">Centrifugo Real-time Stream & Metric Telemetry</div>
+            </div>
+        </div>
+
+        <div class="metrics-bar">
+            <div id="statusPill" class="status-pill">
+                <span class="status-dot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Tokens Elapsed</span>
+                <span id="metricTokens" class="metric-value">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Time Elapsed</span>
+                <span id="metricTime" class="metric-value">0.00s</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Tools Executed</span>
+                <span id="metricTools" class="metric-value">0</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="toggleConfigDrawer()">⚙️ Settings</button>
+            <button class="btn" onclick="clearFeed()">🗑️ Clear</button>
+            <button id="connectBtn" class="btn btn-primary" onclick="toggleConnection()">⚡ Connect</button>
+        </div>
+    </header>
+
+    <!-- Settings Drawer -->
+    <div id="configDrawer" class="config-drawer hidden">
+        <div class="input-group">
+            <label for="wsUrl">WebSocket URL:</label>
+            <input type="text" id="wsUrl" value="ws://localhost:8002/connection/websocket">
+        </div>
+        <div class="input-group">
+            <label for="channelInput">Channel:</label>
+            <input type="text" id="channelInput" value="workflow">
+        </div>
+        <div class="input-group">
+            <label for="secretInput">HMAC Secret:</label>
+            <input type="text" id="secretInput" value="a45131f8882de49f3e">
+        </div>
+    </div>
+
+    <!-- Main Live Operation Stream -->
+    <main>
+        <div id="timeline" class="timeline-container">
+            <div id="emptyState" class="empty-state">
+                <div class="empty-icon">🛰️</div>
+                <h3>Waiting for Agent Operations...</h3>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;">Connect to Centrifugo and start an MCPAgent session to preview live tool calls, responses, and token metrics.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        MCPAgent Live Telemetry Observer • Centrifugo Real-time Stream
+    </footer>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        let totalTokens = 0;
+        let totalTime = 0.0;
+        let toolCallsCount = 0;
+        let activeAnsweringCardId = null;
+        let activeThinkingCardId = null;
+        let manualDisconnect = false;
+        let reconnectAttempts = 0;
+        let reconnectTimer = null;
+        const MAX_RECONNECT_ATTEMPTS = 20;
+        const BASE_RECONNECT_DELAY_MS = 1000;
+
+        let eventCache = [];
+        try {
+            eventCache = JSON.parse(sessionStorage.getItem('mcp_event_cache') || '[]');
+        } catch(e) {
+            eventCache = [];
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (eventCache && eventCache.length > 0) {
+                const copy = [...eventCache];
+                eventCache = [];
+                copy.forEach(evt => handleIncomingAgentEvent(evt, true));
+            }
+            // Auto connect on page load
+            connectWS();
+        });
+
+        function toggleConfigDrawer() {
+            const drawer = document.getElementById('configDrawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        function base64url(source) {
+            let encoded = CryptoJS.enc.Base64.stringify(source);
+            encoded = encoded.replace(/=+$/, '');
+            encoded = encoded.replace(/\+/g, '-');
+            encoded = encoded.replace(/\//g, '_');
+            return encoded;
+        }
+
+        function generateJwtToken(secret) {
+            const header = { alg: "HS256", typ: "JWT" };
+            const stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(header));
+            const encodedHeader = base64url(stringifiedHeader);
+
+            const payload = {
+                sub: "live_preview_user",
+                exp: Math.floor(Date.now() / 1000) + 3600
+            };
+            const stringifiedPayload = CryptoJS.enc.Utf8.parse(JSON.stringify(payload));
+            const encodedPayload = base64url(stringifiedPayload);
+
+            const token = encodedHeader + "." + encodedPayload;
+            const signature = CryptoJS.HmacSHA256(token, secret);
+            const encodedSignature = base64url(signature);
+
+            return token + "." + encodedSignature;
+        }
+
+        function toggleConnection() {
+            if (isConnected) {
+                disconnectWS();
+            } else {
+                connectWS();
+            }
+        }
+
+        function updateStatus(status, text) {
+            const pill = document.getElementById('statusPill');
+            const statusText = document.getElementById('statusText');
+            const connectBtn = document.getElementById('connectBtn');
+
+            pill.className = 'status-pill ' + (status === 'connected' ? 'connected' : '');
+            statusText.innerText = text;
+
+            if (status === 'connected') {
+                connectBtn.innerText = '🔌 Disconnect';
+                connectBtn.classList.remove('btn-primary');
+            } else {
+                connectBtn.innerText = '⚡ Connect';
+                connectBtn.classList.add('btn-primary');
+            }
+        }
+
+        function scheduleReconnect() {
+            if (manualDisconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                return;
+            }
+            // Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
+            const delay = Math.min(BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttempts), 30000);
+            reconnectAttempts++;
+            updateStatus('disconnected', `Reconnecting in ${(delay / 1000).toFixed(0)}s (#${reconnectAttempts})...`);
+            reconnectTimer = setTimeout(() => {
+                connectWS();
+            }, delay);
+        }
+
+        function connectWS() {
+            const wsUrl = document.getElementById('wsUrl').value.trim();
+            const channel = document.getElementById('channelInput').value.trim();
+            const secret = document.getElementById('secretInput').value.trim();
+
+            // Clear any pending reconnect timer
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+
+            manualDisconnect = false;
+            updateStatus('connecting', 'Connecting...');
+            const token = generateJwtToken(secret);
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    // Step 1: Connect command
+                    const connectCmd = { id: 1, connect: { token: token } };
+                    ws.send(JSON.stringify(connectCmd));
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const rawData = event.data;
+
+                        // Centrifugo ping/pong: server sends empty JSON "{}" or ping frame as a ping.
+                        // Client MUST respond with "{}" pong, otherwise server disconnects.
+                        if (rawData === '{}' || rawData === '{"ping":{}}') {
+                            ws.send('{}');
+                            return;
+                        }
+
+                        const msg = JSON.parse(rawData);
+                        console.log("WS Received:", msg);
+
+                        // Handle Connect Response
+                        if (msg.id === 1 && msg.connect) {
+                            // Step 2: Subscribe command
+                            const subCmd = { id: 2, subscribe: { channel: channel } };
+                            ws.send(JSON.stringify(subCmd));
+                            isConnected = true;
+                            reconnectAttempts = 0; // Reset on successful connection
+                            updateStatus('connected', `Live: #${channel}`);
+                        }
+
+                        // Handle Push Event Payload
+                        if (msg.push && msg.push.pub && msg.push.pub.data) {
+                            const eventData = msg.push.pub.data;
+                            handleIncomingAgentEvent(eventData);
+                        }
+                    } catch (err) {
+                        console.error("Error processing Centrifugo WS message:", err);
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    console.error("WebSocket Error:", err);
+                    updateStatus('disconnected', 'Error');
+                };
+
+                ws.onclose = () => {
+                    isConnected = false;
+                    if (manualDisconnect) {
+                        updateStatus('disconnected', 'Disconnected');
+                    } else {
+                        // Unexpected disconnect — schedule auto-reconnect
+                        updateStatus('disconnected', 'Connection lost');
+                        scheduleReconnect();
+                    }
+                };
+
+            } catch (err) {
+                console.error("Connection failed:", err);
+                updateStatus('disconnected', 'Failed');
+                scheduleReconnect();
+            }
+        }
+
+        function disconnectWS() {
+            manualDisconnect = true;
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            reconnectAttempts = 0;
+            if (ws) {
+                ws.close();
+            }
+            isConnected = false;
+            updateStatus('disconnected', 'Disconnected');
+        }
+
+        function escapeHtml(str) {
+            if (typeof str !== 'string') str = String(str || '');
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function clearFeed() {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = `
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">🛰️</div>
+                    <h3>Waiting for Agent Operations...</h3>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem;">Connect to Centrifugo and start an MCPAgent session to preview live tool calls, responses, and token metrics.</p>
+                </div>
+            `;
+            totalTokens = 0;
+            totalTime = 0.0;
+            toolCallsCount = 0;
+            activeAnsweringCardId = null;
+            activeThinkingCardId = null;
+            eventCache = [];
+            try {
+                sessionStorage.removeItem('mcp_event_cache');
+            } catch(e) {}
+            updateMetrics(0, 0, 0);
+        }
+
+        function updateMetrics(tokens, time, toolsCount) {
+            if (tokens !== undefined && tokens !== null) {
+                totalTokens = Number(tokens) || 0;
+                document.getElementById('metricTokens').innerText = totalTokens.toLocaleString();
+            }
+            if (time !== undefined && time !== null) {
+                totalTime = Number(time) || 0;
+                document.getElementById('metricTime').innerText = totalTime.toFixed(2) + 's';
+            }
+            if (toolsCount !== undefined && toolsCount !== null) {
+                document.getElementById('metricTools').innerText = toolsCount;
+            }
+        }
+
+        function removeEmptyState() {
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.remove();
+            }
+        }
+
+        function handleIncomingAgentEvent(evt, isRestoring = false) {
+            if (!evt) return;
+            if (typeof evt === 'string') {
+                try {
+                    evt = JSON.parse(evt);
+                } catch(e) {
+                    console.warn("Could not parse incoming event JSON string:", evt);
+                    return;
+                }
+            }
+
+            if (!isRestoring) {
+                eventCache.push(evt);
+                try {
+                    sessionStorage.setItem('mcp_event_cache', JSON.stringify(eventCache));
+                } catch(e) {}
+            }
+
+            removeEmptyState();
+
+            // Extract telemetry metrics safely
+            const rawTokens = evt.tokens_elapsed || (evt.content && evt.content.tokens_elapsed) || 0;
+            const rawTime = evt.time_elapsed || (evt.content && evt.content.time_elapsed) || 0;
+            const tokens = Number(rawTokens) || 0;
+            const timeElapsed = Number(rawTime) || 0;
+            updateMetrics(tokens, timeElapsed);
+
+            const timeline = document.getElementById('timeline');
+            const evtType = evt.type || '';
+
+            // 1. Tool Call Event
+            if (evtType === 'tool_call' || evt.tool_kwargs !== undefined || (evt.content && evt.content.tool_kwargs !== undefined)) {
+                toolCallsCount++;
+                updateMetrics(undefined, undefined, toolCallsCount);
+                activeAnsweringCardId = null;
+                activeThinkingCardId = null;
+
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                const toolName = evt.tool_name || (evt.content && evt.content.tool_name) || 'MCP Tool';
+                const toolArgs = evt.tool_kwargs || (evt.content && evt.content.tool_kwargs) || {};
+
+                card.innerHTML = `
+                    <div class="event-icon" style="border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;">🛠️</div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="type-badge badge-tool_call">Tool Call</span>
+                            <span class="card-tool-name">${escapeHtml(toolName)}</span>
+                        </div>
+                        <div class="meta-group">
+                            <div class="meta-item">🪙 ${tokens} tokens</div>
+                            <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">JSON Arguments: ${escapeHtml(JSON.stringify(toolArgs, null, 2))}</div>
+                    </div>
+                `;
+                timeline.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+
+            // 2. Tool Result Event
+            if (evtType === 'tool_result' || evt.tool_result !== undefined || (evt.content && evt.content.tool_result !== undefined)) {
+                activeAnsweringCardId = null;
+                activeThinkingCardId = null;
+
+                try {
+                    const card = document.createElement('div');
+                    card.className = 'event-card';
+                    const toolName = evt.tool_name || (evt.content && evt.content.tool_name) || 'MCP Tool';
+
+                    // Extract raw result from any nested or flat format
+                    let rawResult = evt.tool_result !== undefined ? evt.tool_result : (evt.content ? evt.content.tool_result : '');
+                    if (rawResult && typeof rawResult === 'object' && rawResult.result !== undefined) {
+                        rawResult = rawResult.result;
+                    }
+
+                    let resultText = '';
+                    if (typeof rawResult === 'object') {
+                        resultText = JSON.stringify(rawResult, null, 2);
+                    } else if (typeof rawResult === 'string') {
+                        try {
+                            const parsed = JSON.parse(rawResult);
+                            resultText = JSON.stringify(parsed, null, 2);
+                        } catch (e) {
+                            resultText = rawResult;
+                        }
+                    } else {
+                        resultText = String(rawResult || '');
+                    }
+
+                    card.innerHTML = `
+                        <div class="event-icon" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">📥</div>
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="type-badge badge-tool_result">Tool Result</span>
+                                <span class="card-tool-name">${escapeHtml(toolName)}</span>
+                            </div>
+                            <div class="meta-group">
+                                <div class="meta-item">🪙 ${tokens} tokens</div>
+                                <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="code-block">${escapeHtml(resultText)}</div>
+                        </div>
+                    `;
+                    timeline.appendChild(card);
+                    card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } catch(err) {
+                    console.error("Error rendering tool_result event:", err);
+                }
+                return;
+            }
+
+            // 3. Stream Delta Event (text / delta)
+            if (evt.delta !== undefined) {
+                const msgType = evt.messageType || 'Thinking';
+                const deltaText = evt.delta || '';
+
+                if (msgType !== 'Answering') {
+                    activeAnsweringCardId = null;
+
+                    let card = null;
+                    if (activeThinkingCardId) {
+                        card = document.getElementById(activeThinkingCardId);
+                    }
+
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = 'thinking_' + Date.now();
+                        activeThinkingCardId = card.id;
+                        card.className = 'event-card';
+                        card.innerHTML = `
+                            <div class="event-icon" style="border-color: rgba(139, 92, 246, 0.4); color: #c084fc;">🧠</div>
+                            <div class="card-header">
+                                <div class="card-title-group">
+                                    <span class="type-badge badge-thinking">${escapeHtml(msgType)}</span>
+                                </div>
+                                <div class="meta-group">
+                                    <div class="meta-item">🪙 <span class="card-tokens">${tokens}</span> tokens</div>
+                                    <div class="meta-item">⏱️ <span class="card-time">${timeElapsed.toFixed(2)}s</span></div>
+                                </div>
+                            </div>
+                            <div class="card-body streaming-text" style="color: #c084fc; font-style: italic;">
+                                <span class="thinking-span"></span><span class="cursor-blink"></span>
+                            </div>
+                        `;
+                        timeline.appendChild(card);
+                    }
+
+                    const thinkingSpan = card.querySelector('.thinking-span');
+                    if (thinkingSpan) {
+                        thinkingSpan.innerText += deltaText;
+                    }
+                    const cardTokens = card.querySelector('.card-tokens');
+                    if (cardTokens) cardTokens.innerText = tokens;
+                    const cardTime = card.querySelector('.card-time');
+                    if (cardTime) cardTime.innerText = timeElapsed.toFixed(2) + 's';
+
+                    card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    return;
+                }
+
+                // If msgType is Answering, clear active thinking card reference so next thinking gets a new card
+                activeThinkingCardId = null;
+
+                // Append to active answering card or create a new one
+                let card = null;
+                if (activeAnsweringCardId) {
+                    card = document.getElementById(activeAnsweringCardId);
+                }
+
+                if (!card) {
+                    card = document.createElement('div');
+                    card.id = 'answering_' + Date.now();
+                    activeAnsweringCardId = card.id;
+                    card.className = 'event-card';
+                    card.innerHTML = `
+                        <div class="event-icon" style="border-color: rgba(236, 72, 153, 0.4); color: #f472b6;">💬</div>
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="type-badge badge-answering">Agent Output</span>
+                            </div>
+                            <div class="meta-group">
+                                <div class="meta-item">🪙 <span class="card-tokens">${tokens}</span> tokens</div>
+                                <div class="meta-item">⏱️ <span class="card-time">${timeElapsed.toFixed(2)}s</span></div>
+                            </div>
+                        </div>
+                        <div class="card-body streaming-text"><span class="content-span"></span><span class="cursor-blink"></span></div>
+                    `;
+                    timeline.appendChild(card);
+                }
+
+                const contentSpan = card.querySelector('.content-span');
+                if (contentSpan) {
+                    contentSpan.innerText += deltaText;
+                }
+                const cardTokens = card.querySelector('.card-tokens');
+                if (cardTokens) cardTokens.innerText = tokens;
+                const cardTime = card.querySelector('.card-time');
+                if (cardTime) cardTime.innerText = timeElapsed.toFixed(2) + 's';
+
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                return;
+            }
+
+            // 4. Run Completion Event
+            if (evtType === 'run_completion' || (evt.content !== undefined && !evt.delta && !evt.tool_kwargs && !evt.tool_result)) {
+                activeThinkingCardId = null;
+                if (activeAnsweringCardId) {
+                    const currentCard = document.getElementById(activeAnsweringCardId);
+                    if (currentCard) {
+                        const blinker = currentCard.querySelector('.cursor-blink');
+                        if (blinker) blinker.remove();
+                    }
+                    activeAnsweringCardId = null;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                const contentText = typeof evt.content === 'object' ? JSON.stringify(evt.content, null, 2) : String(evt.content || '');
+                card.innerHTML = `
+                    <div class="event-icon" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">✨</div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="type-badge badge-completion">Run Completed</span>
+                        </div>
+                        <div class="meta-group">
+                            <div class="meta-item">🪙 ${tokens} tokens</div>
+                            <div class="meta-item">⏱️ ${timeElapsed.toFixed(2)}s</div>
+                        </div>
+                    </div>
+                    <div class="card-body streaming-text" style="font-weight: 500;">
+                        ${escapeHtml(contentText)}
+                    </div>
+                `;
+                timeline.appendChild(card);
+                card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+        }
+    </script>
+</body>
+</html>

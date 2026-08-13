@@ -35,6 +35,11 @@ class ProviderSettings:
     @classmethod
     def from_env(cls, env: Optional[Dict[str, str]] = None):
         import os
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
 
         env = env or os.environ
         return cls(

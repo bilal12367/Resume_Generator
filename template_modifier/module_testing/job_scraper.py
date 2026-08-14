@@ -106,6 +106,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+
+output_static_dir = Path(__file__).resolve().parent.parent / "output"
+output_static_dir.mkdir(exist_ok=True)
+app.mount("/output", StaticFiles(directory=str(output_static_dir)), name="output")
+
 class CreateSessionRequest(BaseModel):
     title: Optional[str] = None
 
@@ -711,6 +717,113 @@ async def regenerate_pdf_endpoint(req: RegeneratePDFRequest):
         "output_pdf_folder": output_pdf_folder,
         "generated_json_file": temp_json_name,
         "generated_data": parsed_dict
+    }
+
+class DirectJDRequest(BaseModel):
+    session_id: Optional[str] = None
+    job_title: Optional[str] = None
+    company: Optional[str] = None
+    job_description: str
+
+@app.post("/process-direct-jd")
+async def process_direct_jd_endpoint(req: DirectJDRequest):
+    """
+    POST /process-direct-jd — Accepts raw job description directly, runs ATSDataModifier to generate JSON,
+    saves JSON, compiles PDF resumes, and returns downloadable PDF links & JSON data.
+    """
+    jd_text = req.job_description.strip()
+    if not jd_text:
+        raise HTTPException(status_code=400, detail="job_description is required.")
+
+    sess_id = req.session_id.strip() if req.session_id else str(uuid.uuid4())
+    job_id = f"DIRECT_{int(time.time())}"
+    title = (req.job_title or "").strip() or "Custom Job Posting"
+    company = (req.company or "").strip() or "Target Enterprise"
+
+    # Step 1: Save Job Description into SQLite DB
+    from mcps.linkedin_platform import save_job_description, save_generated_ats_resume
+    jd_details = {
+        "job_id": job_id,
+        "title": title,
+        "company_name": company,
+        "location": "Remote / Flexible",
+        "minimal_description": jd_text[:300] + "...",
+        "raw_description": jd_text,
+        "skills_required": [],
+        "job_url": ""
+    }
+    save_job_description(sess_id, jd_details)
+
+    # Step 2: Run ATSDataModifier
+    base_dir = Path(__file__).resolve().parent.parent
+    user_data_path = base_dir / "user_data" / "bilal_resume_data_ai.json"
+    if not user_data_path.exists():
+        json_files = list((base_dir / "user_data").glob("*.json"))
+        if json_files:
+            user_data_path = json_files[0]
+
+    with open(user_data_path, "r", encoding="utf-8") as f:
+        user_old_data = json.load(f)
+
+    from module_testing.ats_data_modifier import ATSDataModifier
+    modifier = ATSDataModifier()
+    modified_schema = await modifier.generate_data(job_description=jd_text, user_old_data=user_old_data)
+
+    if hasattr(modified_schema, "model_dump"):
+        modified_dict = modified_schema.model_dump()
+    elif hasattr(modified_schema, "dict"):
+        modified_dict = modified_schema.dict()
+    else:
+        modified_dict = dict(modified_schema)
+
+    modified_json_str = json.dumps(modified_dict, indent=2)
+
+    # Save JSON to disk & SQLite
+    temp_json_name = f"generated_ats_{job_id}.json"
+    temp_json_path = base_dir / "user_data" / temp_json_name
+    with open(temp_json_path, "w", encoding="utf-8") as f:
+        f.write(modified_json_str)
+
+    prefix_name = f"resume_{job_id}"
+    output_pdf_folder = os.path.join("output", prefix_name)
+    save_generated_ats_resume(sess_id, job_id, modified_json_str, output_pdf_folder)
+
+    # Step 3: Run generate_resume.py to compile PDFs
+    gen_script = base_dir / "generate_resume.py"
+    try:
+        cmd = [
+            sys.executable,
+            str(gen_script),
+            "-d", temp_json_name,
+            "-p", prefix_name,
+            "-y"
+        ]
+        proc = subprocess.run(cmd, cwd=str(base_dir), capture_output=True, text=True, timeout=120)
+        print(f"[process_direct_jd stdout for {job_id}]: {proc.stdout}")
+    except Exception as proc_err:
+        print(f"[Error running generate_resume for {job_id}]: {proc_err}")
+
+    # Discover compiled PDF files in output directory
+    pdf_dir = base_dir / "output" / prefix_name
+    pdf_files = []
+    if pdf_dir.exists():
+        for pfile in pdf_dir.glob("*.pdf"):
+            pdf_files.append({
+                "name": pfile.name,
+                "download_url": f"/output/{prefix_name}/{pfile.name}"
+            })
+
+    return {
+        "status": "ok",
+        "message": f"Successfully processed Direct Job Description and generated ATS JSON & PDFs for job_id '{job_id}'.",
+        "session_id": sess_id,
+        "job_id": job_id,
+        "title": title,
+        "company": company,
+        "generated_json_file": temp_json_name,
+        "generated_data": modified_dict,
+        "output_pdf_folder": output_pdf_folder,
+        "pdf_files": pdf_files
     }
 
 if __name__ == '__main__':

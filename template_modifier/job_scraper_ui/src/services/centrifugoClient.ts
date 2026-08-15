@@ -20,7 +20,7 @@ export type EventCallback = (event: CentrifugoEvent) => void;
 
 export class CentrifugoService {
   private ws: WebSocket | null = null;
-  private wsUrl: string = 'ws://localhost:8002/connection/websocket';
+  private wsUrl: string;
   private hmacSecret: string = 'a45131f8882de49f3e';
   private listeners: Map<string, Set<EventCallback>> = new Map();
   private isConnected: boolean = false;
@@ -28,10 +28,23 @@ export class CentrifugoService {
   private reconnectTimer: any = null;
   private statusListeners: Set<(connected: boolean, statusText: string) => void> = new Set();
 
+  private static getDefaultWsUrl(): string {
+    const envUrl = (import.meta as any).env?.VITE_WS_URL;
+    if (envUrl) return envUrl;
+    // In production (served via nginx proxy), use relative /ws path
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (window.location.port === '3000' || window.location.port === '') {
+      return `${protocol}//${window.location.host}/ws`;
+    }
+    // Local dev fallback
+    return 'ws://localhost:8002/connection/websocket';
+  }
+
   constructor(wsUrl?: string, hmacSecret?: string) {
-    if (wsUrl) this.wsUrl = wsUrl;
+    this.wsUrl = wsUrl || CentrifugoService.getDefaultWsUrl();
     if (hmacSecret) this.hmacSecret = hmacSecret;
   }
+
 
   // Base64URL encode string
   private base64url(str: string): string {

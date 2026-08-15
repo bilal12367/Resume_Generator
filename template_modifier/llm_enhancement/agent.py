@@ -136,8 +136,8 @@ class Agent(Subject):
                 timeout=None,
             )
 
-    def custom_tokenizer(self, text: str) -> int:
-        return len(text) // 3
+    def custom_tokenizer(self, text: str, flag = 0):
+        return [0] * (len(text) // 3) if flag == 0 else (len(text) // 3)
 
     def _get_memory_buffer(self, session_id: str) -> ChatMemoryBuffer:
         return ChatMemoryBuffer.from_defaults(
@@ -203,7 +203,7 @@ class Agent(Subject):
             handler = self.agent.run(user_msg=new_message, memory=memory, max_iterations=60)
 
             chat_history_tokens = memory._token_count_for_messages(memory.get_all())
-            new_message_tokens = self.custom_tokenizer(new_message)
+            new_message_tokens = self.custom_tokenizer(new_message, flag=1)
             prompt_tokens = chat_history_tokens + new_message_tokens
             completion_tokens = 0
             self.total_tokens = 0
@@ -213,7 +213,7 @@ class Agent(Subject):
                 event_type = type(event).__name__
                 if event_type == "AgentStream":
                     delta = getattr(event, "delta", "")
-                    completion_tokens += self.custom_tokenizer(delta)
+                    completion_tokens += self.custom_tokenizer(delta, flag = 1)
                     self.total_tokens = prompt_tokens + completion_tokens
                     if "Thought" in delta:
                         message_type = "Thinking"

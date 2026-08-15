@@ -11,6 +11,7 @@ import urllib.parse
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 # Add parent directory to path so we can import dev_containers
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -519,7 +520,11 @@ class LinkedinPlatform:
             await self.playwright.stop()
 
 # Instantiate FastMCP server
-mcp = FastMCP("LinkedIn Platform Server")
+mcp = FastMCP(
+    "LinkedIn Platform Server",
+    host=os.getenv("LINKEDIN_MCP_HOST", "0.0.0.0"),
+    transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False)
+)
 
 # Instantiate LinkedinPlatform globally to reuse browser/context
 linkedin = LinkedinPlatform()
@@ -680,7 +685,8 @@ if __name__ == '__main__':
     load_dotenv()
 
     port = int(os.getenv("LINKEDIN_MCP_PORT", 8000))
-    print(f"Starting LinkedIn MCP Server on http://127.0.0.1:{port}/sse")
+    host = os.getenv("LINKEDIN_MCP_HOST", "0.0.0.0")
+    print(f"Starting LinkedIn MCP Server on http://{host}:{port}/sse")
     app = mcp.sse_app()
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    uvicorn.run(app, host=host, port=port)
 

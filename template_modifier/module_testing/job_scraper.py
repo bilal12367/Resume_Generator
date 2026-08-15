@@ -7,6 +7,8 @@ import json
 import time
 import re
 from pathlib import Path
+
+import traceback
 from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
 from pydantic import BaseModel, Field
@@ -78,7 +80,8 @@ async def get_or_create_agent(session_id: str) -> MCPAgent:
             .set_prompt(SYSTEM_PROMPT)
             .set_provider_type('SILICONFLOW')
             .set_token_limit(100000))
-        agent = MCPAgent(agent_config=agnt_cnf, run_id=session_id, mcp_urls=['http://127.0.0.1:8000/sse'])
+        mcp_url = os.getenv('MCP_URL', 'http://127.0.0.1:8000/sse')
+        agent = MCPAgent(agent_config=agnt_cnf, run_id=session_id, mcp_urls=[mcp_url])
         try:
             await agent.connect_mcp()
         except Exception as e:
@@ -391,6 +394,7 @@ async def handle_scrape(req: ScrapeRequest):
         raise
     except Exception as e:
         print(f"[Error in handle_scrape] {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 class GenerateATSResumesRequest(BaseModel):
@@ -826,11 +830,18 @@ async def process_direct_jd_endpoint(req: DirectJDRequest):
         "pdf_files": pdf_files
     }
 
+
+@app.get('/health')
+def health():
+    return "== Server Healthy and Listening =="
+
+
 if __name__ == '__main__':
     import uvicorn
     from dotenv import load_dotenv
     load_dotenv()
 
     port = int(os.getenv("JOB_SCRAPER_PORT", 8080))
-    print(f"Starting Job Scraper API on http://127.0.0.1:{port}")
-    uvicorn.run(app, host="127.0.0.1", port=port)
+    host = os.getenv("JOB_SCRAPER_HOST", "0.0.0.0")
+    print(f"Starting Job Scraper API on http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port)

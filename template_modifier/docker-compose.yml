@@ -1,0 +1,89 @@
+services:
+  # ───────────────────────────────────────────────
+  # Centrifugo — Real-time messaging (WebSocket + HTTP API)
+  # ───────────────────────────────────────────────
+  centrifugo:
+    image: centrifugo/centrifugo:latest
+    container_name: rg_centrifugo
+    volumes:
+      - ./dev_containers/centrifugo_config.json:/centrifugo/config.json
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    command: centrifugo -c config.json
+    networks:
+      - app-network
+
+  # ───────────────────────────────────────────────
+  # LinkedIn MCP Server — MCP tools + Playwright browser automation
+  # ───────────────────────────────────────────────
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mcp
+    container_name: rg_mcp
+    env_file: .env
+    environment:
+      - LINKEDIN_MCP_PORT=8000
+      - CENTRIFUGE_BASE_URL=http://centrifugo:8000
+      - CENTRIFUGO_API_KEY=bcb3a1a3ad19f36fd95f49
+    depends_on:
+      centrifugo:
+        condition: service_started
+    volumes:
+      - ./mcps:/app/mcps
+    networks:
+      - app-network
+
+  # ───────────────────────────────────────────────
+  # Job Scraper API — FastAPI backend (LLM agent, ATS, PDF generation)
+  # ───────────────────────────────────────────────
+  job_scraper:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.job_scraper
+    container_name: rg_job_scraper
+    env_file: .env
+    environment:
+      - JOB_SCRAPER_PORT=8080
+      - MCP_URL=http://mcp:8000/sse
+      - CENTRIFUGE_BASE_URL=http://centrifugo:8000
+      - CENTRIFUGO_API_KEY=bcb3a1a3ad19f36fd95f49
+    depends_on:
+      centrifugo:
+        condition: service_started
+      mcp:
+        condition: service_started
+    volumes:
+      - ./output:/app/output
+      - ./user_data:/app/user_data
+      - ./mcps:/app/mcps
+      - ./module_testing:/app/module_testing
+    networks:
+      - app-network
+
+  # ───────────────────────────────────────────────
+  # Nginx + UI — Vite build + Reverse proxy (single entry point :3000)
+  # ───────────────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ui
+    container_name: rg_nginx
+    ports:
+      - "3000:3000"
+    depends_on:
+      job_scraper:
+        condition: service_started
+      centrifugo:
+        condition: service_started
+    networks:
+      - app-network
+
+volumes:
+  mcp_db:
+
+networks:
+  app-network:
+    driver: bridge

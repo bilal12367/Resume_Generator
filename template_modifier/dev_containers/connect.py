@@ -4,6 +4,8 @@ import json
 import asyncio
 import jwt
 
+import os
+
 try:
     import websockets
 except ImportError:
@@ -12,15 +14,17 @@ except ImportError:
 class CentrifugoClient:
     def __init__(
         self,
-        hmac_secret: str = "a45131f8882de49f3e",
-        api_url: str = "http://localhost:8002/api",
-        api_key: str = "bcb3a1a3ad19f36fd95f49",
-        ws_url: str = "ws://localhost:8002/connection/websocket",
+        hmac_secret: str | None = None,
+        api_url: str | None = None,
+        api_key: str | None = None,
+        ws_url: str | None = None,
     ):
-        self.hmac_secret = hmac_secret
-        self.api_url = api_url
-        self.api_key = api_key
-        self.ws_url = ws_url
+        base_url = os.getenv("CENTRIFUGE_BASE_URL", "http://localhost:8002")
+        self.hmac_secret = hmac_secret or os.getenv("CENTRIFUGO_SECRET_HMAC_KEY", "a45131f8882de49f3e")
+        self.api_url = api_url or f"{base_url}/api"
+        self.api_key = api_key or os.getenv("CENTRIFUGO_API_KEY", "bcb3a1a3ad19f36fd95f49")
+        ws_base = base_url.replace("http://", "ws://").replace("https://", "wss://")
+        self.ws_url = ws_url or f"{ws_base}/connection/websocket"
 
     def generate_token(self, user_id: str, exp_seconds: int = 3600) -> str:
         """Generate JWT token for Centrifugo client connection."""

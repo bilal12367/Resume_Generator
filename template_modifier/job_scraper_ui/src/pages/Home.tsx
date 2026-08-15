@@ -12,10 +12,10 @@ import { SidebarSessions } from '../components/SidebarSessions';
 import type { SessionItem } from '../components/SidebarSessions';
 import { ChatWorkspace } from '../components/ChatWorkspace';
 import { RightShowcasePanel } from '../components/RightShowcasePanel';
-import { centrifugoService, CentrifugoService } from '../services/centrifugoClient';
+import { centrifugoService } from '../services/centrifugoClient';
 import type { CentrifugoEvent } from '../services/centrifugoClient';
 
-const API_BASE = 'http://127.0.0.1:8080';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8080';
 
 export const Home: React.FC = () => {
   // Session & Chat State
@@ -46,7 +46,7 @@ export const Home: React.FC = () => {
   const [modalSessionIdInput, setModalSessionIdInput] = useState<string>('');
   const [isRegeneratingPdf, setIsRegeneratingPdf] = useState<boolean>(false);
   const [isGeneratingResumes, setIsGeneratingResumes] = useState<boolean>(false);
-  const [atsProgressStatus, setAtsProgressStatus] = useState<string>('');
+  const [_atsProgressStatus, setAtsProgressStatus] = useState<string>('');
   const [generatedAtsResults, setGeneratedAtsResults] = useState<any[]>([]);
   const [toastNotification, setToastNotification] = useState<ToastData | null>(null);
 

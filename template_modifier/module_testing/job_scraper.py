@@ -318,6 +318,17 @@ async def handle_scrape(req: ScrapeRequest):
                                     extracted_job_ids.append(str(jid))
                                 extracted_jobs.append(job)
 
+            elif isinstance(evt, DeltaEvent):
+                if evt.delta:
+                    evt_data = {
+                        "event_type": "delta",
+                        "session_id": session_id,
+                        "delta": evt.delta,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    publish_event("workflow", evt_data)
+                    publish_event(f"session_{session_id}", evt_data)
+
             elif isinstance(evt, RunCompletionEvent):
                 response = evt
                 if hasattr(evt, "tokens_elapsed") and evt.tokens_elapsed:
@@ -537,53 +548,29 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
 @app.get("/sessions/{session_id}/job-descriptions")
 async def get_session_job_descriptions(session_id: str):
     """GET /sessions/{session_id}/job-descriptions — Fetch saved job descriptions for session."""
-    from mcps.linkedin_platform import init_db, DB_PATH
-    import sqlite3
+    from mcps.linkedin_platform import init_db, SessionLocal, JobDescription
+    from sqlalchemy import select, or_
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
 
     session = SESSIONS.get(session_id, {})
     sess_job_ids = [str(jid) for jid in session.get("job_ids", []) if jid]
 
-    if sess_job_ids:
-        placeholders = ",".join(["?"] * len(sess_job_ids))
-        query = f"""
-            SELECT job_id, session_id, title, company_name, location, minimal_description, raw_description, skills_required, job_url
-            FROM job_descriptions WHERE session_id = ? OR job_id IN ({placeholders})
-        """
-        cursor.execute(query, [session_id] + sess_job_ids)
-    else:
-        cursor.execute("""
-            SELECT job_id, session_id, title, company_name, location, minimal_description, raw_description, skills_required, job_url
-            FROM job_descriptions WHERE session_id = ?
-        """, (session_id,))
+    with SessionLocal() as db_session:
+        stmt = select(JobDescription)
+        if sess_job_ids:
+            stmt = stmt.where(or_(JobDescription.session_id == session_id, JobDescription.job_id.in_(sess_job_ids)))
+        else:
+            stmt = stmt.where(JobDescription.session_id == session_id)
+        
+        entities = db_session.scalars(stmt).all()
+        jobs = []
+        seen = set()
+        for entity in entities:
+            if entity.job_id in seen:
+                continue
+            seen.add(entity.job_id)
+            jobs.append(entity.to_dict())
 
-    rows = cursor.fetchall()
-    conn.close()
-    jobs = []
-    seen = set()
-    for r in rows:
-        jid = r[0]
-        if jid in seen:
-            continue
-        seen.add(jid)
-        skills = []
-        try:
-            skills = json.loads(r[7]) if r[7] else []
-        except Exception:
-            pass
-        jobs.append({
-            "job_id": r[0],
-            "session_id": r[1],
-            "title": r[2],
-            "company_name": r[3],
-            "location": r[4],
-            "minimal_description": r[5],
-            "raw_description": r[6],
-            "skills_required": skills,
-            "job_url": r[8]
-        })
     return {"status": "ok", "session_id": session_id, "jobs": jobs}
 
 @app.get("/sessions/{session_id}/ats-resumes")

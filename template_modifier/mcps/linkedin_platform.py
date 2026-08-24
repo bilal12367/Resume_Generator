@@ -5,7 +5,7 @@
 import os
 import sys
 import json
-import sqlite3
+import uuid
 import atexit
 import urllib.parse
 from bs4 import BeautifulSoup
@@ -13,167 +13,203 @@ from playwright.async_api import async_playwright
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from sqlalchemy import create_engine, Column, String, Text, Integer, DateTime, func, select, or_
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
 # Add parent directory to path so we can import dev_containers
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dev_containers.connect import CentrifugoClient
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "session_jobs.db")
+engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+class SearchCursorCache(Base):
+    __tablename__ = "search_cursor_caches"
+
+    cursor_id = Column(String, primary_key=True)
+    keywords = Column(Text, nullable=True)
+    locations = Column(Text, nullable=True)
+    experience_level = Column(String, nullable=True)
+    posted_within = Column(String, nullable=True)
+    current_offset = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+    def to_dict(self) -> dict:
+        return {
+            "cursor_id": self.cursor_id,
+            "keywords": self.keywords or "",
+            "locations": self.locations or "",
+            "experience_level": self.experience_level or "",
+            "posted_within": self.posted_within or "",
+            "current_offset": self.current_offset or 0,
+            "created_at": str(self.created_at) if self.created_at else ""
+        }
+
+class JobCondensedDescription(Base):
+    __tablename__ = "job_condensed_descriptions"
+
+    job_id = Column(String, primary_key=True)
+    condensed_output = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+class JobDescription(Base):
+    __tablename__ = "job_descriptions"
+
+    job_id = Column(String, primary_key=True)
+    session_id = Column(String, nullable=True)
+    title = Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    minimal_description = Column(Text, nullable=True)
+    raw_description = Column(Text, nullable=True)
+    skills_required = Column(Text, nullable=True)
+    job_url = Column(String, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    def to_dict(self) -> dict:
+        skills = []
+        skills_str = str(self.skills_required) if self.skills_required else ""
+        if skills_str:
+            try:
+                skills = json.loads(skills_str)
+            except Exception:
+                pass
+        return {
+            "job_id": self.job_id,
+            "session_id": self.session_id or "",
+            "title": self.title or "",
+            "company_name": self.company_name or "",
+            "location": self.location or "",
+            "minimal_description": self.minimal_description or "",
+            "raw_description": self.raw_description or "",
+            "skills_required": skills,
+            "job_url": self.job_url or ""
+        }
+
+class GeneratedATSResume(Base):
+    __tablename__ = "generated_ats_resumes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String, nullable=True)
+    job_id = Column(String, nullable=True)
+    generated_json = Column(Text, nullable=True)
+    output_pdf_folder = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    def to_dict(self) -> dict:
+        gen_json = {}
+        gen_json_str = str(self.generated_json) if self.generated_json else ""
+        if gen_json_str:
+            try:
+                gen_json = json.loads(gen_json_str)
+            except Exception:
+                pass
+        return {
+            "id": self.id,
+            "session_id": self.session_id or "",
+            "job_id": self.job_id or "",
+            "generated_json": gen_json,
+            "generated_json_file": f"generated_ats_{self.job_id}.json",
+            "generated_data": gen_json,
+            "output_pdf_folder": self.output_pdf_folder or "",
+            "created_at": str(self.created_at) if self.created_at else ""
+        }
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS job_condensed_descriptions (
-            job_id TEXT PRIMARY KEY,
-            condensed_output TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    Base.metadata.create_all(bind=engine)
+
+def get_search_cursor(cursor_id: str) -> dict | None:
+    init_db()
+    with SessionLocal() as session:
+        obj = session.get(SearchCursorCache, cursor_id)
+        if obj:
+            return obj.to_dict()
+        return None
+
+def save_search_cursor(cursor_id: str, keywords: str, locations: str, experience_level: str, posted_within: str, next_offset: int):
+    init_db()
+    with SessionLocal() as session:
+        entity = SearchCursorCache(
+            cursor_id=cursor_id,
+            keywords=keywords or "",
+            locations=locations or "",
+            experience_level=experience_level or "",
+            posted_within=posted_within or "",
+            current_offset=next_offset
         )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS job_descriptions (
-            job_id TEXT PRIMARY KEY,
-            session_id TEXT,
-            title TEXT,
-            company_name TEXT,
-            location TEXT,
-            minimal_description TEXT,
-            raw_description TEXT,
-            skills_required TEXT,
-            job_url TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS generated_ats_resumes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id TEXT,
-            job_id TEXT,
-            generated_json TEXT,
-            output_pdf_folder TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
-    conn.close()
+        session.merge(entity)
+        session.commit()
 
 def get_cached_job_description(job_id: str) -> str | None:
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT condensed_output FROM job_condensed_descriptions WHERE job_id = ?", (job_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return row[0]
-    return None
+    with SessionLocal() as session:
+        obj = session.get(JobCondensedDescription, job_id)
+        if obj and obj.condensed_output:
+            return str(obj.condensed_output)
+        return None
 
 def cache_job_description(job_id: str, condensed_output: str):
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT OR REPLACE INTO job_condensed_descriptions (job_id, condensed_output)
-        VALUES (?, ?)
-    """, (job_id, condensed_output))
-    conn.commit()
-    conn.close()
+    with SessionLocal() as session:
+        session.merge(JobCondensedDescription(job_id=job_id, condensed_output=condensed_output))
+        session.commit()
 
 def save_job_description(session_id: str, job_data: dict):
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
     job_id = job_data.get("job_id", "")
     skills_json = json.dumps(job_data.get("skills_required", []))
-    cursor.execute("""
-        INSERT OR REPLACE INTO job_descriptions
-        (job_id, session_id, title, company_name, location, minimal_description, raw_description, skills_required, job_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        job_id,
-        session_id or "",
-        job_data.get("title", ""),
-        job_data.get("company_name", ""),
-        job_data.get("location", ""),
-        job_data.get("minimal_description", ""),
-        job_data.get("raw_description", ""),
-        skills_json,
-        job_data.get("job_url", "")
-    ))
-    conn.commit()
-    conn.close()
+    with SessionLocal() as session:
+        entity = JobDescription(
+            job_id=job_id,
+            session_id=session_id or "",
+            title=job_data.get("title", ""),
+            company_name=job_data.get("company_name", ""),
+            location=job_data.get("location", ""),
+            minimal_description=job_data.get("minimal_description", ""),
+            raw_description=job_data.get("raw_description", ""),
+            skills_required=skills_json,
+            job_url=job_data.get("job_url", "")
+        )
+        session.merge(entity)
+        session.commit()
 
 def get_job_description(job_id: str) -> dict | None:
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT job_id, session_id, title, company_name, location, minimal_description, raw_description, skills_required, job_url
-        FROM job_descriptions WHERE job_id = ?
-    """, (job_id,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        skills = []
-        try:
-            skills = json.loads(row[7]) if row[7] else []
-        except Exception:
-            pass
-        return {
-            "job_id": row[0],
-            "session_id": row[1],
-            "title": row[2],
-            "company_name": row[3],
-            "location": row[4],
-            "minimal_description": row[5],
-            "raw_description": row[6],
-            "skills_required": skills,
-            "job_url": row[8]
-        }
-    return None
+    with SessionLocal() as session:
+        entity = session.get(JobDescription, job_id)
+        if entity:
+            return entity.to_dict()
+        return None
 
 def save_generated_ats_resume(session_id: str, job_id: str, generated_json_str: str, pdf_folder: str = ""):
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO generated_ats_resumes (session_id, job_id, generated_json, output_pdf_folder)
-        VALUES (?, ?, ?, ?)
-    """, (session_id or "", job_id, generated_json_str, pdf_folder))
-    conn.commit()
-    conn.close()
+    with SessionLocal() as session:
+        entity = GeneratedATSResume(
+            session_id=session_id or "",
+            job_id=job_id,
+            generated_json=generated_json_str,
+            output_pdf_folder=pdf_folder
+        )
+        session.add(entity)
+        session.commit()
 
 def get_generated_ats_resumes(session_id: str = "", job_id: str = "") -> list[dict]:
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    if session_id and job_id:
-        cursor.execute("SELECT id, session_id, job_id, generated_json, output_pdf_folder, created_at FROM generated_ats_resumes WHERE session_id = ? AND job_id = ?", (session_id, job_id))
-    elif session_id:
-        cursor.execute("SELECT id, session_id, job_id, generated_json, output_pdf_folder, created_at FROM generated_ats_resumes WHERE session_id = ?", (session_id,))
-    elif job_id:
-        cursor.execute("SELECT id, session_id, job_id, generated_json, output_pdf_folder, created_at FROM generated_ats_resumes WHERE job_id = ?", (job_id,))
-    else:
-        cursor.execute("SELECT id, session_id, job_id, generated_json, output_pdf_folder, created_at FROM generated_ats_resumes ORDER BY created_at DESC")
-    rows = cursor.fetchall()
-    conn.close()
-    resumes = []
-    for r in rows:
-        gen_json = {}
-        try:
-            gen_json = json.loads(r[3])
-        except Exception:
-            pass
-        resumes.append({
-            "id": r[0],
-            "session_id": r[1],
-            "job_id": r[2],
-            "generated_json": gen_json,
-            "generated_json_file": f"generated_ats_{r[2]}.json",
-            "generated_data": gen_json,
-            "output_pdf_folder": r[4],
-            "created_at": r[5]
-        })
-    return resumes
+    with SessionLocal() as session:
+        stmt = select(GeneratedATSResume)
+        if session_id and job_id:
+            stmt = stmt.where(GeneratedATSResume.session_id == session_id, GeneratedATSResume.job_id == job_id)
+        elif session_id:
+            stmt = stmt.where(GeneratedATSResume.session_id == session_id)
+        elif job_id:
+            stmt = stmt.where(GeneratedATSResume.job_id == job_id)
+        else:
+            stmt = stmt.order_by(GeneratedATSResume.created_at.desc())
+        
+        results = session.scalars(stmt).all()
+        return [r.to_dict() for r in results]
 
 class LinkedinPlatform:
     def __init__(self):
@@ -198,6 +234,9 @@ class LinkedinPlatform:
             list_container = soup
 
         cards = list_container.find_all("div", class_=lambda c: c and "job-search-card" in c)
+        if not cards:
+            cards = list_container.find_all("li")
+
         jobs = []
         for card in cards:
             subtitle_el = card.find("h4", class_=lambda c: c and "base-search-card__subtitle" in c)
@@ -205,17 +244,23 @@ class LinkedinPlatform:
             loc_el = card.find("span", class_=lambda c: c and "job-search-card__location" in c)
 
             urn = card.get("data-entity-urn", "")
+            if not urn:
+                inner_div = card.find("div", attrs={"data-entity-urn": True})
+                if inner_div:
+                    urn = inner_div.get("data-entity-urn", "")
+
             job_id = urn.split(":")[-1] if urn and ":" in urn else urn
 
             company_name = company_link.text.strip() if company_link else (subtitle_el.text.strip() if subtitle_el else "")
             location = loc_el.text.strip() if loc_el else ""
 
-            job_data = {
-                "job_id": job_id,
-                "company_name": company_name,
-                "location": location
-            }
-            jobs.append(job_data)
+            if job_id:
+                job_data = {
+                    "job_id": job_id,
+                    "company_name": company_name,
+                    "location": location
+                }
+                jobs.append(job_data)
         return jobs
 
     @staticmethod
@@ -245,10 +290,12 @@ class LinkedinPlatform:
 
     async def search_jobs(
         self,
-        keywords: list[str],
-        locations: list[str],
-        experience_level: str,
-        posted_within: int | str | None = None
+        keywords: list[str] | str,
+        locations: list[str] | str,
+        experience_level: str = "",
+        posted_within: int | str | None = None,
+        offset: int = 0,
+        limit: int = 10
     ) -> list[dict]:
         kw_str = " ".join(keywords) if isinstance(keywords, list) else str(keywords)
         loc_str = locations[0] if isinstance(locations, list) and len(locations) > 0 else (locations if isinstance(locations, str) else "")
@@ -261,14 +308,26 @@ class LinkedinPlatform:
         if tpr_val:
             params["f_TPR"] = tpr_val
 
-        url = f"https://www.linkedin.com/jobs/search/?{urllib.parse.urlencode(params)}"
+        params["start"] = str(offset)
+
+        if offset >= 25:
+            url = f"https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?{urllib.parse.urlencode(params)}"
+        else:
+            url = f"https://www.linkedin.com/jobs/search/?{urllib.parse.urlencode(params)}"
 
         driver = await self.get_driver()
         await driver.goto(url)
         await driver.wait_for_load_state("domcontentloaded")
         
         html_content = await driver.content()
-        return self.parse_job_cards(html_content)
+        all_jobs = self.parse_job_cards(html_content)
+
+        if offset < 25:
+            sliced_jobs = all_jobs[offset : offset + limit]
+        else:
+            sliced_jobs = all_jobs[:limit]
+
+        return sliced_jobs
 
     def extract_minimal_desc_and_skills(self, full_description: str) -> tuple[str, list[str]]:
         if not full_description:
@@ -569,32 +628,77 @@ def format_jobs_grouped_by_company(jobs: list[dict]) -> str:
 
 @mcp.tool()
 async def search_linkedin_jobs(
-    keywords: str,
-    locations: str,
+    keywords: str = "",
+    locations: str = "",
     experience_level: str = "",
-    posted_within: str = None
+    posted_within: str = None,
+    offset: int = 0,
+    cursor: str | None = None,
+    limit: int = 10
 ) -> str:
     """
-    Search for jobs on LinkedIn matching specified keywords, locations, and time filters.
-    Returns jobs grouped by company name and location with job IDs.
+    Search for jobs on LinkedIn matching specified keywords, locations, and time filters with cursor-based pagination.
     
     Args:
         keywords: String List of search keywords/titles separated by commas (e.g. Python, AI Engineer).
         locations: String List of locations separated by commas (e.g. Remote,San Francisco).
         experience_level: Seniority level (e.g. Entry Level, Mid Senior).
         posted_within: Time limit (e.g. '24h', '1d', '3d', '7d').
+        offset: Starting offset (default 0).
+        cursor: Optional UUID cursor string to continue a previous paginated search.
+        limit: Max number of records to return per page (default 10).
     """
     try:
-        keywords = keywords.split(',')
+        current_cursor = cursor.strip() if cursor and cursor.strip() else None
+
+        if current_cursor:
+            cursor_data = get_search_cursor(current_cursor)
+            if not cursor_data:
+                return json.dumps({"error": f"Cursor '{current_cursor}' not found or expired.", "jobs": []}, indent=2)
+
+            keywords = cursor_data.get("keywords") or keywords
+            locations = cursor_data.get("locations") or locations
+            experience_level = cursor_data.get("experience_level") or experience_level
+            posted_within = cursor_data.get("posted_within") or posted_within
+            start_offset = cursor_data.get("current_offset", offset)
+        else:
+            current_cursor = str(uuid.uuid4())
+            start_offset = offset
+
+        kw_list = [k.strip() for k in keywords.split(',') if k.strip()] if isinstance(keywords, str) and keywords else keywords
+
         jobs = await linkedin.search_jobs(
-            keywords=keywords,
+            keywords=kw_list,
             locations=locations,
             experience_level=experience_level,
-            posted_within=posted_within
+            posted_within=posted_within,
+            offset=start_offset,
+            limit=limit
         )
-        return format_jobs_grouped_by_company(jobs)
+
+        next_offset = start_offset + len(jobs)
+        save_search_cursor(
+            cursor_id=current_cursor,
+            keywords=keywords if isinstance(keywords, str) else ",".join(keywords),
+            locations=locations if isinstance(locations, str) else ",".join(locations),
+            experience_level=experience_level or "",
+            posted_within=posted_within or "",
+            next_offset=next_offset
+        )
+
+        formatted_summary = format_jobs_grouped_by_company(jobs)
+
+        result_payload = {
+            "cursor": current_cursor,
+            "current_offset": start_offset,
+            "next_offset": next_offset,
+            "count": len(jobs),
+            "summary": formatted_summary,
+            "jobs": jobs
+        }
+        return json.dumps(result_payload, indent=2)
     except Exception as e:
-        return f"Error searching jobs: {str(e)}"
+        return json.dumps({"error": f"Error searching jobs: {str(e)}", "jobs": []}, indent=2)
 
 @mcp.tool()
 async def get_linkedin_job_details(job_ids: str) -> str:

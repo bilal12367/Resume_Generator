@@ -1,0 +1,26 @@
+# Database & SQLite files
+.db_data/
+*.db
+mcps/*.db
+module_testing/sessions_storage.json
+
+# Environment & Secrets
+.env
+*.env
+
+# Python cache & virtualenv
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Node & UI build
+node_modules/
+job_scraper_ui/node_modules/
+job_scraper_ui/dist/
+job_scraper_ui/build/
+
+# Output generated PDFs & temp files
+output/
+user_data/generated_ats_*.json

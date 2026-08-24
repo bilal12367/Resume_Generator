@@ -4,8 +4,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY job_scraper_ui/package.json job_scraper_ui/package-lock.json ./
-RUN npm ci
+COPY job_scraper_ui/package*.json ./
+RUN npm i
 
 # Copy UI source code
 COPY job_scraper_ui/ ./

@@ -109,8 +109,8 @@ class LLMConfig:
         return self
 
     def build(self) -> Self:
-        if not self.MODEL_ID or not self.API_KEY:
-            raise Exception("LLM Config BUILDER Error: Cannot initialize without custom LLM Provider.")
+        # if not self.MODEL_ID or not self.API_KEY:
+        #     raise Exception("LLM Config BUILDER Error: Cannot initialize without custom LLM Provider.")
         return self
 
 

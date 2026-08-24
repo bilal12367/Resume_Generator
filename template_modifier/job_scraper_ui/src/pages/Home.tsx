@@ -134,7 +134,7 @@ export const Home: React.FC = () => {
     }
   };
 
-  // Open modal and load existing ATS resume data for job ID
+  // Open modal and load existing ATS resume & job details for job ID
   const openJobModal = async (jid: string) => {
     setActiveModalJobId(jid);
     setModalSessionIdInput(activeSessionId || '');
@@ -149,6 +149,23 @@ export const Home: React.FC = () => {
       setModalActiveTab('summary');
     }
 
+    // 1. Fetch full job details & job description
+    try {
+      const res = await fetch(`${API_BASE}/jobs/${jid}/details`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.found && data.job) {
+          setJobDescriptionsMap((prev) => ({
+            ...prev,
+            [jid]: data.job
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch job details:', e);
+    }
+
+    // 2. Fetch ATS resume data
     try {
       const res = await fetch(`${API_BASE}/jobs/${jid}/ats-resume`);
       if (res.ok) {
@@ -315,18 +332,22 @@ export const Home: React.FC = () => {
   // Connect Centrifugo on mount
   useEffect(() => {
     centrifugoService.connect('workflow');
-    centrifugoService.onStatusChange((connected, statusText) => {
+    
+    const handleStatusChange = (connected: boolean, statusText: string) => {
       setWsConnected(connected);
       setWsStatusText(statusText);
-    });
+    };
+    centrifugoService.onStatusChange(handleStatusChange);
 
-    centrifugoService.on('all', (event: CentrifugoEvent) => {
+    const handleLiveEvent = (event: CentrifugoEvent) => {
       setLiveEvents((prev) => [event, ...prev.slice(0, 49)]);
-    });
+    };
+    centrifugoService.on('all', handleLiveEvent);
 
     fetchSessions();
 
     return () => {
+      centrifugoService.off('all', handleLiveEvent);
       centrifugoService.disconnect();
     };
   }, []);
@@ -340,7 +361,7 @@ export const Home: React.FC = () => {
 
   // Centrifugo live listener for job descriptions & ATS events
   useEffect(() => {
-    centrifugoService.on('all', (evt: CentrifugoEvent) => {
+    const handleCentrifugoEvent = (evt: CentrifugoEvent) => {
       const anyEvt = evt as any;
       if (anyEvt.event_type === 'job_descriptions_saved' || anyEvt.event === 'process_jobs') {
         const jobs = anyEvt.jobs || [];
@@ -360,6 +381,50 @@ export const Home: React.FC = () => {
           setToastNotification({
             message: `📋 Processed ${jobs.length} Job Description${jobs.length > 1 ? 's' : ''}!`,
             jobId: jobs[0]?.job_id || jobs[0]?.id,
+            type: 'info',
+          });
+        }
+      }
+
+      if (anyEvt.event_type === 'delta' && anyEvt.delta) {
+        setSessions((prev) =>
+          prev.map((s) => {
+            if (s.id === anyEvt.session_id) {
+              const messages = [...s.messages];
+              const lastIdx = messages.length - 1;
+              if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+                const lastMsg = { ...messages[lastIdx] };
+                lastMsg.content = (lastMsg.content || '') + anyEvt.delta;
+                messages[lastIdx] = lastMsg;
+              }
+              return { ...s, messages };
+            }
+            return s;
+          })
+        );
+      }
+
+      if (anyEvt.event_type === 'hitl_job_selection') {
+        const jobIds = anyEvt.job_ids || [];
+        if (Array.isArray(jobIds) && jobIds.length > 0) {
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id === anyEvt.session_id) {
+                const mergedJobIds = Array.from(new Set([...(s.job_ids || []), ...jobIds]));
+                const messages = [...s.messages];
+                const lastIdx = messages.length - 1;
+                if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+                  const lastMsg = { ...messages[lastIdx] };
+                  lastMsg.extracted_jobs = Array.from(new Set([...(lastMsg.extracted_jobs || []), ...jobIds]));
+                  messages[lastIdx] = lastMsg;
+                }
+                return { ...s, job_ids: mergedJobIds, messages };
+              }
+              return s;
+            })
+          );
+          setToastNotification({
+            message: `🎯 HITL Selection Prompt: ${jobIds.length} candidate job IDs ready for selection`,
             type: 'info',
           });
         }
@@ -386,7 +451,13 @@ export const Home: React.FC = () => {
         setIsGeneratingResumes(false);
         setAtsProgressStatus('');
       }
-    });
+    };
+
+    centrifugoService.on('all', handleCentrifugoEvent);
+
+    return () => {
+      centrifugoService.off('all', handleCentrifugoEvent);
+    };
   }, []);
 
   const handleCreateSession = async () => {
@@ -455,9 +526,19 @@ export const Home: React.FC = () => {
       timestamp: new Date().toISOString(),
     };
 
+    const assistantStreamingMsg = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant' as const,
+      content: '',
+      timestamp: new Date().toISOString(),
+      isStreaming: true,
+    };
+
     setSessions((prev) =>
       prev.map((s) =>
-        s.id === targetSessionId ? { ...s, messages: [...s.messages, userMsg] } : s
+        s.id === targetSessionId
+          ? { ...s, messages: [...s.messages, userMsg, assistantStreamingMsg] }
+          : s
       )
     );
 
@@ -476,31 +557,36 @@ export const Home: React.FC = () => {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.status === 'ok' && data.reply) {
-          const assistantMsg = {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant' as const,
-            content: data.reply.content,
-            timestamp: data.reply.timestamp || new Date().toISOString(),
-            tokens: data.metrics?.tokens,
-            time_taken_ms: data.metrics?.time_taken_ms,
-            extracted_jobs: data.metrics?.extracted_jobs || [],
-            jobs: data.metrics?.jobs || [],
-          };
+        if (data.status === 'ok') {
+          const finalResult = data.result || (data.reply && data.reply.content) || '';
+          const finalTokens = data.tokens ?? data.metrics?.tokens ?? 0;
+          const finalTime = data.time_taken_ms ?? data.metrics?.time_taken_ms ?? 0;
+          const finalJobIds = data.job_ids || data.metrics?.extracted_jobs || [];
+          const finalJobs = data.jobs || data.metrics?.jobs || [];
 
           setSessions((prev) =>
             prev.map((s) => {
               if (s.id === targetSessionId) {
-                const updatedMsg = [...s.messages, assistantMsg];
-                const updatedTokens = (s.total_tokens || 0) + (data.metrics?.tokens || 0);
-                const updatedTime = (s.total_time_ms || 0) + (data.metrics?.time_taken_ms || 0);
-                const existingJobIds = s.job_ids || [];
-                const newJobIds = data.metrics?.extracted_jobs || [];
-                const mergedJobIds = Array.from(new Set([...existingJobIds, ...newJobIds]));
+                const messages = [...s.messages];
+                const lastIdx = messages.length - 1;
+                if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+                  messages[lastIdx] = {
+                    ...messages[lastIdx],
+                    content: finalResult || messages[lastIdx].content,
+                    tokens: finalTokens,
+                    time_taken_ms: finalTime,
+                    extracted_jobs: finalJobIds,
+                    jobs: finalJobs,
+                    isStreaming: false,
+                  };
+                }
+                const updatedTokens = (s.total_tokens || 0) + finalTokens;
+                const updatedTime = (s.total_time_ms || 0) + finalTime;
+                const mergedJobIds = Array.from(new Set([...(s.job_ids || []), ...finalJobIds]));
 
                 return {
                   ...s,
-                  messages: updatedMsg,
+                  messages,
                   total_tokens: updatedTokens,
                   total_time_ms: updatedTime,
                   job_ids: mergedJobIds,

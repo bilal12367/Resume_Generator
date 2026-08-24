@@ -69,20 +69,53 @@ export const RightShowcasePanel: React.FC<RightShowcasePanelProps> = ({
             {activeJobIds.map((jid) => {
               const isSelected = selectedJobIds.includes(jid);
               return (
-                <span
-                  key={jid}
-                  className="job-id-pill"
-                  style={{
-                    cursor: 'pointer',
-                    background: isSelected ? 'rgba(139, 92, 246, 0.35)' : undefined,
-                    borderColor: isSelected ? '#a855f7' : undefined,
-                    color: isSelected ? '#f3e8ff' : undefined,
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={() => toggleJobSelection(jid)}
-                >
-                  {isSelected ? '✅ ' : '🏷️ '} {jid}
-                </span>
+                <div key={jid} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <span
+                    className={`job-id-pill ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      cursor: 'pointer',
+                      background: isSelected ? '#8b5cf6' : 'rgba(255, 255, 255, 0.08)',
+                      borderColor: isSelected ? '#a855f7' : 'rgba(255, 255, 255, 0.15)',
+                      color: isSelected ? '#ffffff' : '#e2e8f0',
+                      transition: 'all 0.2s ease',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                    onClick={() => {
+                      if (!isSelected) {
+                        toggleJobSelection(jid);
+                      }
+                      openJobModal(jid);
+                    }}
+                    title="Click to select & view details"
+                  >
+                    {isSelected ? '✅ ' : '🏷️ '} {jid}
+                  </span>
+                  <button
+                    style={{
+                      background: 'rgba(139, 92, 246, 0.2)',
+                      border: '1px solid rgba(139, 92, 246, 0.4)',
+                      color: '#ddd6fe',
+                      borderRadius: '4px',
+                      padding: '0.15rem 0.35rem',
+                      fontSize: '0.65rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openJobModal(jid);
+                    }}
+                    title="View Job Details Popup"
+                  >
+                    📖
+                  </button>
+                </div>
               );
             })}
           </div>

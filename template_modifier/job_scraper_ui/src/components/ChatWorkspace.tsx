@@ -9,6 +9,7 @@ export interface Message {
   time_taken_ms?: number;
   extracted_jobs?: string[];
   jobs?: any[];
+  isStreaming?: boolean;
 }
 
 interface ChatWorkspaceProps {
@@ -69,7 +70,23 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
                 {msg.role === 'user' ? '👤' : '🤖'}
               </div>
               <div className="message-content-wrapper">
-                <div className="message-body">{msg.content}</div>
+                <div className="message-body">
+                  {msg.content}
+                  {msg.isStreaming && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '8px',
+                        height: '14px',
+                        backgroundColor: '#8b5cf6',
+                        marginLeft: '4px',
+                        animation: 'pulse 1s infinite',
+                        borderRadius: '2px',
+                        verticalAlign: 'middle',
+                      }}
+                    />
+                  )}
+                </div>
 
                 {/* Render extracted Job ID pills if present */}
                 {msg.extracted_jobs && msg.extracted_jobs.length > 0 && (

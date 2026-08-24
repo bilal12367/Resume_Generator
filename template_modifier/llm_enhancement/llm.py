@@ -1,4 +1,6 @@
-from __future__ import annotations
+
+from llama_index.core.prompts import PromptTemplate
+from pydantic import BaseModel
 
 import time
 from typing import Any, Optional
@@ -89,6 +91,12 @@ class LLM(BroadcastingSubject):
                 tokens_utilized=len(getattr(chunk, "text", "")) // 3,
             )
             self.notify_all(stream_chunk.model_dump_json())
+        
+    def run_with_schema(self, type: BaseModel, prompt, **kwargs):
+        pt = PromptTemplate(template=prompt)
+        resp = self.llm.structured_predict(type, pt, **kwargs)
+        self.notify_all(resp.model_dump_json())
+        return resp
 
     def log(self, *args, **kwargs):
         self._emit_log(*args, **kwargs)

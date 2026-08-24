@@ -9,6 +9,7 @@ export interface CentrifugoEvent {
   tool_name?: string;
   kwargs?: any;
   result?: any;
+  delta?: string;
   job_ids?: string[];
   tokens?: number;
   time_taken_ms?: number;

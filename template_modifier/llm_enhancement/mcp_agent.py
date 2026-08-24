@@ -203,7 +203,10 @@ class MCPAgent(Agent):
 
         self._exit_stack = AsyncExitStack()
         self.mcp_sessions = []
-        all_tools = list(self.tools)
+        
+        # Deduplicate and preserve initial local tools passed during initialization
+        existing_local_tools = [t for t in self.tools if getattr(t, "name", None) not in ["search_jobs", "get_job_details", "process_jobs"]] if hasattr(self, "tools") else []
+        all_tools = list(existing_local_tools)
 
         try:
             for url in self.mcp_urls:

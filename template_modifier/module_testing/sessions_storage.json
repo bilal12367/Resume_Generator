@@ -167,31 +167,47 @@
     "job_ids": [],
     "jobs": []
   },
-  "5bc0f98c-7841-4111-9525-57e21349a9e7": {
-    "id": "5bc0f98c-7841-4111-9525-57e21349a9e7",
+  "640ea063-edb7-43ff-94fc-564bbe5462dd": {
+    "id": "640ea063-edb7-43ff-94fc-564bbe5462dd",
     "title": "Job Search #3",
-    "created_at": "2026-08-14T11:09:23.037494+00:00",
-    "updated_at": "2026-08-14T11:22:18.730898+00:00",
+    "created_at": "2026-08-16T17:10:38.609272+00:00",
+    "updated_at": "2026-08-16T17:13:48.605875+00:00",
     "messages": [
       {
-        "id": "a274958d-ca6c-4d8e-9ae7-b23cbe1cf2a2",
+        "id": "3c5454c5-d0fd-44f0-b7e0-9b6f5ee9cacb",
         "role": "user",
         "content": "Hi",
-        "timestamp": "2026-08-14T11:22:09.897047Z"
+        "timestamp": "2026-08-16T17:10:41.431720Z"
       },
       {
-        "id": "6caa4a32-140a-40f5-8d65-fccabc49a249",
+        "id": "236913cc-c508-48fe-a5d5-8de43a7969d1",
         "role": "assistant",
-        "content": "Hi! I'm your job scraping assistant. To help you find relevant job opportunities, please provide the following details:\n\n1. **Job keywords/titles** (e.g., Python, AI Engineer, Data Scientist)\n2. **Locations** (e.g., Remote, San Francisco, New York)\n3. **Experience level** (optional, e.g., Entry Level, Mid Senior, Senior)\n4. **Time range for posted jobs** (optional, e.g., past 24 hours, past 7 days, past month)\n\nOnce you provide these, I'll search for jobs at top tier-1 to tier-2 MNCs and guide you through the selection process.",
+        "content": "Hello! I'm your job scraping assistant. To help you find relevant job opportunities, please provide the following details:\n1. Job keywords or titles (e.g., Python, AI Engineer, Data Scientist)\n2. Locations (e.g., Remote, San Francisco, New York)\n3. Experience level (e.g., Entry Level, Mid Senior, Senior) \u2013 optional\n4. Time range for posted jobs (e.g., past 24 hours, 7 days, 1 month) \u2013 optional\n\nOnce you provide these, I'll search for jobs targeting top-tier MNCs and guide you through the selection process. What are you looking for?",
         "job_ids": [],
         "jobs": [],
-        "tokens": 668,
-        "time_taken_ms": 8833.28,
-        "timestamp": "2026-08-14T11:22:18.730879+00:00"
+        "tokens": 680,
+        "time_taken_ms": 18506.38,
+        "timestamp": "2026-08-16T17:10:59.939334+00:00"
+      },
+      {
+        "id": "a92fc0e6-70d5-47dd-9abb-d90741db3b2b",
+        "role": "user",
+        "content": "That's great, first tell me some news about iran and israel war, any updates ??",
+        "timestamp": "2026-08-16T17:13:40.728768Z"
+      },
+      {
+        "id": "1b7cb33d-fd81-48cf-b72f-8e2bbd856554",
+        "role": "assistant",
+        "content": "I'm sorry, but I'm specialized as a job scraping agent and can only assist with job search tasks using LinkedIn. I don't have access to news updates or current events about the Iran-Israel war. If you'd like help finding jobs, please let me know your job search criteria (keywords, locations, etc.), and I'll be happy to assist with that!",
+        "job_ids": [],
+        "jobs": [],
+        "tokens": 921,
+        "time_taken_ms": 7876.86,
+        "timestamp": "2026-08-16T17:13:48.605850+00:00"
       }
     ],
-    "total_tokens": 668,
-    "total_time_ms": 8833.28,
+    "total_tokens": 1601,
+    "total_time_ms": 26383.24,
     "job_ids": [],
     "jobs": []
   }

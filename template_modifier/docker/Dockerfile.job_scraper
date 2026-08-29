@@ -55,4 +55,4 @@ ENV JOB_SCRAPER_PORT=8080
 ENV MCP_URL=http://mcp:8000/sse
 ENV CENTRIFUGE_BASE_URL=http://centrifugo:8000
 
-CMD ["uv", "run", "-m", "module_testing.job_scraper"]
+CMD ["uv", "run", "-m", "module_testing.job_scraper_2"]

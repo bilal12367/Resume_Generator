@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   grandTotalTokens: number;
@@ -95,6 +96,25 @@ export const Header: React.FC<HeaderProps> = ({
         >
           📝 Direct JD & PDF Generator
         </button>
+        <Link
+          to="/processed-jobs"
+          style={{
+            background: 'rgba(139, 92, 246, 0.15)',
+            border: '1px solid rgba(139, 92, 246, 0.4)',
+            color: '#c084fc',
+            padding: '0.4rem 0.9rem',
+            borderRadius: '8px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          📁 Processed Jobs Browser ↗
+        </Link>
       </div>
 
       {/* Global Metrics Bar */}

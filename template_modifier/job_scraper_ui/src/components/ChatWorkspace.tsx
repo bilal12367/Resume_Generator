@@ -8,6 +8,7 @@ export interface Message {
   tokens?: number;
   time_taken_ms?: number;
   extracted_jobs?: string[];
+  job_ids?: string[];
   jobs?: any[];
   isStreaming?: boolean;
 }
@@ -88,56 +89,120 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
                   )}
                 </div>
 
-                {/* Render extracted Job ID pills if present */}
-                {msg.extracted_jobs && msg.extracted_jobs.length > 0 && (
-                  <div className="job-tags-container">
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      📌 Extracted Job IDs:
-                    </span>
-                    {msg.extracted_jobs.map((jid) => {
-                      const isSelected = selectedJobIds.includes(jid);
-                      return (
-                        <div
-                          key={jid}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                {/* Render extracted candidate Job IDs per message turn */}
+                {(() => {
+                  const candidateJobs = (msg.extracted_jobs && msg.extracted_jobs.length > 0)
+                    ? msg.extracted_jobs
+                    : (msg.job_ids && msg.job_ids.length > 0 ? msg.job_ids : []);
+                  
+                  if (candidateJobs.length === 0) return null;
+
+                  return (
+                    <div
+                      className="job-tags-container"
+                      style={{
+                        marginTop: '0.75rem',
+                        padding: '0.8rem 1rem',
+                        background: 'rgba(139, 92, 246, 0.08)',
+                        border: '1px solid rgba(139, 92, 246, 0.25)',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '0.6rem',
+                          flexWrap: 'wrap',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', color: '#c084fc', fontWeight: 700 }}>
+                          🎯 Candidate Jobs for Selection ({candidateJobs.length}):
+                        </span>
+                        <button
+                          style={{
+                            background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                            border: 'none',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            padding: '0.3rem 0.75rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                          }}
+                          onClick={() => openJobModal(candidateJobs[0])}
                         >
-                          <span
-                            className={`job-id-pill ${isSelected ? 'selected' : ''}`}
-                            style={{
-                              cursor: 'pointer',
-                              background: isSelected ? '#8b5cf6' : undefined,
-                              color: isSelected ? '#ffffff' : undefined,
-                              transition: 'all 0.2s ease',
-                            }}
-                            onClick={() => toggleJobSelection(jid)}
-                          >
-                            {isSelected ? '✓ ' : ''}
-                            {jid}
-                          </span>
-                          <button
-                            style={{
-                              background: 'rgba(139, 92, 246, 0.2)',
-                              border: '1px solid rgba(139, 92, 246, 0.4)',
-                              color: '#ddd6fe',
-                              borderRadius: '4px',
-                              padding: '0.15rem 0.4rem',
-                              fontSize: '0.68rem',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openJobModal(jid);
-                            }}
-                            title="Explore Job Description"
-                          >
-                            📖 Details
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                          🔍 Open Jobs Navigator & Details
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                        {candidateJobs.map((jid: string) => {
+                          const isSelected = selectedJobIds.includes(jid);
+                          return (
+                            <div
+                              key={jid}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                              <span
+                                className={`job-id-pill ${isSelected ? 'selected' : ''}`}
+                                style={{
+                                  cursor: 'pointer',
+                                  background: isSelected ? '#8b5cf6' : 'rgba(255, 255, 255, 0.08)',
+                                  color: isSelected ? '#ffffff' : '#e2e8f0',
+                                  border: isSelected ? '1px solid #a78bfa' : '1px solid rgba(255, 255, 255, 0.15)',
+                                  transition: 'all 0.2s ease',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                  padding: '0.25rem 0.6rem',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  fontSize: '0.78rem',
+                                }}
+                                onClick={() => toggleJobSelection(jid)}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleJobSelection(jid)}
+                                  style={{ accentColor: '#8b5cf6', cursor: 'pointer' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                {jid}
+                              </span>
+                              <button
+                                style={{
+                                  background: 'rgba(139, 92, 246, 0.2)',
+                                  border: '1px solid rgba(139, 92, 246, 0.4)',
+                                  color: '#ddd6fe',
+                                  borderRadius: '4px',
+                                  padding: '0.15rem 0.4rem',
+                                  fontSize: '0.68rem',
+                                  cursor: 'pointer',
+                                  fontWeight: 600,
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openJobModal(jid);
+                                }}
+                                title="Explore Job Details"
+                              >
+                                📖 Details
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Render job cards if available */}
                 {msg.jobs && msg.jobs.length > 0 && (

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 
-
-
 import { Header } from '../components/Header';
 import { ToastNotification } from '../components/ToastNotification';
 import type { ToastData } from '../components/ToastNotification';
@@ -12,6 +10,7 @@ import { SidebarSessions } from '../components/SidebarSessions';
 import type { SessionItem } from '../components/SidebarSessions';
 import { ChatWorkspace } from '../components/ChatWorkspace';
 import { RightShowcasePanel } from '../components/RightShowcasePanel';
+import { AtsQueueTracker, type QueuedAtsJob } from '../components/AtsQueueTracker';
 import { centrifugoService } from '../services/centrifugoClient';
 import type { CentrifugoEvent } from '../services/centrifugoClient';
 
@@ -48,7 +47,14 @@ export const Home: React.FC = () => {
   const [isGeneratingResumes, setIsGeneratingResumes] = useState<boolean>(false);
   const [_atsProgressStatus, setAtsProgressStatus] = useState<string>('');
   const [generatedAtsResults, setGeneratedAtsResults] = useState<any[]>([]);
+  const [loadingJobDetailsId, setLoadingJobDetailsId] = useState<string | null>(null);
   const [toastNotification, setToastNotification] = useState<ToastData | null>(null);
+
+  // ATS Real-time Generation Queue State
+  const [atsQueue, setAtsQueue] = useState<QueuedAtsJob[]>([]);
+  const [atsQueueStatusMsg, setAtsQueueStatusMsg] = useState<string>('');
+  const [atsQueueTotal, setAtsQueueTotal] = useState<number>(0);
+  const [atsQueueCurrentIndex, setAtsQueueCurrentIndex] = useState<number>(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -149,6 +155,8 @@ export const Home: React.FC = () => {
       setModalActiveTab('summary');
     }
 
+    setLoadingJobDetailsId(jid);
+
     // 1. Fetch full job details & job description
     try {
       const res = await fetch(`${API_BASE}/jobs/${jid}/details`);
@@ -163,6 +171,8 @@ export const Home: React.FC = () => {
       }
     } catch (e) {
       console.warn('Failed to fetch job details:', e);
+    } finally {
+      setLoadingJobDetailsId(null);
     }
 
     // 2. Fetch ATS resume data
@@ -332,7 +342,7 @@ export const Home: React.FC = () => {
   // Connect Centrifugo on mount
   useEffect(() => {
     centrifugoService.connect('workflow');
-    
+
     const handleStatusChange = (connected: boolean, statusText: string) => {
       setWsConnected(connected);
       setWsStatusText(statusText);
@@ -430,8 +440,70 @@ export const Home: React.FC = () => {
         }
       }
 
+      if (anyEvt.event_type === 'ats_generation_started') {
+        setIsGeneratingResumes(true);
+        const jids: string[] = anyEvt.job_ids || [];
+        setAtsQueueTotal(jids.length);
+        setAtsQueueCurrentIndex(0);
+        setAtsQueueStatusMsg(`Started ATS generation queue for ${jids.length} job(s)...`);
+        setAtsQueue(
+          jids.map((jid) => ({
+            job_id: jid,
+            step: 'pending',
+            message: 'Queued for processing...',
+          }))
+        );
+      }
+
       if (anyEvt.event_type === 'ats_generation_progress') {
-        setAtsProgressStatus(anyEvt.message || 'Processing ATS Resume Workflow...');
+        setIsGeneratingResumes(true);
+        const jid = anyEvt.job_id;
+        const step = anyEvt.step || 'llm_generating';
+        const msg = anyEvt.message || `Processing Job #${jid}...`;
+        if (anyEvt.current) setAtsQueueCurrentIndex(anyEvt.current);
+        if (anyEvt.total) setAtsQueueTotal(anyEvt.total);
+        setAtsQueueStatusMsg(msg);
+        setAtsProgressStatus(msg);
+
+        setAtsQueue((prev) => {
+          const idx = prev.findIndex((q) => q.job_id === jid);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = { ...updated[idx], step: step as any, message: msg };
+            return updated;
+          } else {
+            return [...prev, { job_id: jid, step: step as any, message: msg }];
+          }
+        });
+      }
+
+      if (anyEvt.event_type === 'ats_job_completed') {
+        const jid = anyEvt.job_id;
+        const msg = anyEvt.message || `✅ ATS Resume & 4 PDFs generated for Job #${jid}!`;
+        setToastNotification({ message: msg, jobId: jid, type: 'success' });
+
+        setAtsQueue((prev) => {
+          const idx = prev.findIndex((q) => q.job_id === jid);
+          if (idx >= 0) {
+            const updated = [...prev];
+            updated[idx] = {
+              ...updated[idx],
+              step: 'completed',
+              message: '✅ Ready in Processed Section',
+              result: anyEvt.result,
+            };
+            return updated;
+          }
+          return prev;
+        });
+
+        if (anyEvt.result) {
+          setGeneratedAtsResults((prev) => {
+            const map = new Map(prev.map((r) => [r.job_id, r]));
+            map.set(jid, anyEvt.result);
+            return Array.from(map.values());
+          });
+        }
       }
 
       if (anyEvt.event_type === 'ats_generation_completed') {
@@ -656,7 +728,20 @@ export const Home: React.FC = () => {
         />
       ) : (
         /* 3-Column Agent Job Scraper Workspace */
-        <div className="main-workspace">
+        <div className="main-workspace-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Active ATS Queue Tracker Banner */}
+          <div style={{ padding: '0.8rem 1rem 0 1rem' }}>
+            <AtsQueueTracker
+              isGenerating={isGeneratingResumes}
+              totalJobs={atsQueueTotal}
+              currentJobIndex={atsQueueCurrentIndex}
+              queueList={atsQueue}
+              statusMessage={atsQueueStatusMsg}
+              onClose={() => setAtsQueue([])}
+            />
+          </div>
+
+          <div className="main-workspace" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
           {/* Left Column: Sessions Sidebar */}
           <SidebarSessions
             filteredSessions={filteredSessions}
@@ -693,10 +778,11 @@ export const Home: React.FC = () => {
             setSelectedJobIds={setSelectedJobIds}
             liveEvents={liveEvents}
           />
+          </div>
         </div>
       )}
 
-      {/* 3-Step Statewise Job Details Modal */}
+      {/* 3-Step Statewise Job Details Modal with Candidate Jobs Navigator */}
       <JobModal
         activeModalJobId={activeModalJobId}
         onClose={() => setActiveModalJobId(null)}
@@ -710,6 +796,12 @@ export const Home: React.FC = () => {
         onRegeneratePdf={handleRegeneratePdfForModal}
         isGeneratingResumes={isGeneratingResumes}
         onGenerateATSResumes={handleGenerateATSResumes}
+        activeJobIds={activeJobIds}
+        selectedJobIds={selectedJobIds}
+        toggleJobSelection={toggleJobSelection}
+        onOpenJobModal={openJobModal}
+        onSubmitSelectedJobs={handleSubmitSelectedJobs}
+        isLoadingJobDetails={loadingJobDetailsId === activeModalJobId}
       />
     </div>
   );

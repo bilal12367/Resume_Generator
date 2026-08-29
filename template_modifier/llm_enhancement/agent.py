@@ -74,6 +74,7 @@ class Agent(Subject):
             api_key=api_key,
             model=model_id,
             max_tokens=20000,
+            timeout=600
         )
 
         self.chat_store = SQLiteChatStore.from_uri(uri=self.db_uri, table_name=table_name)

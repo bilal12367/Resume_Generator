@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -45,8 +46,14 @@ You should follow this workflow:
 3. Target top tier-1 to tier-2 MNCs using search keywords (e.g., Python, AI Engineer, Deloitte, Accenture, TCS, Infosys, Wipro).
 4. Don't call get_job_details; filter search results directly based on location, skills, experience, and posting freshness.
 5. Filter the jobs based on user requirements and select top candidate relevant jobs.
-6. **HUMAN-IN-THE-LOOP (HITL) STEP**: Call local tool `ask_user_to_select_jobs(job_ids=[...], session_id=session_id, message="...")` passing candidate Job IDs and active Session ID. **CRITICAL**: Immediately after calling this tool, STOP calling any further tools and output your final response to the user asking them to select which Job IDs to proceed with.
-7. Once the user responds with their selected Job IDs in their message, call tool `process_jobs(job_ids, session_id)` with those user-selected job IDs and the active Session ID provided in your prompt context.
+6. While filtering don't write unnecessary json in thinking or observation, just use job_id_1, job_id_2 etc
+7. **HUMAN-IN-THE-LOOP (HITL) STEP**: Call local tool `ask_user_to_select_jobs(job_ids=[...], session_id=session_id, message="...")` passing candidate Job IDs and active Session ID. **CRITICAL**: Immediately after calling this tool, STOP calling any further tools and output your final response to the user asking them to select which Job IDs to proceed with.
+8. Once you call the HITL step, and tool returns result, you should stop the execution immediately. With Answer: Done.
+9. Once the user responds with their selected Job IDs in their message, call tool `process_jobs(job_ids, session_id)` with those user-selected job IDs and the active Session ID provided in your prompt context.
+
+**Important**
+1. Don't think too long, respond quickly. This is just quick filter and send.
+2. Don't repeat the search tools more than once per turn.
 '''
 
 # --- SQLite Database Storage for Sessions (new_workflow_db.db) ---
@@ -161,13 +168,11 @@ def db_delete_session(session_id: str):
 async def ask_user_to_select_jobs(job_ids: List[str], session_id: str, message: Optional[str] = None) -> str:
     """
     Local tool for Human-in-the-Loop (HITL) job selection.
-    Fetches job details for candidate job IDs if not cached, saves them to SQLite database,
-    and emits Centrifugo events containing full job descriptions to prompt the UI for selection.
+    Associates candidate job IDs with the active session, saves them instantly to SQLite database,
+    and emits Centrifugo events to prompt the UI for user selection.
     """
     if not session_id:
         return "Error: session_id is required."
-
-    from mcps.linkedin_platform import get_job_description, save_job_description, linkedin
 
     session = db_get_session(session_id)
     if not session:
@@ -186,66 +191,57 @@ async def ask_user_to_select_jobs(job_ids: List[str], session_id: str, message: 
 
     clean_job_ids = [str(jid).strip() for jid in job_ids if str(jid).strip()]
 
-    # Fetch & Cache Job Descriptions for each candidate job ID
-    cached_jobs = []
-    for jid in clean_job_ids:
-        job_data = get_job_description(jid)
-        if not job_data or not (job_data.get("raw_description") or job_data.get("title")):
-            try:
-                fetched = await linkedin.fetch_job_description(jid)
-                if fetched and isinstance(fetched, dict):
-                    save_job_description(session_id=session_id, job_data=fetched)
-                    job_data = fetched
-            except Exception as err:
-                print(f"[Warning] Failed to fetch job description for {jid} in ask_user_to_select_jobs: {err}")
-
-        if not job_data:
-            job_data = {
-                "job_id": jid,
-                "title": f"Job Position #{jid}",
-                "company_name": "Tech MNC",
-                "location": "India / Remote",
-                "raw_description": f"Details for Job ID {jid}"
-            }
-        cached_jobs.append(job_data)
-
     existing_ids = set(session.get("job_ids", []))
     session["job_ids"] = list(dict.fromkeys(list(existing_ids) + clean_job_ids))
-
-    existing_jobs = {j.get("job_id") or j.get("id"): j for j in session.get("jobs", []) if isinstance(j, dict)}
-    for j in cached_jobs:
-        jid = j.get("job_id") or j.get("id")
-        if jid:
-            existing_jobs[jid] = j
-    session["jobs"] = list(existing_jobs.values())
     session["updated_at"] = datetime.now(timezone.utc).isoformat()
 
+    display_msg = message or f"Please select which of the following Job IDs you want to process: {', '.join(clean_job_ids)}"
+
+    # Permanently attach candidate job_ids to session messages in SQLite DB
+    raw_messages = session.get("messages", [])
+    messages = list(raw_messages) if isinstance(raw_messages, list) else []
+    if messages and isinstance(messages[-1], dict):
+        last_msg = messages[-1]
+        if last_msg.get("role") == "assistant":
+            curr = last_msg.get("extracted_jobs", []) if isinstance(last_msg.get("extracted_jobs"), list) else []
+            updated_list = list(dict.fromkeys(list(curr) + clean_job_ids))
+            last_msg["extracted_jobs"] = updated_list
+            last_msg["job_ids"] = updated_list
+        else:
+            messages.append({
+                "id": str(uuid.uuid4()),
+                "role": "assistant",
+                "content": display_msg,
+                "extracted_jobs": clean_job_ids,
+                "job_ids": clean_job_ids,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+    else:
+        messages.append({
+            "id": str(uuid.uuid4()),
+            "role": "assistant",
+            "content": display_msg,
+            "extracted_jobs": clean_job_ids,
+            "job_ids": clean_job_ids,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+    session["messages"] = messages
     db_save_session(session)
 
-    display_msg = message or f"Please select which of the following Job IDs you want to process: {', '.join(clean_job_ids)}"
     scraper = JOB_SCRAPER()
 
     hitl_event = {
         "event_type": "hitl_job_selection",
         "session_id": session_id,
         "job_ids": clean_job_ids,
-        "jobs": cached_jobs,
         "message": display_msg,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     scraper._safe_publish("workflow", hitl_event)
     scraper._safe_publish(f"session_{session_id}", hitl_event)
 
-    jd_saved_event = {
-        "event_type": "job_descriptions_saved",
-        "session_id": session_id,
-        "jobs": cached_jobs,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    scraper._safe_publish("workflow", jd_saved_event)
-    scraper._safe_publish(f"session_{session_id}", jd_saved_event)
-
-    return f"Successfully fetched, cached, and presented {len(clean_job_ids)} Job IDs ({', '.join(clean_job_ids)}) with full descriptions to the UI. Awaiting user selection choice."
+    return f"Candidate Job IDs ({', '.join(clean_job_ids)}) successfully presented to the user UI. STOP calling any further tools and provide your final response to the user presenting the candidate jobs and asking for their selection."
 
 
 async def get_or_create_agent(session_id: str) -> MCPAgent:
@@ -262,7 +258,7 @@ async def get_or_create_agent(session_id: str) -> MCPAgent:
             run_id=session_id,
             tools=[ask_user_to_select_jobs],
             mcp_urls=[mcp_url],
-            attach_centrifugo=False
+            attach_centrifugo=False,
         )
         try:
             await agent.connect_mcp()
@@ -347,83 +343,85 @@ class JOB_SCRAPER:
         """Runs the job scraping agent for a user message, streaming events to Centrifugo."""
         start_time = time.time()
         now = datetime.now(timezone.utc).isoformat()
-        
+        try:
         # Send agent_start event
-        start_evt = {
-            "event_type": "agent_start",
-            "session_id": session_id,
-            "message": user_message,
-            "timestamp": now
-        }
-        for ch in ["workflow", f"session_{session_id}"]:
-            self._safe_publish(ch, start_evt)
+            start_evt = {
+                "event_type": "agent_start",
+                "session_id": session_id,
+                "message": user_message,
+                "timestamp": now
+            }
+            for ch in ["workflow", f"session_{session_id}"]:
+                self._safe_publish(ch, start_evt)
 
-        agent = await get_or_create_agent(session_id)
-        current_prompt = f"{SYSTEM_PROMPT}\n\n[Active Session Context]\nActive Session ID: '{session_id}'\nAlways pass session_id='{session_id}' when calling tool `process_jobs`."
+            agent = await get_or_create_agent(session_id)
+            current_prompt = f"{SYSTEM_PROMPT}\n\n[Active Session Context]\nActive Session ID: '{session_id}'\nAlways pass session_id='{session_id}' when calling tool `process_jobs`."
 
-        handler = agent.chat(new_message=user_message, system_prompt=current_prompt)
-        
-        response = None
-        extracted_job_ids: List[str] = []
-        extracted_jobs: List[Dict[str, Any]] = []
-        tokens_utilized = 0
+            handler = agent.chat(new_message=user_message, system_prompt=current_prompt)
+            
+            response = None
+            extracted_job_ids: List[str] = []
+            extracted_jobs: List[Dict[str, Any]] = []
+            tokens_utilized = 0
 
-        async for evt in handler:
-            self.publisher(session_id, evt)
+            async for evt in handler:
+                self.publisher(session_id, evt)
 
-            if isinstance(evt, ToolCallEvent):
-                tool_kwargs = getattr(evt, "tool_kwargs", {})
-                if "job_ids" in tool_kwargs and isinstance(tool_kwargs["job_ids"], list):
-                    for jid in tool_kwargs["job_ids"]:
-                        if str(jid) not in extracted_job_ids:
-                            extracted_job_ids.append(str(jid))
-
-            elif isinstance(evt, ToolResultEvent):
-                tool_result = getattr(evt, "tool_result", None) or getattr(evt, "content", "")
-                parsed_res = tool_result
-                if isinstance(parsed_res, str):
-                    try:
-                        parsed_res = json.loads(parsed_res)
-                    except Exception:
-                        pass
-
-                if isinstance(parsed_res, dict) and "jobs" in parsed_res and isinstance(parsed_res["jobs"], list):
-                    for job in parsed_res["jobs"]:
-                        if isinstance(job, dict):
-                            jid = job.get("job_id") or job.get("id")
-                            if jid and str(jid) not in extracted_job_ids:
+                if isinstance(evt, ToolCallEvent):
+                    tool_kwargs = getattr(evt, "tool_kwargs", {})
+                    if "job_ids" in tool_kwargs and isinstance(tool_kwargs["job_ids"], list):
+                        for jid in tool_kwargs["job_ids"]:
+                            if str(jid) not in extracted_job_ids:
                                 extracted_job_ids.append(str(jid))
-                            extracted_jobs.append(job)
 
-            elif isinstance(evt, RunCompletionEvent):
-                response = evt
-                if hasattr(evt, "tokens_elapsed") and evt.tokens_elapsed:
-                    tokens_utilized = evt.tokens_elapsed
+                elif isinstance(evt, ToolResultEvent):
+                    tool_result = getattr(evt, "tool_result", None) or getattr(evt, "content", "")
+                    parsed_res = tool_result
+                    if isinstance(parsed_res, str):
+                        try:
+                            parsed_res = json.loads(parsed_res)
+                        except Exception:
+                            pass
 
-        time_taken_ms = round((time.time() - start_time) * 1000, 2)
-        result_content = ""
-        if response:
-            result_content = response.content if isinstance(response.content, str) else str(response.content)
-        else:
-            result_content = "Agent finished execution."
+                    if isinstance(parsed_res, dict) and "jobs" in parsed_res and isinstance(parsed_res["jobs"], list):
+                        for job in parsed_res["jobs"]:
+                            if isinstance(job, dict):
+                                jid = job.get("job_id") or job.get("id")
+                                if jid and str(jid) not in extracted_job_ids:
+                                    extracted_job_ids.append(str(jid))
+                                extracted_jobs.append(job)
 
-        text_job_ids = extract_job_ids_from_text(result_content)
-        for jid in text_job_ids:
-            if jid not in extracted_job_ids:
-                extracted_job_ids.append(jid)
+                elif isinstance(evt, RunCompletionEvent):
+                    response = evt
+                    if hasattr(evt, "tokens_elapsed") and evt.tokens_elapsed:
+                        tokens_utilized = evt.tokens_elapsed
 
-        if not tokens_utilized:
-            total_chars = len(user_message) + len(result_content)
-            tokens_utilized = max(round(total_chars / 3.8), 45)
+            time_taken_ms = round((time.time() - start_time) * 1000, 2)
+            result_content = ""
+            if response:
+                result_content = response.content if isinstance(response.content, str) else str(response.content)
+            else:
+                result_content = "Agent finished execution."
 
-        return {
-            "result": result_content,
-            "job_ids": extracted_job_ids,
-            "jobs": extracted_jobs,
-            "tokens": tokens_utilized,
-            "time_taken_ms": time_taken_ms
-        }
+            text_job_ids = extract_job_ids_from_text(result_content)
+            for jid in text_job_ids:
+                if jid not in extracted_job_ids:
+                    extracted_job_ids.append(jid)
 
+            if not tokens_utilized:
+                total_chars = len(user_message) + len(result_content)
+                tokens_utilized = max(round(total_chars / 3.8), 45)
+
+            return {
+                "result": result_content,
+                "job_ids": extracted_job_ids,
+                "jobs": extracted_jobs,
+                "tokens": tokens_utilized,
+                "time_taken_ms": time_taken_ms
+            }
+        except Exception as e:
+            print(e)
+            print("error caught whiler running agent.")
 
 # --- FastAPI Application ---
 app = FastAPI(title="Job Scraper API v2")
@@ -616,6 +614,7 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
     user_data_path = base_dir / "user_data" / data_file_name
     if not user_data_path.exists():
         json_files = list((base_dir / "user_data").glob("*.json"))
+        
         if json_files:
             user_data_path = json_files[0]
         else:
@@ -631,18 +630,28 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
     results = []
     scraper = JOB_SCRAPER()
 
-    for idx, jid in enumerate(req.job_ids):
-        jid_str = str(jid).strip()
-        if not jid_str:
-            continue
+    clean_job_ids = [str(jid).strip() for jid in req.job_ids if str(jid).strip()]
 
+    # Broadcast start event
+    start_payload = {
+        "event_type": "ats_generation_started",
+        "session_id": req.session_id,
+        "job_ids": clean_job_ids,
+        "total": len(clean_job_ids)
+    }
+    scraper._safe_publish("workflow", start_payload)
+    scraper._safe_publish(f"session_{req.session_id}", start_payload)
+
+    for idx, jid_str in enumerate(clean_job_ids):
+        # Step 1: Fetching Job Description
         scraper._safe_publish("workflow", {
             "event_type": "ats_generation_progress",
             "session_id": req.session_id,
             "job_id": jid_str,
             "current": idx + 1,
-            "total": len(req.job_ids),
-            "status": f"Fetching Job Description for {jid_str}..."
+            "total": len(clean_job_ids),
+            "step": "fetching_jd",
+            "message": f"Fetching Job Description for #{jid_str}..."
         })
 
         job_desc_dict = get_job_description(jid_str)
@@ -657,6 +666,17 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
         jd_text = job_desc_dict.get("raw_description") or job_desc_dict.get("minimal_description") or f"Job ID {jid_str}"
 
         try:
+            # Step 2: LLM Tailoring candidate ATS profile
+            scraper._safe_publish("workflow", {
+                "event_type": "ats_generation_progress",
+                "session_id": req.session_id,
+                "job_id": jid_str,
+                "current": idx + 1,
+                "total": len(clean_job_ids),
+                "step": "llm_generating",
+                "message": f"LLM Tailoring ATS Profile & Keywords for #{jid_str}..."
+            })
+
             modified_schema = await modifier.generate_data(job_description=jd_text, user_old_data=user_old_data)
             if hasattr(modified_schema, "model_dump"):
                 modified_dict = modified_schema.model_dump()
@@ -675,6 +695,17 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
             output_pdf_folder = os.path.join("output", prefix_name)
             save_generated_ats_resume(req.session_id, jid_str, modified_json_str, output_pdf_folder)
 
+            # Step 3: Compiling 4 HTML/PDF resume templates
+            scraper._safe_publish("workflow", {
+                "event_type": "ats_generation_progress",
+                "session_id": req.session_id,
+                "job_id": jid_str,
+                "current": idx + 1,
+                "total": len(clean_job_ids),
+                "step": "compiling_pdf",
+                "message": f"Compiling 4 HTML/PDF Resume Templates for #{jid_str}..."
+            })
+
             gen_script = base_dir / "generate_resume.py"
             try:
                 cmd = [sys.executable, str(gen_script), "-d", temp_json_name, "-p", prefix_name, "-y"]
@@ -682,20 +713,45 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
             except Exception as proc_err:
                 print(f"[Error running generate_resume for {jid_str}]: {proc_err}")
 
-            results.append({
+            job_completed_item = {
                 "job_id": jid_str,
                 "generated_json_file": temp_json_name,
                 "output_pdf_folder": output_pdf_folder,
                 "generated_data": modified_dict
+            }
+            results.append(job_completed_item)
+
+            # Step 4: Per-Job Completed Event
+            scraper._safe_publish("workflow", {
+                "event_type": "ats_job_completed",
+                "session_id": req.session_id,
+                "job_id": jid_str,
+                "current": idx + 1,
+                "total": len(clean_job_ids),
+                "result": job_completed_item,
+                "message": f"✅ ATS Resume & 4 PDFs generated for Job #{jid_str}!"
             })
+            scraper._safe_publish(f"session_{req.session_id}", {
+                "event_type": "ats_job_completed",
+                "session_id": req.session_id,
+                "job_id": jid_str,
+                "current": idx + 1,
+                "total": len(clean_job_ids),
+                "result": job_completed_item,
+                "message": f"✅ ATS Resume & 4 PDFs generated for Job #{jid_str}!"
+            })
+
         except Exception as gen_err:
             print(f"[Error generating ATS data for {jid_str}]: {gen_err}")
 
-    scraper._safe_publish("workflow", {
+    # Broadcast final completion event
+    completion_payload = {
         "event_type": "ats_generation_completed",
         "session_id": req.session_id,
         "results": results
-    })
+    }
+    scraper._safe_publish("workflow", completion_payload)
+    scraper._safe_publish(f"session_{req.session_id}", completion_payload)
 
     return {"status": "ok", "session_id": req.session_id, "results": results}
 
@@ -790,6 +846,75 @@ async def get_job_details_route(job_id: str):
             "minimal_description": f"Job ID {job_id}"
         }
     }
+
+
+@app.get("/processed-jobs/all")
+async def get_all_processed_jobs():
+    """GET /processed-jobs/all — Fetch all candidate job postings with full details & ATS status."""
+    from mcps.linkedin_platform import init_db, SessionLocal, JobDescription, GeneratedATSResume
+    from sqlalchemy import select
+    init_db()
+
+    with SessionLocal() as db_session:
+        jds = db_session.scalars(select(JobDescription)).all()
+        jd_map = {j.job_id: j.to_dict() for j in jds}
+
+        resumes = db_session.scalars(select(GeneratedATSResume)).all()
+        ats_map = {r.job_id: r.to_dict() for r in resumes}
+
+    all_sessions = db_get_all_sessions()
+    all_job_ids = set(jd_map.keys()).union(set(ats_map.keys()))
+    for sess in all_sessions:
+        for jid in sess.get("job_ids", []):
+            if jid:
+                all_job_ids.add(str(jid).strip())
+
+    results = []
+    base_dir = Path(__file__).resolve().parent.parent
+
+    for jid in sorted(all_job_ids):
+        jd = jd_map.get(jid, {
+            "job_id": jid,
+            "title": f"Job Position #{jid}",
+            "company_name": "Tech Company",
+            "location": "India / Remote",
+            "raw_description": f"Job description for ID {jid}"
+        })
+        ats = ats_map.get(jid)
+
+        json_file = base_dir / "user_data" / f"generated_ats_{jid}.json"
+        pdf_folder = f"output/resume_{jid}"
+        
+        has_pdf = (base_dir / pdf_folder).exists() or (ats and bool(ats.get("output_pdf_folder")))
+        has_json = json_file.exists() or bool(ats)
+
+        results.append({
+            "job_id": jid,
+            "job_details": jd,
+            "ats_resume": ats,
+            "has_ats_json": has_json,
+            "has_pdf": has_pdf,
+            "output_pdf_folder": pdf_folder if has_pdf else None,
+            "generated_json_file": f"generated_ats_{jid}.json" if has_json else None
+        })
+
+    return {"status": "ok", "total": len(results), "jobs": results}
+
+
+@app.get("/download-pdf")
+async def download_pdf_file(file_path: str):
+    """GET /download-pdf — Serves PDF file as attachment for instant browser download."""
+    base_dir = Path(__file__).resolve().parent.parent
+    target_path = (base_dir / file_path).resolve()
+    if not str(target_path).startswith(str(base_dir)):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    if not target_path.exists():
+        raise HTTPException(status_code=404, detail="PDF file not found")
+    return FileResponse(
+        path=str(target_path),
+        media_type="application/pdf",
+        filename=target_path.name
+    )
 
 
 if __name__ == '__main__':

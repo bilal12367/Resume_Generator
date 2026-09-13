@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AtsQueueTracker, type QueuedAtsJob } from '../components/AtsQueueTracker';
+import { formatPostedDate } from '../components/JobModal';
 import { centrifugoService } from '../services/centrifugoClient';
 
 const API_BASE = 'http://127.0.0.1:8080';
@@ -145,20 +146,24 @@ export const ProcessedJobsPage: React.FC = () => {
 
   const handleBatchGenerateATS = async (jobIdsToProcess?: string[]) => {
     const ids = jobIdsToProcess || selectedJobIds;
-    if (ids.length === 0 || isGenerating) return;
-    setIsGenerating(true);
-    setAtsQueueTotal(ids.length);
-    setAtsQueueCurrentIndex(1);
-    setAtsQueueStatusMsg(`Initiating workflow for ${ids.length} job(s)...`);
-    setAtsQueue(
-      ids.map((id) => ({
-        job_id: id,
-        step: 'pending',
-        message: 'Queued for processing...',
-      }))
-    );
+    if (ids.length === 0) return;
 
-    showToast(`⚡ Starting ATS Resume & PDF generation for ${ids.length} job(s)...`);
+    setIsGenerating(true);
+    setAtsQueueStatusMsg(`Initiating workflow for ${ids.length} job(s)...`);
+    setAtsQueue((prev) => {
+      const existingIds = new Set(prev.map((q) => q.job_id));
+      const newItems: QueuedAtsJob[] = ids
+        .filter((id) => !existingIds.has(id))
+        .map((id) => ({
+          job_id: id,
+          step: 'pending',
+          message: 'Queued for processing...',
+        }));
+      return [...prev, ...newItems];
+    });
+    setAtsQueueTotal((prev) => Math.max(prev + ids.length, ids.length));
+
+    showToast(`⚡ Submitted Job #${ids.join(', #')} to processing queue!`);
     try {
       const res = await fetch(`${API_BASE}/generate-ats-resumes`, {
         method: 'POST',
@@ -169,12 +174,44 @@ export const ProcessedJobsPage: React.FC = () => {
         }),
       });
       if (res.ok) {
-        showToast(`🎉 Submitted ${ids.length} job(s) to ATS workflow!`);
+        showToast(`🎉 Completed ATS workflow for ${ids.length} job(s)!`);
+        fetchProcessedJobs();
       } else {
         showToast('⚠️ Error generating ATS resumes.');
       }
     } catch (e: any) {
       showToast(`⚠️ Error: ${e.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleBatchDownloadZip = async () => {
+    if (selectedJobIds.length === 0) return;
+    showToast(`📦 Packaging PDFs for ${selectedJobIds.length} job(s)...`);
+    try {
+      const res = await fetch(`${API_BASE}/download-batch-pdfs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_ids: selectedJobIds }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ATS_Resumes_Batch_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+        showToast(`🎉 Downloaded ATS Resumes ZIP!`);
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        showToast(`⚠️ ${errJson.detail || 'Failed to download batch ZIP'}`);
+      }
+    } catch (e: any) {
+      showToast(`⚠️ Download error: ${e.message}`);
     }
   };
 
@@ -463,22 +500,39 @@ export const ProcessedJobsPage: React.FC = () => {
                 {selectedJobIds.length === filteredJobs.length ? 'Deselect All' : 'Select All'}
               </button>
               {selectedJobIds.length > 0 && (
-                <button
-                  disabled={isGenerating}
-                  onClick={() => handleBatchGenerateATS()}
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    border: 'none',
-                    color: '#fff',
-                    borderRadius: '6px',
-                    padding: '0.35rem 0.75rem',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  ⚡ Process Selected ({selectedJobIds.length})
-                </button>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    disabled={isGenerating}
+                    onClick={() => handleBatchGenerateATS()}
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      border: 'none',
+                      color: '#fff',
+                      borderRadius: '6px',
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⚡ Process ({selectedJobIds.length})
+                  </button>
+                  <button
+                    onClick={handleBatchDownloadZip}
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                      border: 'none',
+                      color: '#fff',
+                      borderRadius: '6px',
+                      padding: '0.35rem 0.65rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📦 ZIP ({selectedJobIds.length})
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -599,9 +653,10 @@ export const ProcessedJobsPage: React.FC = () => {
                     <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#ffffff', fontWeight: 700 }}>
                       {activeJd.title || activeJd.job_title || `Job Position #${activeJobId}`}
                     </h2>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
                       <span>🏢 {activeJd.company_name || 'Top MNC Company'}</span>
                       <span>📍 {activeJd.location || 'India / Remote'}</span>
+                      <span style={{ color: '#38bdf8' }}>📅 {formatPostedDate(activeJd.posted_time || activeJd.posted_date, activeJd.created_at)}</span>
                       <span>
                         Job ID: <code style={{ color: '#c084fc', fontWeight: 700 }}>#{activeJobId}</code>
                       </span>

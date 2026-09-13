@@ -210,5 +210,16 @@
     "total_time_ms": 26383.24,
     "job_ids": [],
     "jobs": []
+  },
+  "9c889669-b2bc-4d45-8446-52894dfa91e3": {
+    "id": "9c889669-b2bc-4d45-8446-52894dfa91e3",
+    "title": "Job Search #4",
+    "created_at": "2026-09-12T12:13:16.630230+00:00",
+    "updated_at": "2026-09-12T12:13:16.630230+00:00",
+    "messages": [],
+    "total_tokens": 0,
+    "total_time_ms": 0.0,
+    "job_ids": [],
+    "jobs": []
   }
 }

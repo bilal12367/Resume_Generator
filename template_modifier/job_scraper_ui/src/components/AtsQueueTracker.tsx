@@ -48,15 +48,20 @@ export const AtsQueueTracker: React.FC<AtsQueueTrackerProps> = ({
       {/* Header Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div className="spinner-ring" style={{ width: '22px', height: '22px', borderTopColor: '#c084fc' }} />
+          {isGenerating ? (
+            <div className="spinner-ring" style={{ width: '22px', height: '22px', borderTopColor: '#c084fc' }} />
+          ) : (
+            <span style={{ fontSize: '1.2rem' }}>✅</span>
+          )}
           <h4 style={{ margin: 0, fontSize: '0.98rem', color: '#f3f4f6', fontWeight: 700 }}>
-            ⚡ Active ATS Generation Queue (Job {activeDisplayIndex} of {totalJobs})
+            {isGenerating ? `⚡ Active ATS Generation Queue (Job ${activeDisplayIndex} of ${totalJobs})` : `🎉 ATS Generation Completed (${totalJobs} Job${totalJobs === 1 ? '' : 's'})`}
           </h4>
         </div>
-        {onClose && !isGenerating && (
+        {onClose && (
           <button
             onClick={onClose}
             style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.9rem' }}
+            title="Dismiss Queue Widget"
           >
             ✖
           </button>

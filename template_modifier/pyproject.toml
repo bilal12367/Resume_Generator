@@ -46,6 +46,7 @@ dependencies = [
     "requests>=2.33.1",
     "sqlalchemy>=2.0.48",
     "uvicorn>=0.42.0",
+    "playwright-stealth>=2.0.3",
 ]
 
 [tool.pytest.ini_options]

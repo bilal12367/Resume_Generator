@@ -7,6 +7,7 @@ import sys
 import json
 import uuid
 import atexit
+import re
 import urllib.parse
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
@@ -62,6 +63,7 @@ class JobDescription(Base):
     title = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     location = Column(String, nullable=True)
+    posted_time = Column(String, nullable=True)
     minimal_description = Column(Text, nullable=True)
     raw_description = Column(Text, nullable=True)
     skills_required = Column(Text, nullable=True)
@@ -82,10 +84,13 @@ class JobDescription(Base):
             "title": self.title or "",
             "company_name": self.company_name or "",
             "location": self.location or "",
+            "posted_time": self.posted_time or "",
+            "posted_date": self.posted_time or "",
             "minimal_description": self.minimal_description or "",
             "raw_description": self.raw_description or "",
             "skills_required": skills,
-            "job_url": self.job_url or ""
+            "job_url": self.job_url or "",
+            "created_at": str(self.created_at) if self.created_at else ""
         }
 
 class GeneratedATSResume(Base):
@@ -160,6 +165,7 @@ def save_job_description(session_id: str, job_data: dict):
     init_db()
     job_id = job_data.get("job_id", "")
     skills_json = json.dumps(job_data.get("skills_required", []))
+    posted = job_data.get("posted_time") or job_data.get("posted_date") or job_data.get("posted_within") or job_data.get("posted") or ""
     with SessionLocal() as session:
         entity = JobDescription(
             job_id=job_id,
@@ -167,6 +173,7 @@ def save_job_description(session_id: str, job_data: dict):
             title=job_data.get("title", ""),
             company_name=job_data.get("company_name", ""),
             location=job_data.get("location", ""),
+            posted_time=posted,
             minimal_description=job_data.get("minimal_description", ""),
             raw_description=job_data.get("raw_description", ""),
             skills_required=skills_json,
@@ -412,11 +419,21 @@ class LinkedinPlatform:
         location = loc_el.get_text(strip=True) if loc_el else ""
 
         # Posted time
-        posted_el = (
-            container.find("span", class_=lambda c: c and "posted-time-ago" in c)
-            or container.find("span", class_=lambda c: c and "topcard__flavor--metadata" in c)
-        )
-        posted_time = posted_el.get_text(strip=True) if posted_el else ""
+        posted_time = ""
+        tertiary_container = container.find("div", class_=lambda c: c and "job-details-jobs-unified-top-card__tertiary-description-container" in c)
+        if tertiary_container:
+            for span in tertiary_container.find_all("span"):
+                txt = span.get_text(strip=True)
+                if txt and (re.search(r'\b(\d+|a|an)\s*(day|hour|week|month|minute)s?\s*(ago|old)?\b', txt, re.I) or re.search(r'\byesterday\b', txt, re.I)):
+                    posted_time = txt
+                    break
+
+        if not posted_time:
+            posted_el = (
+                container.find("span", class_=lambda c: c and "posted-time-ago" in c)
+                or container.find("span", class_=lambda c: c and "topcard__flavor--metadata" in c)
+            )
+            posted_time = posted_el.get_text(strip=True) if posted_el else ""
 
         # Number of applicants
         applicants_el = container.find("span", class_=lambda c: c and "num-applicants" in c)
@@ -496,6 +513,23 @@ class LinkedinPlatform:
         )
         location = loc_el.get_text(strip=True) if loc_el else ""
 
+        # Posted time
+        posted_time = ""
+        tertiary_container = container.find("div", class_=lambda c: c and "job-details-jobs-unified-top-card__tertiary-description-container" in c)
+        if tertiary_container:
+            for span in tertiary_container.find_all("span"):
+                txt = span.get_text(strip=True)
+                if txt and (re.search(r'\b(\d+|a|an)\s*(day|hour|week|month|minute)s?\s*(ago|old)?\b', txt, re.I) or re.search(r'\byesterday\b', txt, re.I)):
+                    posted_time = txt
+                    break
+
+        if not posted_time:
+            posted_el = (
+                container.find("span", class_=lambda c: c and "posted-time-ago" in c)
+                or container.find("span", class_=lambda c: c and "topcard__flavor--metadata" in c)
+            )
+            posted_time = posted_el.get_text(strip=True) if posted_el else ""
+
         # Description text
         desc_container = (
             container.find("div", class_=lambda c: c and "show-more-less-html__markup" in c)
@@ -512,6 +546,8 @@ class LinkedinPlatform:
             "title": title,
             "company_name": company_name,
             "location": location,
+            "posted_time": posted_time,
+            "posted_date": posted_time,
             "minimal_description": minimal_desc,
             "raw_description": raw_description,
             "skills_required": skills_required,

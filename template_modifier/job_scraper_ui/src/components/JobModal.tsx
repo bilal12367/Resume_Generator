@@ -21,6 +21,79 @@ interface JobModalProps {
   isLoadingJobDetails?: boolean;
 }
 
+export const formatDateDDMMYYYY = (d: Date) => {
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
+export const formatPostedDate = (postedTime?: string, createdAt?: string) => {
+  const pt = (postedTime || '').trim();
+  const baseDate = createdAt && !isNaN(new Date(createdAt).getTime()) ? new Date(createdAt) : new Date();
+
+  if (pt) {
+    if (pt.includes(',')) {
+      return pt;
+    }
+
+    const matchDays = pt.match(/(?:(\d+)|(a|an))\s*days?\s*(ago|old)?/i);
+    if (matchDays) {
+      const days = matchDays[1] ? parseInt(matchDays[1], 10) : 1;
+      const calculatedDate = new Date(baseDate.getTime() - days * 24 * 60 * 60 * 1000);
+      return `${days} ${days === 1 ? 'day' : 'days'} ago, ${formatDateDDMMYYYY(calculatedDate)}`;
+    }
+
+    const matchYesterday = pt.match(/yesterday/i);
+    if (matchYesterday) {
+      const calculatedDate = new Date(baseDate.getTime() - 1 * 24 * 60 * 60 * 1000);
+      return `1 day ago, ${formatDateDDMMYYYY(calculatedDate)}`;
+    }
+
+    const matchHours = pt.match(/(?:(\d+)|(a|an))\s*hours?\s*(ago|old)?/i);
+    if (matchHours) {
+      const hours = matchHours[1] ? parseInt(matchHours[1], 10) : 1;
+      const calculatedDate = new Date(baseDate.getTime() - hours * 60 * 60 * 1000);
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago, ${formatDateDDMMYYYY(calculatedDate)}`;
+    }
+
+    const matchWeeks = pt.match(/(?:(\d+)|(a|an))\s*weeks?\s*(ago|old)?/i);
+    if (matchWeeks) {
+      const weeks = matchWeeks[1] ? parseInt(matchWeeks[1], 10) : 1;
+      const calculatedDate = new Date(baseDate.getTime() - weeks * 7 * 24 * 60 * 60 * 1000);
+      return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago, ${formatDateDDMMYYYY(calculatedDate)}`;
+    }
+
+    const matchMonths = pt.match(/(?:(\d+)|(a|an))\s*months?\s*(ago|old)?/i);
+    if (matchMonths) {
+      const months = matchMonths[1] ? parseInt(matchMonths[1], 10) : 1;
+      const calculatedDate = new Date(baseDate.getTime() - months * 30 * 24 * 60 * 60 * 1000);
+      return `${months} ${months === 1 ? 'month' : 'months'} ago, ${formatDateDDMMYYYY(calculatedDate)}`;
+    }
+
+    return `${pt}, ${formatDateDDMMYYYY(baseDate)}`;
+  }
+
+  if (createdAt && createdAt.trim()) {
+    try {
+      const date = new Date(createdAt);
+      if (!isNaN(date.getTime())) {
+        const diffMs = Date.now() - date.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const formattedDateStr = formatDateDDMMYYYY(date);
+        if (diffDays === 0) {
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          const relStr = diffHours <= 1 ? 'Today' : `${diffHours} hours ago`;
+          return `${relStr}, ${formattedDateStr}`;
+        }
+        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago, ${formattedDateStr}`;
+      }
+    } catch (e) {}
+  }
+
+  return `Recently posted, ${formatDateDDMMYYYY(new Date())}`;
+};
+
 export const JobModal: React.FC<JobModalProps> = ({
   activeModalJobId,
   onClose,
@@ -284,34 +357,50 @@ export const JobModal: React.FC<JobModalProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Company:</span>
-                    <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
-                      🏢 {jobDescriptionsMap[activeModalJobId]?.company_name || 'Top MNC'}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.8rem' }}>
+                      <div
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          padding: '0.8rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Company:</span>
+                        <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                          🏢 {jobDescriptionsMap[activeModalJobId]?.company_name || 'Top MNC'}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          padding: '0.8rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Location:</span>
+                        <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
+                          📍 {jobDescriptionsMap[activeModalJobId]?.location || 'India / Remote'}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          padding: '0.8rem 1rem',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Posted Date:</span>
+                        <div style={{ fontWeight: 600, color: '#38bdf8' }}>
+                          📅 {formatPostedDate(
+                            jobDescriptionsMap[activeModalJobId]?.posted_time || jobDescriptionsMap[activeModalJobId]?.posted_date,
+                            jobDescriptionsMap[activeModalJobId]?.created_at
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      padding: '0.8rem 1rem',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Location:</span>
-                    <div style={{ fontWeight: 600, color: '#f1f5f9' }}>
-                      📍 {jobDescriptionsMap[activeModalJobId]?.location || 'India / Remote'}
-                    </div>
-                  </div>
-                </div>
 
                 {jobDescriptionsMap[activeModalJobId]?.skills_required?.length > 0 && (
                   <div>
@@ -430,10 +519,9 @@ export const JobModal: React.FC<JobModalProps> = ({
                     </a>
                   )}
                   <button
-                    disabled={isGeneratingResumes}
                     onClick={async () => {
                       if (activeModalJobId) {
-                        await onGenerateATSResumes([activeModalJobId]);
+                        onGenerateATSResumes([activeModalJobId]);
                         setModalActiveTab('json');
                       }
                     }}
@@ -445,7 +533,7 @@ export const JobModal: React.FC<JobModalProps> = ({
                       padding: '0.5rem 1.1rem',
                       fontWeight: 600,
                       fontSize: '0.82rem',
-                      cursor: isGeneratingResumes ? 'not-allowed' : 'pointer',
+                      cursor: 'pointer',
                     }}
                   >
                     ⚙️ Process Job with ATS LLM & Generate PDF
@@ -837,7 +925,6 @@ export const JobModal: React.FC<JobModalProps> = ({
                 {onGenerateATSResumes && (
                   <button
                     onClick={() => onGenerateATSResumes(selectedJobIds && selectedJobIds.length > 0 ? selectedJobIds : [activeModalJobId])}
-                    disabled={isGeneratingResumes}
                     style={{
                       background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                       color: '#ffffff',
@@ -846,12 +933,11 @@ export const JobModal: React.FC<JobModalProps> = ({
                       borderRadius: '8px',
                       fontWeight: 700,
                       fontSize: '0.82rem',
-                      cursor: isGeneratingResumes ? 'not-allowed' : 'pointer',
-                      opacity: isGeneratingResumes ? 0.6 : 1,
+                      cursor: 'pointer',
                       boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
                     }}
                   >
-                    {isGeneratingResumes ? '⏳ Generating Resumes...' : '📄 Generate ATS Resumes'}
+                    📄 Generate ATS Resumes
                   </button>
                 )}
               </div>

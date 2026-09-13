@@ -14,8 +14,10 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
 from pydantic import BaseModel, Field
+import zipfile
+import io
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -46,14 +48,8 @@ You should follow this workflow:
 3. Target top tier-1 to tier-2 MNCs using search keywords (e.g., Python, AI Engineer, Deloitte, Accenture, TCS, Infosys, Wipro).
 4. Don't call get_job_details; filter search results directly based on location, skills, experience, and posting freshness.
 5. Filter the jobs based on user requirements and select top candidate relevant jobs.
-6. While filtering don't write unnecessary json in thinking or observation, just use job_id_1, job_id_2 etc
-7. **HUMAN-IN-THE-LOOP (HITL) STEP**: Call local tool `ask_user_to_select_jobs(job_ids=[...], session_id=session_id, message="...")` passing candidate Job IDs and active Session ID. **CRITICAL**: Immediately after calling this tool, STOP calling any further tools and output your final response to the user asking them to select which Job IDs to proceed with.
-8. Once you call the HITL step, and tool returns result, you should stop the execution immediately. With Answer: Done.
-9. Once the user responds with their selected Job IDs in their message, call tool `process_jobs(job_ids, session_id)` with those user-selected job IDs and the active Session ID provided in your prompt context.
-
-**Important**
-1. Don't think too long, respond quickly. This is just quick filter and send.
-2. Don't repeat the search tools more than once per turn.
+6. **HUMAN-IN-THE-LOOP (HITL) STEP**: Call local tool `ask_user_to_select_jobs(job_ids=[...], session_id=session_id, message="...")` passing candidate Job IDs and active Session ID. **CRITICAL**: Immediately after calling this tool, STOP calling any further tools and output your final response to the user asking them to select which Job IDs to proceed with.
+7. Once the user responds with their selected Job IDs in their message, call tool `process_jobs(job_ids, session_id)` with those user-selected job IDs and the active Session ID provided in your prompt context.
 '''
 
 # --- SQLite Database Storage for Sessions (new_workflow_db.db) ---
@@ -548,7 +544,7 @@ async def handle_scrape(req: ScrapeRequest):
 
         scraper = JOB_SCRAPER()
         run_res = await scraper.run(session_id=session_id, user_message=req.message)
-
+        
         result_content = run_res["result"]
         extracted_job_ids = run_res["job_ids"]
         extracted_jobs = run_res["jobs"]
@@ -709,7 +705,14 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
             gen_script = base_dir / "generate_resume.py"
             try:
                 cmd = [sys.executable, str(gen_script), "-d", temp_json_name, "-p", prefix_name, "-y"]
-                subprocess.run(cmd, cwd=str(base_dir), capture_output=True, text=True, timeout=120)
+                await asyncio.to_thread(
+                    subprocess.run,
+                    cmd,
+                    cwd=str(base_dir),
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
             except Exception as proc_err:
                 print(f"[Error running generate_resume for {jid_str}]: {proc_err}")
 
@@ -824,6 +827,21 @@ async def get_job_details_route(job_id: str):
     from mcps.linkedin_platform import get_job_description, save_job_description, linkedin
     job_desc = get_job_description(job_id)
     if job_desc and (job_desc.get("raw_description") or job_desc.get("minimal_description") or job_desc.get("title")):
+        if not job_desc.get("posted_time") and not job_desc.get("posted_date"):
+            created_str = job_desc.get("created_at") or ""
+            if created_str:
+                try:
+                    from datetime import datetime, timezone
+                    dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                    diff_days = (datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).days
+                    job_desc["posted_time"] = f"{diff_days} days old" if diff_days > 0 else "Today (0 days old)"
+                    job_desc["posted_date"] = job_desc["posted_time"]
+                except Exception:
+                    job_desc["posted_time"] = "Recently posted"
+                    job_desc["posted_date"] = "Recently posted"
+            else:
+                job_desc["posted_time"] = "Recently posted"
+                job_desc["posted_date"] = "Recently posted"
         return {"status": "ok", "found": True, "job": job_desc}
 
     try:
@@ -842,6 +860,8 @@ async def get_job_details_route(job_id: str):
             "title": f"Job Position #{job_id}",
             "company_name": "Tier-1 / Tier-2 Tech Company",
             "location": "Remote / Onsite",
+            "posted_time": "Recently posted",
+            "posted_date": "Recently posted",
             "raw_description": f"Detailed job description for Job ID {job_id}.\nCandidate job description details are stored in SQLite database.",
             "minimal_description": f"Job ID {job_id}"
         }
@@ -914,6 +934,41 @@ async def download_pdf_file(file_path: str):
         path=str(target_path),
         media_type="application/pdf",
         filename=target_path.name
+    )
+
+
+class DownloadBatchPdfsRequest(BaseModel):
+    job_ids: List[str]
+
+
+@app.post("/download-batch-pdfs")
+async def download_batch_pdfs(req: DownloadBatchPdfsRequest):
+    """POST /download-batch-pdfs — Bundles all generated PDF resumes for requested jobs into a downloadable zip file."""
+    if not req.job_ids:
+        raise HTTPException(status_code=400, detail="No job_ids provided")
+
+    base_dir = Path(__file__).resolve().parent.parent
+    zip_buffer = io.BytesIO()
+
+    files_added = 0
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for jid in req.job_ids:
+            jid_str = str(jid).strip()
+            pdf_dir = base_dir / "output" / f"resume_{jid_str}"
+            if pdf_dir.exists() and pdf_dir.is_dir():
+                for pdf_path in pdf_dir.glob("*.pdf"):
+                    archive_name = f"Job_{jid_str}/{pdf_path.name}"
+                    zip_file.write(pdf_path, arcname=archive_name)
+                    files_added += 1
+
+    if files_added == 0:
+        raise HTTPException(status_code=404, detail="No PDF files found for the selected jobs.")
+
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=ATS_Resumes_Batch.zip"}
     )
 
 

@@ -15,6 +15,81 @@ from .observer import Subject
 from .types import DeltaEvent, RunCompletionEvent, ToolCallEvent, ToolResultEvent
 
 
+def _patch_siliconflow_astream():
+    try:
+        import json
+        from typing import cast
+        import aiohttp
+        import llama_index.llms.siliconflow.base as sf_base
+        from llama_index.core.base.llms.types import ChatMessage, ChatResponse
+
+        if getattr(sf_base.SiliconFlow, "_patched_safe_astream", False):
+            return
+
+        async def safe_astream_chat(self, messages, **kwargs):
+            messages_dict = self._convert_to_llm_messages(messages)
+            response_format = kwargs.get("response_format", {"type": "text"})
+
+            async def gen():
+                async with aiohttp.ClientSession(trust_env=True) as session:
+                    input_json = {
+                        "model": self.model,
+                        "messages": messages_dict,
+                        "stream": True,
+                        "n": 1,
+                        "tools": kwargs.get("tools"),
+                        "response_format": response_format,
+                        **self.model_kwargs,
+                    }
+                    async with session.post(
+                        self.base_url,
+                        json=input_json,
+                        headers=self._headers,
+                        timeout=self.timeout,
+                    ) as response:
+                        response.raise_for_status()
+                        response_txt = ""
+                        response_role = "assistant"
+                        async for line in response.content.iter_any():
+                            line_str = line.decode("utf-8") if isinstance(line, bytes) else str(line)
+                            chunks = list(filter(None, line_str.split("data: ")))
+                            for chunk in chunks:
+                                chunk_str = chunk.strip()
+                                if chunk_str == "[DONE]":
+                                    break
+                                try:
+                                    chunk_json = json.loads(chunk_str)
+                                except Exception:
+                                    continue
+                                choices = chunk_json.get("choices")
+                                if not choices or len(choices) == 0:
+                                    continue
+                                delta: dict = choices[0].get("delta", {})
+                                response_role = delta.get("role") or response_role
+                                delta_txt = delta.get("content") or ""
+                                response_txt += delta_txt
+                                tool_calls = delta.get("tool_calls")
+                                yield ChatResponse(
+                                    message=ChatMessage(
+                                        content=response_txt,
+                                        role=response_role,
+                                        additional_kwargs={"tool_calls": tool_calls},
+                                    ),
+                                    delta=delta_txt,
+                                    raw=line,
+                                )
+
+            return gen()
+
+        sf_base.SiliconFlow.astream_chat = safe_astream_chat
+        sf_base.SiliconFlow._patched_safe_astream = True
+    except Exception:
+        pass
+
+
+_patch_siliconflow_astream()
+
+
 class Agent(Subject):
     def __init__(
         self,
@@ -74,7 +149,7 @@ class Agent(Subject):
             api_key=api_key,
             model=model_id,
             max_tokens=20000,
-            timeout=600
+            timeout=60000
         )
 
         self.chat_store = SQLiteChatStore.from_uri(uri=self.db_uri, table_name=table_name)
@@ -137,8 +212,11 @@ class Agent(Subject):
                 timeout=None,
             )
 
-    def custom_tokenizer(self, text: str, flag = 0):
-        return [0] * (len(text) // 3) if flag == 0 else (len(text) // 3)
+    def custom_tokenizer(self, text: Optional[str], flag: int = 0) -> Any:
+        if not text:
+            return [] if flag == 0 else 0
+        token_count = max(1, len(text) // 3)
+        return [0] * token_count if flag == 0 else token_count
 
     def _get_memory_buffer(self, session_id: str) -> ChatMemoryBuffer:
         return ChatMemoryBuffer.from_defaults(
@@ -204,7 +282,7 @@ class Agent(Subject):
             handler = self.agent.run(user_msg=new_message, memory=memory, max_iterations=60)
 
             chat_history_tokens = memory._token_count_for_messages(memory.get_all())
-            new_message_tokens = self.custom_tokenizer(new_message, flag=1)
+            new_message_tokens = int(self.custom_tokenizer(new_message, flag=1))
             prompt_tokens = chat_history_tokens + new_message_tokens
             completion_tokens = 0
             self.total_tokens = 0
@@ -214,7 +292,7 @@ class Agent(Subject):
                 event_type = type(event).__name__
                 if event_type == "AgentStream":
                     delta = getattr(event, "delta", "")
-                    completion_tokens += self.custom_tokenizer(delta, flag = 1)
+                    completion_tokens += int(self.custom_tokenizer(delta, flag=1))
                     self.total_tokens = prompt_tokens + completion_tokens
                     if "Thought" in delta:
                         message_type = "Thinking"
@@ -278,7 +356,7 @@ class Agent(Subject):
                     )
                     self.notify_all(tool_result_evt.model_dump_json())
                     yield tool_result_evt
-
+            
             resp = await handler
             yield RunCompletionEvent(session_id=self.run_id, content=resp.response.content)
         except Exception as exc:

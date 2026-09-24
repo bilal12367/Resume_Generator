@@ -12,7 +12,7 @@ COPY job_scraper_ui/ ./
 
 # Build for production (API_BASE defaults to /api via env)
 ENV VITE_API_BASE=/api
-ENV VITE_WS_URL=
+# ENV VITE_WS_URL=
 RUN npm run build
 
 # Stage 2: Serve with Nginx
@@ -25,7 +25,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy custom nginx config
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY scripts/docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 

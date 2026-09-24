@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: finalized_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: dev
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "admin", "-padmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  centrifugo:
+    image: centrifugo/centrifugo:latest
+    container_name: finalized_centrifugo
+    restart: always
+    ports:
+      - "8008:8000"
+    volumes:
+      - ./centrifugo_config.json:/centrifugo/config.json
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    command: centrifugo -c config.json
+
+  # server:
+  #   build:
+  #     context: ./server
+  #   container_name: finalized_server
+  #   restart: always
+  #   environment:
+  #     - DB_HOST=mysql
+  #     - DB_PORT=3306
+  #     - DB_NAME=dev
+  #     - DB_USER=admin
+  #     - DB_PASSWORD=admin
+  #     - SECRET_KEY=supersecretkey123456789
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+
+  # ui:
+  #   build:
+  #     context: ./ui
+  #   container_name: finalized_ui
+  #   restart: always
+  #   ports:
+  #     - "5173:5173"
+  #   depends_on:
+  #     - server
+
+volumes:
+  mysql_data:
+    driver: local

@@ -1,0 +1,68 @@
+### LinkedIn Jobs API - REST Client File
+@baseUrl = http://localhost:8000/api/linkedin
+
+### 1. Search LinkedIn Jobs (POST)
+POST {{baseUrl}}/search
+Content-Type: application/json
+
+{
+  "keywords": "AI ML Engineer, Full Stack, Accenture, Wipro, TCS, Capgemini",
+  "locations": "Hyderabad",
+  "posted_within": "7d",
+  "offset": 0,
+  "limit": 15
+}
+
+###
+
+### 2. Search LinkedIn Jobs (GET with Query Parameters)
+GET {{baseUrl}}/search?keywords=Python%20Developer&location=Remote&posted_within=24h&limit=5
+Accept: application/json
+
+###
+
+### 3. Get LinkedIn Job Details & Description by Job ID
+GET {{baseUrl}}/job/4468221669
+Accept: application/json
+
+###
+
+### 4. Job Search Agent Chat - Initial Message / Preference Gathering
+POST {{baseUrl}}/agent/chat
+Content-Type: application/json
+
+{
+  "session_id": "job_agent_session_01",
+  "message": "Hi, I am looking for Remote Python Developer positions posted in the last 24h. Can you search for them?"
+}
+
+###
+
+### 5. Job Search Agent Chat - HITL Selection (Fetching Full Details)
+POST {{baseUrl}}/agent/chat
+Content-Type: application/json
+
+{
+  "session_id": "job_agent_session_01",
+  "message": "Can you fetch full details and required skills for job ID 4468221669?"
+}
+
+###
+
+### 6. Get Job Agent Real-time Session Events (Delta Records & Thinking/Tool Call Updates)
+GET {{baseUrl}}/agent/events/job_agent_session_01
+Accept: application/json
+
+###
+
+### 7. Get Job Agent Persistent Status Logs from DB
+GET {{baseUrl}}/agent/logs/job_agent_session_01
+Accept: application/json
+
+###
+
+### 8. Generate Centrifugo Connection JWT Token
+GET {{baseUrl}}/centrifugo/token?user_id=user_demo
+Accept: application/json
+
+

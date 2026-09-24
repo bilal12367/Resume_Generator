@@ -8,6 +8,7 @@ interface RightShowcasePanelProps {
   toggleJobSelection: (jid: string) => void;
   openJobModal: (jid: string) => void;
   setSelectedJobIds: (ids: string[]) => void;
+  onGenerateATSResumes?: (jobIds: string[]) => void;
   liveEvents: CentrifugoEvent[];
 }
 
@@ -18,6 +19,7 @@ export const RightShowcasePanel: React.FC<RightShowcasePanelProps> = ({
   toggleJobSelection,
   openJobModal,
   setSelectedJobIds,
+  onGenerateATSResumes,
   liveEvents,
 }) => {
   return (
@@ -34,25 +36,65 @@ export const RightShowcasePanel: React.FC<RightShowcasePanelProps> = ({
             No jobs selected. Click on job ID pills or job cards in chat to select.
           </span>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-            {selectedJobIds.map((jid) => (
-              <span
-                key={jid}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {selectedJobIds.map((jid) => {
+                const jobObj = sessionJobDescriptions.find((j: any) => (j.job_id || j.id) === jid);
+                const company = jobObj?.company_name || jobObj?.company || '';
+                return (
+                  <span
+                    key={jid}
+                    style={{
+                      background: 'rgba(139, 92, 246, 0.2)',
+                      border: '1px solid rgba(139, 92, 246, 0.4)',
+                      color: '#c084fc',
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                    }}
+                    onClick={() => toggleJobSelection(jid)}
+                    title="Click to deselect job"
+                  >
+                    <span>#{jid}</span>
+                    {company && <span style={{ color: '#38bdf8', fontWeight: 700 }}>🏢 {company}</span>}
+                    <span>✕</span>
+                  </span>
+                );
+              })}
+            </div>
+
+            {onGenerateATSResumes && (
+              <button
                 style={{
-                  background: 'rgba(139, 92, 246, 0.2)',
-                  border: '1px solid rgba(139, 92, 246, 0.4)',
-                  color: '#c084fc',
-                  padding: '0.2rem 0.5rem',
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  border: 'none',
+                  color: '#ffffff',
                   borderRadius: '6px',
-                  fontSize: '0.75rem',
+                  padding: '0.4rem 0.6rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
                 }}
-                onClick={() => toggleJobSelection(jid)}
+                onClick={() => {
+                  const ids = [...selectedJobIds];
+                  setSelectedJobIds([]);
+                  onGenerateATSResumes(ids);
+                }}
               >
-                {jid} ✕
-              </span>
-            ))}
+                ⚡ Process {selectedJobIds.length} Job{selectedJobIds.length > 1 ? 's' : ''} (ATS & PDFs)
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -223,12 +265,12 @@ export const RightShowcasePanel: React.FC<RightShowcasePanelProps> = ({
                         fontWeight: 600,
                       }}
                       onClick={() => {
-                        if (!selectedJobIds.includes(jid)) {
-                          setSelectedJobIds([jid]);
+                        if (onGenerateATSResumes) {
+                          onGenerateATSResumes([jid]);
                         }
                       }}
                     >
-                      ⚙️ Process
+                      ⚙️ Process ATS & PDF
                     </button>
                   </div>
                 </div>

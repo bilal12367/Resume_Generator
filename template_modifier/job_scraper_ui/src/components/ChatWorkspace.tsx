@@ -317,23 +317,43 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
               Selected {selectedJobIds.length} Job IDs:
             </span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-              {selectedJobIds.map((jid) => (
-                <span
-                  key={jid}
-                  style={{
-                    background: '#ffffff',
-                    color: '#6366f1',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => toggleJobSelection(jid)}
-                >
-                  {jid} ✕
-                </span>
-              ))}
+              {selectedJobIds.map((jid) => {
+                let company = '';
+                if (activeSession && Array.isArray(activeSession.messages)) {
+                  for (const m of activeSession.messages) {
+                    if (m.jobs && Array.isArray(m.jobs)) {
+                      const found = m.jobs.find((j: any) => (j.job_id || j.id) === jid);
+                      if (found?.company || found?.company_name) {
+                        company = found.company || found.company_name;
+                        break;
+                      }
+                    }
+                  }
+                }
+                return (
+                  <span
+                    key={jid}
+                    style={{
+                      background: '#ffffff',
+                      color: '#6366f1',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                    }}
+                    onClick={() => toggleJobSelection(jid)}
+                    title="Click to deselect"
+                  >
+                    <span>#{jid}</span>
+                    {company && <span style={{ color: '#0284c7', fontWeight: 800 }}>🏢 {company}</span>}
+                    <span>✕</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
           <button
@@ -351,7 +371,7 @@ export const ChatWorkspace: React.FC<ChatWorkspaceProps> = ({
             }}
             onClick={onSubmitSelectedJobs}
           >
-            ⚡ Submit to Agent Workflow
+            ⚡ Process ATS Resumes & PDFs
           </button>
         </div>
       )}

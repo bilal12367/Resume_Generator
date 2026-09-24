@@ -75,12 +75,12 @@ export const Home: React.FC = () => {
     );
   };
 
-  // Submit selected Job IDs to agent
+  // Submit selected Job IDs directly to ATS & Resume generation API
   const handleSubmitSelectedJobs = () => {
     if (selectedJobIds.length === 0) return;
-    const prompt = `I select the following Job IDs to process: ${selectedJobIds.join(', ')}. Please proceed with these jobs.`;
+    const idsToProcess = [...selectedJobIds];
     setSelectedJobIds([]);
-    handleSendMessage(prompt);
+    handleGenerateATSResumes(idsToProcess);
   };
 
   // Fetch all sessions from backend
@@ -256,15 +256,51 @@ export const Home: React.FC = () => {
   // Trigger ATS Resume Generation workflow for selected Job IDs
   const handleGenerateATSResumes = async (jobIdsToProcess?: string[]) => {
     const ids = jobIdsToProcess || selectedJobIds;
-    if (ids.length === 0 || !activeSessionId || isGeneratingResumes) return;
+    if (ids.length === 0 || isGeneratingResumes) return;
+
+    let targetSessionId = activeSessionId;
+    if (!targetSessionId) {
+      try {
+        const res = await fetch(`${API_BASE}/sessions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: `Job ATS Session #${sessions.length + 1}` }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          targetSessionId = data.session.id;
+          setSessions((prev) => [data.session, ...prev]);
+          setActiveSessionId(targetSessionId);
+        }
+      } catch (e) {
+        console.error('Failed to auto-create session for ATS generation:', e);
+      }
+    }
+
+    if (!targetSessionId) return;
+
     setIsGeneratingResumes(true);
+    setAtsQueueTotal(ids.length);
+    setAtsQueueCurrentIndex(0);
+    setAtsQueue(
+      ids.map((jid) => {
+        const cached = jobDescriptionsMap[jid] || sessionJobDescriptions.find((j) => (j.job_id || j.id) === jid);
+        const comp = cached?.company_name || cached?.company || '';
+        return {
+          job_id: jid,
+          company_name: comp,
+          step: 'pending',
+          message: comp ? `Queued for ${comp}...` : 'Queued for processing...',
+        };
+      })
+    );
     setAtsProgressStatus(`Starting ATS Resume & PDF Generation for ${ids.length} Job ID${ids.length > 1 ? 's' : ''}...`);
     try {
       const res = await fetch(`${API_BASE}/generate-ats-resumes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id: activeSessionId,
+          session_id: targetSessionId,
           job_ids: ids,
         }),
       });
@@ -447,11 +483,16 @@ export const Home: React.FC = () => {
         setAtsQueueCurrentIndex(0);
         setAtsQueueStatusMsg(`Started ATS generation queue for ${jids.length} job(s)...`);
         setAtsQueue(
-          jids.map((jid) => ({
-            job_id: jid,
-            step: 'pending',
-            message: 'Queued for processing...',
-          }))
+          jids.map((jid) => {
+            const cached = jobDescriptionsMap[jid] || sessionJobDescriptions.find((j) => (j.job_id || j.id) === jid);
+            const comp = anyEvt.company_names?.[jid] || cached?.company_name || cached?.company || '';
+            return {
+              job_id: jid,
+              company_name: comp,
+              step: 'pending',
+              message: comp ? `Queued (${comp})...` : 'Queued for processing...',
+            };
+          })
         );
       }
 
@@ -459,7 +500,10 @@ export const Home: React.FC = () => {
         setIsGeneratingResumes(true);
         const jid = anyEvt.job_id;
         const step = anyEvt.step || 'llm_generating';
-        const msg = anyEvt.message || `Processing Job #${jid}...`;
+        const cached = jobDescriptionsMap[jid] || sessionJobDescriptions.find((j) => (j.job_id || j.id) === jid);
+        const comp = anyEvt.company_name || anyEvt.company || cached?.company_name || cached?.company || '';
+        const msg = anyEvt.message || (comp ? `Processing ${comp} (#${jid})...` : `Processing Job #${jid}...`);
+        
         if (anyEvt.current) setAtsQueueCurrentIndex(anyEvt.current);
         if (anyEvt.total) setAtsQueueTotal(anyEvt.total);
         setAtsQueueStatusMsg(msg);
@@ -469,17 +513,25 @@ export const Home: React.FC = () => {
           const idx = prev.findIndex((q) => q.job_id === jid);
           if (idx >= 0) {
             const updated = [...prev];
-            updated[idx] = { ...updated[idx], step: step as any, message: msg };
+            updated[idx] = {
+              ...updated[idx],
+              company_name: comp || updated[idx].company_name,
+              step: step as any,
+              message: msg,
+            };
             return updated;
           } else {
-            return [...prev, { job_id: jid, step: step as any, message: msg }];
+            return [...prev, { job_id: jid, company_name: comp, step: step as any, message: msg }];
           }
         });
       }
 
       if (anyEvt.event_type === 'ats_job_completed') {
         const jid = anyEvt.job_id;
-        const msg = anyEvt.message || `✅ ATS Resume & 4 PDFs generated for Job #${jid}!`;
+        const cached = jobDescriptionsMap[jid] || sessionJobDescriptions.find((j) => (j.job_id || j.id) === jid);
+        const comp = anyEvt.company_name || anyEvt.company || cached?.company_name || cached?.company || '';
+        const compStr = comp ? ` for ${comp}` : '';
+        const msg = anyEvt.message || `✅ ATS Resume & 4 PDFs generated for Job #${jid}${compStr}!`;
         setToastNotification({ message: msg, jobId: jid, type: 'success' });
 
         setAtsQueue((prev) => {
@@ -488,6 +540,7 @@ export const Home: React.FC = () => {
             const updated = [...prev];
             updated[idx] = {
               ...updated[idx],
+              company_name: comp || updated[idx].company_name,
               step: 'completed',
               message: '✅ Ready in Processed Section',
               result: anyEvt.result,
@@ -738,6 +791,7 @@ export const Home: React.FC = () => {
               queueList={atsQueue}
               statusMessage={atsQueueStatusMsg}
               onClose={() => setAtsQueue([])}
+              onOpenJobModal={openJobModal}
             />
           </div>
 
@@ -776,6 +830,7 @@ export const Home: React.FC = () => {
             toggleJobSelection={toggleJobSelection}
             openJobModal={openJobModal}
             setSelectedJobIds={setSelectedJobIds}
+            onGenerateATSResumes={handleGenerateATSResumes}
             liveEvents={liveEvents}
           />
           </div>

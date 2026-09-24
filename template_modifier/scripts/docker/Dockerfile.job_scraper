@@ -41,7 +41,7 @@ COPY module_testing/ ./module_testing/
 COPY llm_enhancement/ ./llm_enhancement/
 COPY dev_containers/__init__.py dev_containers/connect.py ./dev_containers/
 COPY mcps/ ./mcps/
-COPY generate_resume.py ./
+COPY scripts/generate_resume.py ./
 
 # Copy template directory (needed for PDF generation)
 COPY template/ ./template/

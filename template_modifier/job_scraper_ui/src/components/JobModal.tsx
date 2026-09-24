@@ -105,7 +105,7 @@ export const JobModal: React.FC<JobModalProps> = ({
   setModalSessionIdInput,
   isRegeneratingPdf,
   onRegeneratePdf,
-  isGeneratingResumes,
+  // isGeneratingResumes,
   onGenerateATSResumes,
   activeJobIds = [],
   selectedJobIds = [],

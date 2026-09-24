@@ -47,6 +47,8 @@ dependencies = [
     "sqlalchemy>=2.0.48",
     "uvicorn>=0.42.0",
     "playwright-stealth>=2.0.3",
+    "mysqlclient>=2.3.0",
+    "google-adk>=2.9.2",
 ]
 
 [tool.pytest.ini_options]
@@ -57,6 +59,7 @@ pythonpath = [
 [tool.uv.workspace]
 members = [
     "module_testing/job_mcp",
+    "finalized_ui_server/server",
 ]
 
 [tool.pyrefly]

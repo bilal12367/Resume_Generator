@@ -6,7 +6,9 @@ services:
     image: centrifugo/centrifugo:latest
     container_name: rg_centrifugo
     volumes:
-      - ./dev_containers/centrifugo_config.json:/centrifugo/config.json
+      - ../dev_containers/centrifugo_config.json:/centrifugo/config.json
+    ports:
+      - "8002:8000"
     ulimits:
       nofile:
         soft: 65536
@@ -20,8 +22,8 @@ services:
   # ───────────────────────────────────────────────
   mcp:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.mcp
+      context: ..
+      dockerfile: scripts/docker/Dockerfile.mcp
     container_name: rg_mcp
     env_file: .env
     environment:
@@ -32,7 +34,7 @@ services:
       centrifugo:
         condition: service_started
     volumes:
-      - ./mcps:/app/mcps
+      - ../mcps:/app/mcps
     networks:
       - app-network
 
@@ -41,8 +43,8 @@ services:
   # ───────────────────────────────────────────────
   job_scraper:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.job_scraper
+      context: ..
+      dockerfile: scripts/docker/Dockerfile.job_scraper
     container_name: rg_job_scraper
     env_file: .env
     environment:
@@ -56,21 +58,71 @@ services:
       mcp:
         condition: service_started
     volumes:
-      - ./output:/app/output
-      - ./user_data:/app/user_data
-      - ./mcps:/app/mcps
-      - ./module_testing:/app/module_testing
+      - ../output:/app/output
+      - ../user_data:/app/user_data
+      - ../mcps:/app/mcps
+      - ../module_testing:/app/module_testing
     networks:
       - app-network
+  #
+  # ───────────────────────────────────────────────
+  # Tailscale — Expose Nginx service to Tailnet
+  # ───────────────────────────────────────────────
+  # client id tailscale: kY64CTJxq821CNTRL client secret: tskey-client-kY64CTJxq821CNTRL-cZ5E12PT59dHYbQ9kX4U9dKsddXAvTHN
+  # tailscale:
+  #   image: tailscale/tailscale:latest
+  #   container_name: rg_tailscale
+  #   hostname: resume-generator
+  #   environment:
+  #     - TS_AUTHKEY=
+  #     - TS_STATE_DIR=/var/lib/tailscale
+  #     - TS_USERSPACE=true
+  #     - TS_SERVE_CONFIG=/config/tailscale_serve.json
+  #   volumes:
+  #     - tailscale_state:/var/lib/tailscale
+  #     - ../dev_containers/tailscale_serve.json:/config/tailscale_serve.json
+  #   depends_on:
+  #     nginx:
+  #       condition: service_started
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
 
   # ───────────────────────────────────────────────
   # Nginx + UI — Vite build + Reverse proxy (single entry point :3000)
   # ───────────────────────────────────────────────
+
+  # tailscale:
+  #   image: tailscale/tailscale:latest
+  #   container_name: rg_tailscale
+  #   hostname: resume-generator
+  #   environment:
+  #     - TS_AUTHKEY=tskey-client-kY64CTJxq821CNTRL-cZ5E12PT59dHYbQ9kX4U9dKsddXAvTHN
+  #     - TS_EXTRA_ARGS=--advertise-tags=tag:admin_test
+  #     - TS_STATE_DIR=/var/lib/tailscale
+  #     - TS_USERSPACE=true
+  #     - TS_SERVE_CONFIG=/config/tailscale_serve.json
+
+  #   volumes:
+  #     - tailscale_state:/var/lib/tailscale
+  #     - ../dev_containers/tailscale_serve.json:/config/tailscale_serve.json
+  #   cap_add:
+  #     - NET_ADMIN
+  #     - NET_RAW
+  #   depends_on:
+  #     nginx:
+  #       condition: service_started
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
   nginx:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.ui
+      context: ..
+      dockerfile: scripts/docker/Dockerfile.ui
     container_name: rg_nginx
+    # ports:
+    #   - "3000:80"
     ports:
       - "3000:3000"
     depends_on:
@@ -83,6 +135,7 @@ services:
 
 volumes:
   mcp_db:
+  tailscale_state:
 
 networks:
   app-network:

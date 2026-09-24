@@ -446,15 +446,6 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
         if not jid_str:
             continue
 
-        publish_event("workflow", {
-            "event_type": "ats_generation_progress",
-            "session_id": req.session_id,
-            "job_id": jid_str,
-            "current": idx + 1,
-            "total": len(req.job_ids),
-            "status": f"Fetching Job Description for {jid_str}..."
-        })
-
         job_desc_dict = get_job_description(jid_str)
         if not job_desc_dict or not (job_desc_dict.get("raw_description") or job_desc_dict.get("minimal_description")):
             try:
@@ -464,15 +455,33 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
                 print(f"[Warning] Failed to fetch live job description for {jid_str}: {err}")
                 job_desc_dict = {"job_id": jid_str, "raw_description": f"Job ID {jid_str}"}
 
+        company_name = job_desc_dict.get("company_name") or job_desc_dict.get("company") or ""
+        comp_prefix = f" [{company_name}]" if company_name else ""
+
+        publish_event("workflow", {
+            "event_type": "ats_generation_progress",
+            "session_id": req.session_id,
+            "job_id": jid_str,
+            "company_name": company_name,
+            "current": idx + 1,
+            "total": len(req.job_ids),
+            "step": "fetching_jd",
+            "status": f"Fetched Job Description for {company_name or jid_str}...",
+            "message": f"Fetched Job Description for {company_name or jid_str}"
+        })
+
         jd_text = job_desc_dict.get("raw_description") or job_desc_dict.get("minimal_description") or f"Job ID {jid_str}"
 
         publish_event("workflow", {
             "event_type": "ats_generation_progress",
             "session_id": req.session_id,
             "job_id": jid_str,
+            "company_name": company_name,
             "current": idx + 1,
             "total": len(req.job_ids),
-            "status": f"Running ATS Data Modifier LLM for {jid_str}..."
+            "step": "llm_generating",
+            "status": f"Running ATS LLM Tailoring for {company_name or jid_str}...",
+            "message": f"🧠 Running LLM Tailoring for {company_name or jid_str}..."
         })
 
         try:
@@ -505,9 +514,12 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
                 "event_type": "ats_generation_progress",
                 "session_id": req.session_id,
                 "job_id": jid_str,
+                "company_name": company_name,
                 "current": idx + 1,
                 "total": len(req.job_ids),
-                "status": f"Generating PDF Resumes for {jid_str}..."
+                "step": "compiling_pdf",
+                "status": f"Compiling PDF Resumes for {company_name or jid_str}...",
+                "message": f"📄 Compiling PDF Resumes for {company_name or jid_str}..."
             })
 
             gen_script = base_dir / "generate_resume.py"
@@ -524,11 +536,22 @@ async def generate_ats_resumes(req: GenerateATSResumesRequest):
             except Exception as proc_err:
                 print(f"[Error running generate_resume for {jid_str}]: {proc_err}")
 
-            results.append({
+            res_obj = {
                 "job_id": jid_str,
+                "company_name": company_name,
                 "generated_json_file": temp_json_name,
                 "output_pdf_folder": output_pdf_folder,
                 "generated_data": modified_dict
+            }
+            results.append(res_obj)
+
+            publish_event("workflow", {
+                "event_type": "ats_job_completed",
+                "session_id": req.session_id,
+                "job_id": jid_str,
+                "company_name": company_name,
+                "message": f"✅ ATS Resume & 4 PDFs generated for {company_name or jid_str} (#{jid_str})!",
+                "result": res_obj
             })
         except Exception as gen_err:
             print(f"[Error generating ATS data for {jid_str}]: {gen_err}")

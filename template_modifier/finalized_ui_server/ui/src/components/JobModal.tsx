@@ -1,4 +1,5 @@
 import React from 'react';
+import type { SelectedJob } from '../types';
 
 interface JobModalProps {
   show: boolean;
@@ -6,6 +7,8 @@ interface JobModalProps {
   loading: boolean;
   onClose: () => void;
   onStartWorkflow?: (jobId: string) => void;
+  isAddedToList?: boolean;
+  onToggleAddToList?: (job: SelectedJob) => void;
 }
 
 const formatPostedDate = (rawTime?: string): string => {
@@ -32,7 +35,15 @@ const formatPostedDate = (rawTime?: string): string => {
   return val;
 };
 
-export const JobModal: React.FC<JobModalProps> = ({ show, jobData, loading, onClose, onStartWorkflow }) => {
+export const JobModal: React.FC<JobModalProps> = ({
+  show,
+  jobData,
+  loading,
+  onClose,
+  onStartWorkflow,
+  isAddedToList = false,
+  onToggleAddToList,
+}) => {
   if (!show) return null;
 
   const company = jobData?.company_name || jobData?.company || 'LinkedIn Posting';
@@ -42,6 +53,7 @@ export const JobModal: React.FC<JobModalProps> = ({ show, jobData, loading, onCl
   const numApplicants = jobData?.num_applicants;
   const employmentType = jobData?.employment_type;
   const jobFunction = jobData?.job_function;
+  const targetJobId = jobData ? (jobData.job_id || jobData.id) : null;
 
   return (
     <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
@@ -57,7 +69,7 @@ export const JobModal: React.FC<JobModalProps> = ({ show, jobData, loading, onCl
                   {loading ? 'Fetching LinkedIn Job Details...' : (jobData?.title || 'Job Details')}
                 </h5>
                 <small className="text-white-50">
-                  Job ID: {jobData?.job_id || 'N/A'}
+                  Job ID: {targetJobId || 'N/A'}
                 </small>
               </div>
             </div>
@@ -187,15 +199,32 @@ export const JobModal: React.FC<JobModalProps> = ({ show, jobData, loading, onCl
           </div>
 
           <div className="modal-footer bg-light border-0 p-3 d-flex align-items-center justify-content-between">
-            <div>
-              {onStartWorkflow && jobData && (jobData.job_id || jobData.id) && (
+            <div className="d-flex align-items-center gap-2">
+              {onToggleAddToList && targetJobId && (
+                <button
+                  type="button"
+                  className={`btn ${isAddedToList ? 'btn-success' : 'btn-outline-purple'} px-3.5 fw-bold d-flex align-items-center gap-2 shadow-sm`}
+                  onClick={() => {
+                    onToggleAddToList({
+                      jobId: String(targetJobId),
+                      title: jobData?.title || `Job ${targetJobId}`,
+                      company: company,
+                      location: location,
+                    });
+                  }}
+                >
+                  <i className={`bi ${isAddedToList ? 'bi-check-circle-fill' : 'bi-plus-circle-fill'} fs-6`}></i>
+                  <span>{isAddedToList ? 'In list' : 'Add to list'}</span>
+                </button>
+              )}
+
+              {onStartWorkflow && targetJobId && (
                 <button
                   type="button"
                   className="btn btn-purple px-4 fw-bold d-flex align-items-center gap-2 shadow-sm"
                   onClick={() => {
-                    const targetJobId = jobData.job_id || jobData.id;
                     onClose();
-                    onStartWorkflow(targetJobId);
+                    onStartWorkflow(String(targetJobId));
                   }}
                 >
                   <i className="bi bi-gear-wide-connected fs-5"></i>

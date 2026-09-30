@@ -1,3 +1,4 @@
+from app.services.centrifugo_service import CentrifugoService
 import uvicorn
 from dotenv import load_dotenv, find_dotenv
 
@@ -52,4 +53,9 @@ def root():
     }
 
 if __name__ == "__main__":
+    # cf_svc = CentrifugoService()
+    
+    # cf_svc.publish("Test", {"message": "Test Event"})
+
+    
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

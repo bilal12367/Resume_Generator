@@ -24,3 +24,12 @@ job_scraper_ui/build/
 # Output generated PDFs & temp files
 output/
 user_data/generated_ats_*.json
+
+# Tailscale & Docker runtime state
+tailscale-state/
+**/tailscale-state/
+
+# UI Node & Build
+finalized_ui_server/ui/node_modules/
+finalized_ui_server/ui/dist/
+

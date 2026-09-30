@@ -25,6 +25,7 @@ services:
     restart: always
     ports:
       - "8008:8000"
+      - "8002:8000"
     volumes:
       - ./centrifugo_config.json:/centrifugo/config.json
     ulimits:
@@ -33,33 +34,70 @@ services:
         hard: 65536
     command: centrifugo -c config.json
 
-  # server:
-  #   build:
-  #     context: ./server
-  #   container_name: finalized_server
-  #   restart: always
-  #   environment:
-  #     - DB_HOST=mysql
-  #     - DB_PORT=3306
-  #     - DB_NAME=dev
-  #     - DB_USER=admin
-  #     - DB_PASSWORD=admin
-  #     - SECRET_KEY=supersecretkey123456789
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     mysql:
-  #       condition: service_healthy
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-funnel
+    network_mode: "service:nginx"
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=bilal-job-scraper
+      - TS_STATE_DIR=/var/lib/tailscale
+      # 1. Point this to the port your application listens on internally
+      - TS_SERVE_PORT=80
+      # 2. Enabling TS_FUNNEL opens TS_SERVE_PORT publicly via Tailscale Funnel
+      - TS_FUNNEL=1
+    volumes:
+      - ./tailscale-state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+    depends_on:
+      - nginx
 
-  # ui:
-  #   build:
-  #     context: ./ui
-  #   container_name: finalized_ui
-  #   restart: always
-  #   ports:
-  #     - "5173:5173"
-  #   depends_on:
-  #     - server
+  server:
+    build:
+      context: ./server
+    container_name: finalized_server
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=docker
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=dev
+      - DB_USER=admin
+      - DB_PASSWORD=admin
+      - CENTRIFUGO_BASE_URL=http://centrifugo:8000
+      - DATABASE_URL=mysql+pymysql://admin:admin@mysql:3306/dev
+      - SECRET_KEY=supersecretkey123456789
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  ui:
+    build:
+      context: ./ui
+    container_name: finalized_ui
+    # ports:
+    #   - "5173:5173"
+    restart: always
+    depends_on:
+      - server
+
+  nginx:
+    image: nginx:alpine
+    container_name: finalized_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server
+      - ui
 
 volumes:
   mysql_data:

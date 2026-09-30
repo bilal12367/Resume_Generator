@@ -56,3 +56,12 @@ export interface UserProfileJSON {
   jsonData: any;
   created_at: string;
 }
+
+export interface SelectedJob {
+  jobId: string;
+  title?: string;
+  company?: string;
+  location?: string;
+  addedAt?: string;
+}
+

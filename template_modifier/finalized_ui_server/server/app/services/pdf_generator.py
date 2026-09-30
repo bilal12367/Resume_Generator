@@ -14,7 +14,9 @@ def get_project_root() -> Path:
     for parent in [current] + list(current.parents):
         if (parent / "template").exists() or (parent / "module_testing").exists():
             return parent
-    return Path(__file__).resolve().parents[4]
+    if len(current.parents) >= 3:
+        return current.parents[2]
+    return current.parent
 
 
 class PDFGenerator:

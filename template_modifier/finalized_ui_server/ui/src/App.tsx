@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { User, JobApplication } from './types';
+import type { User, JobApplication, SelectedJob } from './types';
 import { Sidebar, type NavPage } from './components/Sidebar';
 import { Topbar } from './components/Topbar';
 import { JobModal } from './components/JobModal';
+import { SelectedJobsDrawer } from './components/SelectedJobsDrawer';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { JobsPage } from './pages/JobsPage';
@@ -13,7 +14,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import './App.css';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : '';
 
 export function App() {
   // Authentication State
@@ -37,6 +38,42 @@ export function App() {
   // Routing State derived from Hash
   const [activePage, setActivePage] = useState<NavPage>('dashboard');
   const [activeSessionId, setActiveSessionId] = useState<string>('job_agent_session_01');
+
+  // Selected Jobs Drawer State
+  const [selectedJobs, setSelectedJobs] = useState<SelectedJob[]>(() => {
+    const saved = localStorage.getItem('selected_jobs_list');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // Fallback default
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('selected_jobs_list', JSON.stringify(selectedJobs));
+  }, [selectedJobs]);
+
+  const handleToggleAddToList = (job: SelectedJob) => {
+    setSelectedJobs((prev) => {
+      const exists = prev.some((j) => j.jobId === job.jobId);
+      if (exists) {
+        return prev.filter((j) => j.jobId !== job.jobId);
+      } else {
+        return [...prev, { ...job, addedAt: new Date().toISOString() }];
+      }
+    });
+  };
+
+  const handleRemoveSelectedJob = (jobId: string) => {
+    setSelectedJobs((prev) => prev.filter((j) => j.jobId !== jobId));
+  };
+
+  const handleClearAllSelectedJobs = () => {
+    setSelectedJobs([]);
+  };
 
   // Job Modal State
   const [showJobModal, setShowJobModal] = useState<boolean>(false);
@@ -297,6 +334,22 @@ export function App() {
         loading={loadingJobModal}
         onClose={() => setShowJobModal(false)}
         onStartWorkflow={handleStartWorkflowForJob}
+        isAddedToList={
+          jobModalData
+            ? selectedJobs.some(
+                (j) => j.jobId === String(jobModalData.job_id || jobModalData.id)
+              )
+            : false
+        }
+        onToggleAddToList={handleToggleAddToList}
+      />
+
+      {/* Persistent Bottom Right Selected Jobs Stack Drawer */}
+      <SelectedJobsDrawer
+        selectedJobs={selectedJobs}
+        onRemoveJob={handleRemoveSelectedJob}
+        onClearAll={handleClearAllSelectedJobs}
+        onViewJob={handleOpenJobModal}
       />
     </div>
   );

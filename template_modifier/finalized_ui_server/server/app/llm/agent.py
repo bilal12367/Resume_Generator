@@ -10,7 +10,19 @@ from typing import List, Dict, Any, Optional, Callable, Literal, Generator, Asyn
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, func
+from sqlalchemy.orm import sessionmaker
+from app.db.connection import Base
+from app.models.agent_model import (
+    DBMessage,
+    DBSummary,
+    DBTokenUsage,
+    DBAgentLog,
+    DBSessionJob,
+    DBSessionMetadata,
+    DBSessionEvent,
+    DBJobDescription,
+)
 from llama_index.llms.siliconflow import SiliconFlow
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.tools import FunctionTool
@@ -97,7 +109,7 @@ def _emit_event(session_id: str, event_type: str, data: Dict[str, Any]):
 
 
 class AgentDatabase:
-    """Manages persistent database storage for conversation history, condensation summaries, and accumulated token usage (Supports SQLite & MySQL)."""
+    """Manages persistent database storage using SQLAlchemy ORM models (Supports SQLite & MySQL)."""
 
     def __init__(self, db_url: Optional[str] = None):
         self.db_url = self._normalize_db_url(db_url)
@@ -106,283 +118,81 @@ class AgentDatabase:
 
         logger.info(f"Initializing database connection using URL: '{self.db_url}' (Dialect: {'MySQL' if self.is_mysql else 'SQLite'})...")
         self.engine = create_engine(self.db_url, pool_pre_ping=True)
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         self._init_db()
 
     def _normalize_db_url(self, url: Optional[str]) -> str:
-        url_val = url or os.getenv("DATABASE_URL") or "mysql+pymysql://admin:admin@127.0.0.1:3306/dev"
+        db_host = os.getenv("DB_HOST", "mysql")
+        db_port = os.getenv("DB_PORT", "3306")
+        db_user = os.getenv("DB_USER", "admin")
+        db_pass = os.getenv("DB_PASSWORD", "admin")
+        db_name = os.getenv("DB_NAME", "dev")
+        default_url = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+
+        url_val = url or os.getenv("DATABASE_URL") or default_url
         url_str = url_val.strip()
         if url_str.startswith("mysql://"):
             return url_str.replace("mysql://", "mysql+pymysql://", 1)
         elif url_str.startswith("mysql+pymysql://"):
             return url_str
         elif "://" not in url_str:
-            return f"mysql+pymysql://admin:admin@127.0.0.1:3306/{url_str}"
+            return f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{url_str}"
         return url_str
 
     def _init_db(self):
-        with self.engine.connect() as conn:
-            if self.is_mysql:
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS messages (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL,
-                        role VARCHAR(50) NOT NULL,
-                        content LONGTEXT NOT NULL,
-                        token_count INT NOT NULL DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        INDEX idx_session (session_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS summaries (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL UNIQUE,
-                        summary LONGTEXT NOT NULL,
-                        last_summarized_message_id INT NOT NULL,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS token_usage (
-                        session_id VARCHAR(255) PRIMARY KEY,
-                        prompt_tokens INT NOT NULL DEFAULT 0,
-                        completion_tokens INT NOT NULL DEFAULT 0,
-                        total_tokens INT NOT NULL DEFAULT 0,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS agent_logs (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL,
-                        status VARCHAR(100) NOT NULL,
-                        details LONGTEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        INDEX idx_log_session (session_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS session_jobs (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL,
-                        job_id VARCHAR(255) NOT NULL,
-                        job_title VARCHAR(255),
-                        company VARCHAR(255),
-                        location VARCHAR(255),
-                        details LONGTEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE KEY idx_session_job (session_id, job_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS session_events (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL,
-                        event_type VARCHAR(100) NOT NULL,
-                        data LONGTEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        INDEX idx_event_session (session_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS job_descriptions (
-                        job_id VARCHAR(255) PRIMARY KEY,
-                        title VARCHAR(255),
-                        company_name VARCHAR(255),
-                        location VARCHAR(255),
-                        posted_time VARCHAR(100),
-                        num_applicants VARCHAR(100),
-                        seniority_level VARCHAR(100),
-                        employment_type VARCHAR(100),
-                        job_function VARCHAR(100),
-                        job_url VARCHAR(500),
-                        minimal_description LONGTEXT,
-                        raw_description LONGTEXT,
-                        skills_required LONGTEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS user_profiles (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        profile_name VARCHAR(255) NOT NULL,
-                        user_data LONGTEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS generated_ats (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        session_id VARCHAR(255) NOT NULL,
-                        profile_id INT NOT NULL,
-                        job_id VARCHAR(255) NOT NULL,
-                        ats_json_data LONGTEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        INDEX idx_ats_session (session_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS ats_workflow_sessions (
-                        session_id VARCHAR(255) PRIMARY KEY,
-                        title VARCHAR(255) NOT NULL,
-                        status VARCHAR(100) NOT NULL DEFAULT 'CREATED',
-                        profile_id INT,
-                        job_id VARCHAR(255),
-                        pdf_filename VARCHAR(255),
-                        pdf_links LONGTEXT,
-                        error_message LONGTEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                    );
-                """))
-            else:
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS messages (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        session_id TEXT NOT NULL,
-                        role TEXT NOT NULL,
-                        content TEXT NOT NULL,
-                        token_count INTEGER NOT NULL DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS summaries (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        session_id TEXT NOT NULL UNIQUE,
-                        summary TEXT NOT NULL,
-                        last_summarized_message_id INTEGER NOT NULL,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS token_usage (
-                        session_id TEXT PRIMARY KEY,
-                        prompt_tokens INTEGER NOT NULL DEFAULT 0,
-                        completion_tokens INTEGER NOT NULL DEFAULT 0,
-                        total_tokens INTEGER NOT NULL DEFAULT 0,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS agent_logs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        session_id TEXT NOT NULL,
-                        status TEXT NOT NULL,
-                        details TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS session_jobs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        session_id TEXT NOT NULL,
-                        job_id TEXT NOT NULL,
-                        job_title TEXT,
-                        company TEXT,
-                        location TEXT,
-                        details TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        UNIQUE(session_id, job_id)
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS session_events (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        session_id TEXT NOT NULL,
-                        event_type TEXT NOT NULL,
-                        data TEXT NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS job_descriptions (
-                        job_id TEXT PRIMARY KEY,
-                        title TEXT,
-                        company_name TEXT,
-                        location TEXT,
-                        posted_time TEXT,
-                        num_applicants TEXT,
-                        seniority_level TEXT,
-                        employment_type TEXT,
-                        job_function TEXT,
-                        job_url TEXT,
-                        minimal_description TEXT,
-                        raw_description TEXT,
-                        skills_required TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                """))
-            conn.commit()
-            logger.info("Database schema initialized successfully.")
+        Base.metadata.create_all(bind=self.engine)
+        logger.info("Database schema initialized successfully using SQLAlchemy ORM.")
 
     def add_message(self, session_id: str, role: str, content: str, token_count: int) -> int:
-        with self.engine.connect() as conn:
-            query = text("""
-                INSERT INTO messages (session_id, role, content, token_count)
-                VALUES (:session_id, :role, :content, :token_count)
-            """)
-            result = conn.execute(query, {
-                "session_id": session_id,
-                "role": role,
-                "content": content,
-                "token_count": token_count
-            })
-            conn.commit()
-            msg_id = result.lastrowid
-            logger.debug(f"[DB] Inserted message ID {msg_id} [Role: {role}, Session: {session_id}, Tokens: {token_count}]")
-            return msg_id if msg_id is not None else 0
+        with self.SessionLocal() as session:
+            msg = DBMessage(session_id=session_id, role=role, content=content, token_count=token_count)
+            session.add(msg)
+            session.commit()
+            session.refresh(msg)
+            logger.debug(f"[DB] Inserted message ID {msg.id} [Role: {role}, Session: {session_id}, Tokens: {token_count}]")
+            return msg.id if msg.id is not None else 0
 
     def get_all_messages(self, session_id: str) -> List[Dict[str, Any]]:
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT id, session_id, role, content, token_count, created_at
-                FROM messages
-                WHERE session_id = :session_id
-                ORDER BY id ASC
-            """)
-            result = conn.execute(query, {"session_id": session_id})
-            rows = result.mappings().all()
-            return [dict(r) for r in rows]
+        with self.SessionLocal() as session:
+            msgs = session.query(DBMessage).filter(DBMessage.session_id == session_id).order_by(DBMessage.id.asc()).all()
+            return [
+                {
+                    "id": m.id,
+                    "session_id": m.session_id,
+                    "role": m.role,
+                    "content": m.content,
+                    "token_count": m.token_count,
+                    "created_at": str(m.created_at) if m.created_at else None
+                }
+                for m in msgs
+            ]
 
     def get_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT session_id, summary, last_summarized_message_id, updated_at
-                FROM summaries
-                WHERE session_id = :session_id
-            """)
-            result = conn.execute(query, {"session_id": session_id})
-            row = result.mappings().fetchone()
-            return dict(row) if row else None
+        with self.SessionLocal() as session:
+            s = session.query(DBSummary).filter(DBSummary.session_id == session_id).first()
+            if s:
+                return {
+                    "session_id": s.session_id,
+                    "summary": s.summary,
+                    "last_summarized_message_id": s.last_summarized_message_id,
+                    "updated_at": str(s.updated_at) if s.updated_at else None
+                }
+            return None
 
     def save_or_update_summary(self, session_id: str, summary: str, last_summarized_message_id: int):
-        with self.engine.connect() as conn:
-            if self.is_mysql:
-                query = text("""
-                    INSERT INTO summaries (session_id, summary, last_summarized_message_id)
-                    VALUES (:session_id, :summary, :last_summarized_message_id)
-                    ON DUPLICATE KEY UPDATE
-                        summary = VALUES(summary),
-                        last_summarized_message_id = VALUES(last_summarized_message_id),
-                        updated_at = CURRENT_TIMESTAMP
-                """)
+        with self.SessionLocal() as session:
+            s = session.query(DBSummary).filter(DBSummary.session_id == session_id).first()
+            if s:
+                s.summary = summary
+                s.last_summarized_message_id = last_summarized_message_id
             else:
-                query = text("""
-                    INSERT INTO summaries (session_id, summary, last_summarized_message_id)
-                    VALUES (:session_id, :summary, :last_summarized_message_id)
-                    ON CONFLICT(session_id) DO UPDATE SET
-                        summary = excluded.summary,
-                        last_summarized_message_id = excluded.last_summarized_message_id,
-                        updated_at = CURRENT_TIMESTAMP
-                """)
-            conn.execute(query, {
-                "session_id": session_id,
-                "summary": summary,
-                "last_summarized_message_id": last_summarized_message_id
-            })
-            conn.commit()
+                s = DBSummary(
+                    session_id=session_id,
+                    summary=summary,
+                    last_summarized_message_id=last_summarized_message_id
+                )
+                session.add(s)
+            session.commit()
             logger.info(f"[DB] Updated summary for session '{session_id}' up to message ID {last_summarized_message_id}.")
 
     def update_token_usage(self, session_id: str, usage: Dict[str, int], mode: str = "call") -> Dict[str, int]:
@@ -394,184 +204,180 @@ class AgentDatabase:
         c_tokens = usage.get("completion_tokens", 0) if isinstance(usage.get("completion_tokens"), int) else 0
         t_tokens = usage.get("total_tokens", 0) if isinstance(usage.get("total_tokens"), int) else (p_tokens + c_tokens)
 
-        with self.engine.connect() as conn:
-            if self.is_mysql:
-                query = text("""
-                    INSERT INTO token_usage (session_id, prompt_tokens, completion_tokens, total_tokens)
-                    VALUES (:session_id, :p_tokens, :c_tokens, :t_tokens)
-                    ON DUPLICATE KEY UPDATE
-                        prompt_tokens = prompt_tokens + VALUES(prompt_tokens),
-                        completion_tokens = completion_tokens + VALUES(completion_tokens),
-                        total_tokens = total_tokens + VALUES(total_tokens),
-                        updated_at = CURRENT_TIMESTAMP
-                """)
+        with self.SessionLocal() as session:
+            tu = session.query(DBTokenUsage).filter(DBTokenUsage.session_id == session_id).first()
+            if tu:
+                tu.prompt_tokens += p_tokens
+                tu.completion_tokens += c_tokens
+                tu.total_tokens += t_tokens
             else:
-                query = text("""
-                    INSERT INTO token_usage (session_id, prompt_tokens, completion_tokens, total_tokens)
-                    VALUES (:session_id, :p_tokens, :c_tokens, :t_tokens)
-                    ON CONFLICT(session_id) DO UPDATE SET
-                        prompt_tokens = prompt_tokens + excluded.prompt_tokens,
-                        completion_tokens = completion_tokens + excluded.completion_tokens,
-                        total_tokens = total_tokens + excluded.total_tokens,
-                        updated_at = CURRENT_TIMESTAMP
-                """)
-            conn.execute(query, {
-                "session_id": session_id,
-                "p_tokens": p_tokens,
-                "c_tokens": c_tokens,
-                "t_tokens": t_tokens
-            })
-            conn.commit()
+                tu = DBTokenUsage(
+                    session_id=session_id,
+                    prompt_tokens=p_tokens,
+                    completion_tokens=c_tokens,
+                    total_tokens=t_tokens
+                )
+                session.add(tu)
+            session.commit()
 
         acc = self.get_token_usage(session_id)
         logger.info(f"[DB] Updated token usage for session '{session_id}' (Mode: {mode}) -> Added {t_tokens} tokens | Session Total: {acc['total_tokens']}")
         return acc
 
     def get_token_usage(self, session_id: str) -> Dict[str, int]:
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT prompt_tokens, completion_tokens, total_tokens
-                FROM token_usage
-                WHERE session_id = :session_id
-            """)
-            result = conn.execute(query, {"session_id": session_id})
-            row = result.mappings().fetchone()
-            if row:
+        with self.SessionLocal() as session:
+            tu = session.query(DBTokenUsage).filter(DBTokenUsage.session_id == session_id).first()
+            if tu:
                 return {
-                    "prompt_tokens": row["prompt_tokens"],
-                    "completion_tokens": row["completion_tokens"],
-                    "total_tokens": row["total_tokens"]
+                    "prompt_tokens": tu.prompt_tokens,
+                    "completion_tokens": tu.completion_tokens,
+                    "total_tokens": tu.total_tokens
                 }
             return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     def add_agent_log(self, session_id: str, status: str, details: Optional[Dict[str, Any]] = None):
         """Inserts an execution status record into agent_logs table."""
-        import json
         details_str = json.dumps(details) if details else ""
-        with self.engine.connect() as conn:
-            query = text("""
-                INSERT INTO agent_logs (session_id, status, details)
-                VALUES (:session_id, :status, :details)
-            """)
-            conn.execute(query, {
-                "session_id": session_id,
-                "status": status,
-                "details": details_str
-            })
-            conn.commit()
+        with self.SessionLocal() as session:
+            log = DBAgentLog(session_id=session_id, status=status, details=details_str)
+            session.add(log)
+            session.commit()
 
     def get_agent_logs(self, session_id: str) -> List[Dict[str, Any]]:
         """Fetches all status log entries for a given session."""
-        import json
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT id, session_id, status, details, created_at
-                FROM agent_logs
-                WHERE session_id = :session_id
-                ORDER BY id ASC
-            """)
-            result = conn.execute(query, {"session_id": session_id})
+        with self.SessionLocal() as session:
+            logs_raw = session.query(DBAgentLog).filter(DBAgentLog.session_id == session_id).order_by(DBAgentLog.id.asc()).all()
             logs = []
-            for row in result.mappings():
-                d = dict(row)
-                if d.get("details"):
+            for log in logs_raw:
+                details_val = {}
+                if log.details:
                     try:
-                        d["details"] = json.loads(d["details"])
+                        details_val = json.loads(log.details)
                     except Exception:
                         pass
-                else:
-                    d["details"] = {}
-                if d.get("created_at"):
-                    d["created_at"] = str(d["created_at"])
-                logs.append(d)
+                logs.append({
+                    "id": log.id,
+                    "session_id": log.session_id,
+                    "status": log.status,
+                    "details": details_val,
+                    "created_at": str(log.created_at) if log.created_at else None
+                })
             return logs
 
     def get_all_sessions(self) -> List[Dict[str, Any]]:
-        """Fetches distinct active session IDs and their latest activity timestamp."""
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT session_id, MAX(created_at) as last_activity, COUNT(*) as message_count
-                FROM messages
-                GROUP BY session_id
-                ORDER BY last_activity DESC
-            """)
-            result = conn.execute(query)
+        """Fetches distinct active session IDs, custom titles, and their latest activity timestamp."""
+        with self.SessionLocal() as session:
+            meta_map = {sm.session_id: sm.title for sm in session.query(DBSessionMetadata).all()}
+
+            msg_results = session.query(
+                DBMessage.session_id,
+                func.max(DBMessage.created_at).label("last_activity"),
+                func.count(DBMessage.id).label("message_count")
+            ).group_by(
+                DBMessage.session_id
+            ).order_by(
+                func.max(DBMessage.created_at).desc()
+            ).all()
+
             sessions = []
-            for row in result.mappings():
-                d = dict(row)
-                if d.get("last_activity"):
-                    d["last_activity"] = str(d["last_activity"])
-                sessions.append(d)
+            seen_sessions = set()
+            for s_id, last_activity, message_count in msg_results:
+                seen_sessions.add(s_id)
+                sessions.append({
+                    "session_id": s_id,
+                    "title": meta_map.get(s_id),
+                    "last_activity": str(last_activity) if last_activity else None,
+                    "message_count": message_count
+                })
+
+            for s_id, title in meta_map.items():
+                if s_id not in seen_sessions:
+                    sessions.append({
+                        "session_id": s_id,
+                        "title": title,
+                        "last_activity": None,
+                        "message_count": 0
+                    })
+
             return sessions
 
+    def update_session_title(self, session_id: str, title: str) -> bool:
+        """Updates or sets custom display title for a session in DB."""
+        if not session_id or not title:
+            return False
+        with self.SessionLocal() as session:
+            sm = session.query(DBSessionMetadata).filter(DBSessionMetadata.session_id == session_id).first()
+            if sm:
+                sm.title = title
+            else:
+                sm = DBSessionMetadata(session_id=session_id, title=title)
+                session.add(sm)
+            session.commit()
+        return True
+
     def delete_session(self, session_id: str) -> bool:
-        """Deletes all persistent records (messages, summaries, status logs, token usage, session jobs) for a given session_id from DB."""
+        """Deletes all persistent records (messages, summaries, status logs, token usage, session jobs, metadata, events) for a given session_id from DB."""
         if not session_id:
             return False
-        with self.engine.begin() as conn:
-            for table in ["messages", "summaries", "agent_logs", "token_usage", "session_jobs"]:
-                try:
-                    conn.execute(text(f"DELETE FROM {table} WHERE session_id = :session_id"), {"session_id": session_id})
-                except Exception as e:
-                    logger.warning(f"Failed to delete from table '{table}' for session '{session_id}': {e}")
+        with self.SessionLocal() as session:
+            session.query(DBMessage).filter(DBMessage.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBSummary).filter(DBSummary.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBAgentLog).filter(DBAgentLog.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBTokenUsage).filter(DBTokenUsage.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBSessionJob).filter(DBSessionJob.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBSessionEvent).filter(DBSessionEvent.session_id == session_id).delete(synchronize_session=False)
+            session.query(DBSessionMetadata).filter(DBSessionMetadata.session_id == session_id).delete(synchronize_session=False)
+            session.commit()
         logger.info(f"[DB DELETE] Deleted all persistent records for session '{session_id}'.")
         return True
 
     def save_session_job(self, session_id: str, job_id: str, job_title: str = "", company: str = "", location: str = "", details: Optional[Dict[str, Any]] = None):
         """Caches a job ID associated with a session_id in DB."""
         details_json = json.dumps(details) if details else None
-        with self.engine.connect() as conn:
-            if self.is_mysql:
-                query = text("""
-                    INSERT INTO session_jobs (session_id, job_id, job_title, company, location, details)
-                    VALUES (:session_id, :job_id, :job_title, :company, :location, :details)
-                    ON DUPLICATE KEY UPDATE
-                        job_title = VALUES(job_title),
-                        company = VALUES(company),
-                        location = VALUES(location),
-                        details = VALUES(details)
-                """)
+        with self.SessionLocal() as session:
+            job = session.query(DBSessionJob).filter(
+                DBSessionJob.session_id == session_id,
+                DBSessionJob.job_id == str(job_id)
+            ).first()
+            if job:
+                job.job_title = job_title or ""
+                job.company = company or ""
+                job.location = location or ""
+                job.details = details_json
             else:
-                query = text("""
-                    INSERT INTO session_jobs (session_id, job_id, job_title, company, location, details)
-                    VALUES (:session_id, :job_id, :job_title, :company, :location, :details)
-                    ON CONFLICT(session_id, job_id) DO UPDATE SET
-                        job_title = excluded.job_title,
-                        company = excluded.company,
-                        location = excluded.location,
-                        details = excluded.details
-                """)
-            conn.execute(query, {
-                "session_id": session_id,
-                "job_id": str(job_id),
-                "job_title": job_title or "",
-                "company": company or "",
-                "location": location or "",
-                "details": details_json
-            })
-            conn.commit()
+                job = DBSessionJob(
+                    session_id=session_id,
+                    job_id=str(job_id),
+                    job_title=job_title or "",
+                    company=company or "",
+                    location=location or "",
+                    details=details_json
+                )
+                session.add(job)
+            session.commit()
 
     def get_session_jobs(self, session_id: str) -> List[Dict[str, Any]]:
         """Retrieves all cached job IDs for a given session_id from DB."""
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT id, session_id, job_id, job_title, company, location, details, created_at
-                FROM session_jobs
-                WHERE session_id = :session_id
-                ORDER BY id ASC
-            """)
-            result = conn.execute(query, {"session_id": session_id})
+        with self.SessionLocal() as session:
+            jobs_raw = session.query(DBSessionJob).filter(DBSessionJob.session_id == session_id).order_by(DBSessionJob.id.asc()).all()
             jobs = []
-            for row in result.mappings():
-                d = dict(row)
-                if d.get("details"):
+            for j in jobs_raw:
+                details_val = None
+                if j.details:
                     try:
-                        d["details"] = json.loads(d["details"])
+                        details_val = json.loads(j.details)
                     except Exception:
                         pass
-                if d.get("created_at"):
-                    d["created_at"] = str(d["created_at"])
-                jobs.append(d)
+                jobs.append({
+                    "id": j.id,
+                    "session_id": j.session_id,
+                    "job_id": j.job_id,
+                    "job_title": j.job_title,
+                    "company": j.company,
+                    "location": j.location,
+                    "details": details_val,
+                    "created_at": str(j.created_at) if j.created_at else None
+                })
             return jobs
 
     def save_session_event(self, session_id: str, event_type: str, data: Dict[str, Any]) -> None:
@@ -579,45 +385,30 @@ class AgentDatabase:
         if not session_id or not event_type:
             return
         data_json = json.dumps(data) if isinstance(data, (dict, list)) else str(data)
-        with self.engine.connect() as conn:
-            query = text("""
-                INSERT INTO session_events (session_id, event_type, data)
-                VALUES (:session_id, :event_type, :data)
-            """)
-            conn.execute(query, {
-                "session_id": session_id,
-                "event_type": event_type,
-                "data": data_json
-            })
-            conn.commit()
+        with self.SessionLocal() as session:
+            event = DBSessionEvent(session_id=session_id, event_type=event_type, data=data_json)
+            session.add(event)
+            session.commit()
 
     def get_session_events(self, session_id: str) -> List[Dict[str, Any]]:
         """Queries recorded delta events for a given session_id from MySQL database."""
         if not session_id:
             return []
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT id, session_id, event_type, data, created_at
-                FROM session_events
-                WHERE session_id = :session_id
-                ORDER BY id ASC
-            """)
-            result = conn.execute(query, {"session_id": session_id})
+        with self.SessionLocal() as session:
+            events_raw = session.query(DBSessionEvent).filter(DBSessionEvent.session_id == session_id).order_by(DBSessionEvent.id.asc()).all()
             events = []
-            for row in result.mappings():
-                d = dict(row)
-                if d.get("data"):
+            for e in events_raw:
+                data_val = {}
+                if e.data:
                     try:
-                        d["data"] = json.loads(d["data"])
+                        data_val = json.loads(e.data)
                     except Exception:
                         pass
-                if d.get("created_at"):
-                    d["created_at"] = str(d["created_at"])
                 events.append({
-                    "timestamp": d["created_at"],
-                    "session_id": d["session_id"],
-                    "event_type": d["event_type"],
-                    "data": d.get("data", {})
+                    "timestamp": str(e.created_at) if e.created_at else None,
+                    "session_id": e.session_id,
+                    "event_type": e.event_type,
+                    "data": data_val
                 })
             return events
 
@@ -627,90 +418,42 @@ class AgentDatabase:
             return
 
         job_id = str(job_data.get("job_id"))
-        title = job_data.get("title") or ""
-        company_name = job_data.get("company_name") or ""
-        location = job_data.get("location") or ""
-        posted_time = job_data.get("posted_time") or ""
-        num_applicants = job_data.get("num_applicants") or ""
-        seniority_level = job_data.get("seniority_level") or ""
-        employment_type = job_data.get("employment_type") or ""
-        job_function = job_data.get("job_function") or ""
-        job_url = job_data.get("job_url") or ""
-        minimal_description = job_data.get("minimal_description") or ""
-        raw_description = job_data.get("raw_description") or ""
-
         skills = job_data.get("skills_required") or []
         skills_json = json.dumps(skills) if isinstance(skills, (list, dict)) else str(skills)
 
-        with self.engine.connect() as conn:
-            if self.is_mysql:
-                query = text("""
-                    INSERT INTO job_descriptions (
-                        job_id, title, company_name, location, posted_time, num_applicants,
-                        seniority_level, employment_type, job_function, job_url,
-                        minimal_description, raw_description, skills_required
-                    )
-                    VALUES (
-                        :job_id, :title, :company_name, :location, :posted_time, :num_applicants,
-                        :seniority_level, :employment_type, :job_function, :job_url,
-                        :minimal_description, :raw_description, :skills_required
-                    )
-                    ON DUPLICATE KEY UPDATE
-                        title = VALUES(title),
-                        company_name = VALUES(company_name),
-                        location = VALUES(location),
-                        posted_time = VALUES(posted_time),
-                        num_applicants = VALUES(num_applicants),
-                        seniority_level = VALUES(seniority_level),
-                        employment_type = VALUES(employment_type),
-                        job_function = VALUES(job_function),
-                        job_url = VALUES(job_url),
-                        minimal_description = VALUES(minimal_description),
-                        raw_description = VALUES(raw_description),
-                        skills_required = VALUES(skills_required)
-                """)
+        with self.SessionLocal() as session:
+            jd = session.query(DBJobDescription).filter(DBJobDescription.job_id == job_id).first()
+            if jd:
+                jd.title = job_data.get("title") or ""
+                jd.company_name = job_data.get("company_name") or ""
+                jd.location = job_data.get("location") or ""
+                jd.posted_time = job_data.get("posted_time") or ""
+                jd.num_applicants = job_data.get("num_applicants") or ""
+                jd.seniority_level = job_data.get("seniority_level") or ""
+                jd.employment_type = job_data.get("employment_type") or ""
+                jd.job_function = job_data.get("job_function") or ""
+                jd.job_url = job_data.get("job_url") or ""
+                jd.minimal_description = job_data.get("minimal_description") or ""
+                jd.raw_description = job_data.get("raw_description") or ""
+                jd.skills_required = skills_json
             else:
-                query = text("""
-                    INSERT INTO job_descriptions (
-                        job_id, title, company_name, location, posted_time, num_applicants,
-                        seniority_level, employment_type, job_function, job_url,
-                        minimal_description, raw_description, skills_required
-                    )
-                    VALUES (
-                        :job_id, :title, :company_name, :location, :posted_time, :num_applicants,
-                        :seniority_level, :employment_type, :job_function, :job_url,
-                        :minimal_description, :raw_description, :skills_required
-                    )
-                    ON CONFLICT(job_id) DO UPDATE SET
-                        title = excluded.title,
-                        company_name = excluded.company_name,
-                        location = excluded.location,
-                        posted_time = excluded.posted_time,
-                        num_applicants = excluded.num_applicants,
-                        seniority_level = excluded.seniority_level,
-                        employment_type = excluded.employment_type,
-                        job_function = excluded.job_function,
-                        job_url = excluded.job_url,
-                        minimal_description = excluded.minimal_description,
-                        raw_description = excluded.raw_description,
-                        skills_required = excluded.skills_required
-                """)
-            conn.execute(query, {
-                "job_id": job_id,
-                "title": title,
-                "company_name": company_name,
-                "location": location,
-                "posted_time": posted_time,
-                "num_applicants": num_applicants,
-                "seniority_level": seniority_level,
-                "employment_type": employment_type,
-                "job_function": job_function,
-                "job_url": job_url,
-                "minimal_description": minimal_description,
-                "raw_description": raw_description,
-                "skills_required": skills_json
-            })
-            conn.commit()
+                jd = DBJobDescription(
+                    job_id=job_id,
+                    title=job_data.get("title") or "",
+                    company_name=job_data.get("company_name") or "",
+                    location=job_data.get("location") or "",
+                    posted_time=job_data.get("posted_time") or "",
+                    num_applicants=job_data.get("num_applicants") or "",
+                    seniority_level=job_data.get("seniority_level") or "",
+                    employment_type=job_data.get("employment_type") or "",
+                    job_function=job_data.get("job_function") or "",
+                    job_url=job_data.get("job_url") or "",
+                    minimal_description=job_data.get("minimal_description") or "",
+                    raw_description=job_data.get("raw_description") or "",
+                    skills_required=skills_json
+                )
+                session.add(jd)
+            session.commit()
             logger.info(f"[DB CACHE] Cached job description in DB for job_id '{job_id}'.")
 
     def get_cached_job_description(self, job_id: str) -> Optional[Dict[str, Any]]:
@@ -718,28 +461,33 @@ class AgentDatabase:
         if not job_id:
             return None
 
-        with self.engine.connect() as conn:
-            query = text("""
-                SELECT job_id, title, company_name, location, posted_time, num_applicants,
-                       seniority_level, employment_type, job_function, job_url,
-                       minimal_description, raw_description, skills_required, created_at
-                FROM job_descriptions
-                WHERE job_id = :job_id
-            """)
-            result = conn.execute(query, {"job_id": str(job_id)})
-            row = result.mappings().fetchone()
-            if not row:
+        with self.SessionLocal() as session:
+            jd = session.query(DBJobDescription).filter(DBJobDescription.job_id == str(job_id)).first()
+            if not jd:
                 return None
 
-            d = dict(row)
-            if d.get("skills_required"):
+            skills_val = []
+            if jd.skills_required:
                 try:
-                    d["skills_required"] = json.loads(d["skills_required"])
+                    skills_val = json.loads(jd.skills_required)
                 except Exception:
                     pass
-            if d.get("created_at"):
-                d["created_at"] = str(d["created_at"])
-            return d
+            return {
+                "job_id": jd.job_id,
+                "title": jd.title,
+                "company_name": jd.company_name,
+                "location": jd.location,
+                "posted_time": jd.posted_time,
+                "num_applicants": jd.num_applicants,
+                "seniority_level": jd.seniority_level,
+                "employment_type": jd.employment_type,
+                "job_function": jd.job_function,
+                "job_url": jd.job_url,
+                "minimal_description": jd.minimal_description,
+                "raw_description": jd.raw_description,
+                "skills_required": skills_val,
+                "created_at": str(jd.created_at) if jd.created_at else None
+            }
 
 
 class Agent:
@@ -765,7 +513,12 @@ class Agent:
         self.token_limit = token_limit
 
         # Resolve DB URL (defaults to os.getenv('DATABASE_URL') or MySQL dev DB)
-        final_db_url = db_url or os.getenv("DATABASE_URL") or "mysql+pymysql://admin:admin@127.0.0.1:3306/dev"
+        db_host = os.getenv("DB_HOST", "mysql")
+        db_port = os.getenv("DB_PORT", "3306")
+        db_user = os.getenv("DB_USER", "admin")
+        db_pass = os.getenv("DB_PASSWORD", "admin")
+        db_name = os.getenv("DB_NAME", "dev")
+        final_db_url = db_url or os.getenv("DATABASE_URL") or f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
         self.db = AgentDatabase(final_db_url)
 
         # Initialize cumulative token usage from DB

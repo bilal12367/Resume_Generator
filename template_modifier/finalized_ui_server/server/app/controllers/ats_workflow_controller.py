@@ -15,7 +15,13 @@ from app.llm.agent import AgentDatabase
 from app.services.linkedin_service import LinkedInService
 
 # Add project root to sys.path to enable importing services
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+_curr = Path(__file__).resolve()
+_root_candidate = _curr
+for _p in [_curr] + list(_curr.parents):
+    if (_p / "template").exists() or (_p / "module_testing").exists() or (_p / "app").exists():
+        _root_candidate = _p
+        break
+PROJECT_ROOT = _root_candidate
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -408,7 +414,7 @@ async def generate_pdfs_for_session(session_id: str, payload: GeneratePDFRequest
 
         pdf_links = []
         for p in pdf_files:
-            rel_url = f"http://localhost:8000/output/{payload.filename}/{p.name}"
+            rel_url = f"/output/{payload.filename}/{p.name}"
             pdf_links.append({
                 "template_name": p.stem.replace(f"{payload.filename}_", ""),
                 "filename": p.name,

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.schemas.linkedin_schema import (
@@ -143,33 +144,39 @@ async def get_job_agent_logs_endpoint(session_id: str):
 @router.get("/jobs/saved", summary="Get All Saved LinkedIn Jobs from Database")
 async def get_saved_jobs_endpoint():
     """
-    Fetches all job descriptions stored in MySQL database table `job_descriptions`.
+    Fetches all job descriptions stored in database table `job_descriptions`.
     Returns list of saved job objects with title, company, location, posted_time, seniority_level, skills_required, etc.
     """
     try:
+        from app.models.agent_model import DBJobDescription
         db = AgentDatabase()
-        with db.engine.connect() as conn:
-            from sqlalchemy import text
-            query = text("""
-                SELECT job_id, title, company_name, location, posted_time, num_applicants,
-                       seniority_level, employment_type, job_function, job_url,
-                       minimal_description, raw_description, skills_required, created_at
-                FROM job_descriptions
-                ORDER BY created_at DESC
-            """)
-            result = conn.execute(query)
+        with db.SessionLocal() as session:
+            rows = session.query(DBJobDescription).order_by(DBJobDescription.created_at.desc()).all()
             jobs = []
-            for row in result.mappings():
-                d = dict(row)
-                if d.get("skills_required"):
+            for jd in rows:
+                skills_val = []
+                if jd.skills_required:
                     try:
                         import json
-                        d["skills_required"] = json.loads(d["skills_required"])
+                        skills_val = json.loads(jd.skills_required)
                     except Exception:
                         pass
-                if d.get("created_at"):
-                    d["created_at"] = str(d["created_at"])
-                jobs.append(d)
+                jobs.append({
+                    "job_id": jd.job_id,
+                    "title": jd.title,
+                    "company_name": jd.company_name,
+                    "location": jd.location,
+                    "posted_time": jd.posted_time,
+                    "num_applicants": jd.num_applicants,
+                    "seniority_level": jd.seniority_level,
+                    "employment_type": jd.employment_type,
+                    "job_function": jd.job_function,
+                    "job_url": jd.job_url,
+                    "minimal_description": jd.minimal_description,
+                    "raw_description": jd.raw_description,
+                    "skills_required": skills_val,
+                    "created_at": str(jd.created_at) if jd.created_at else None
+                })
             return {"count": len(jobs), "jobs": jobs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch saved jobs: {str(e)}")
@@ -224,6 +231,33 @@ async def delete_agent_session_endpoint(session_id: str):
         return {"status": "success", "message": f"Session '{session_id}' deleted successfully.", "session_id": session_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete agent session: {str(e)}")
+
+
+class UpdateSessionTitleRequest(BaseModel):
+    title: str = Field(..., description="New title/name for the chat session")
+
+@router.put("/agent/session/{session_id}/title", summary="Update Agent Chat Session Title")
+@router.patch("/agent/session/{session_id}/title", summary="Update Agent Chat Session Title")
+async def update_agent_session_title_endpoint(session_id: str, payload: UpdateSessionTitleRequest):
+    """
+    Updates or renames the display title for a chat session in backend database.
+    """
+    try:
+        new_title = payload.title.strip()
+        if not new_title:
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+        db = AgentDatabase()
+        db.update_session_title(session_id, new_title)
+        return {
+            "status": "success",
+            "message": f"Session '{session_id}' title updated successfully.",
+            "session_id": session_id,
+            "title": new_title
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update session title: {str(e)}")
 
 
 @router.get("/centrifugo/token", summary="Generate Centrifugo Connection JWT Token")

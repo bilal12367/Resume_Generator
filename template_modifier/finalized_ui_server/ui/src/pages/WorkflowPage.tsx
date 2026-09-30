@@ -810,17 +810,46 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                     <span>Step 4: Preview Generated Resume PDFs</span>
                   </h5>
 
-                  {activeSession.pdf_links[selectedPdfIndex] && (
-                    <a
-                      href={activeSession.pdf_links[selectedPdfIndex].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-purple d-flex align-items-center gap-1 font-semibold"
-                    >
-                      <i className="bi bi-box-arrow-up-right"></i>
-                      <span>Open in Full Tab</span>
-                    </a>
-                  )}
+                  <div className="d-flex align-items-center gap-2">
+                    {activeSession.job_id && (
+                      <a
+                        href={
+                          activeSession.job_id.startsWith('http')
+                            ? activeSession.job_id
+                            : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 font-semibold"
+                      >
+                        <i className="bi bi-linkedin text-primary"></i>
+                        <span>View on LinkedIn</span>
+                      </a>
+                    )}
+
+                    {activeSession.job_id && (
+                      <button
+                        type="button"
+                        onClick={() => onOpenJobModal(activeSession.job_id!)}
+                        className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1.5 font-semibold"
+                      >
+                        <i className="bi bi-eye-fill"></i>
+                        <span>Inspect Job</span>
+                      </button>
+                    )}
+
+                    {activeSession.pdf_links[selectedPdfIndex] && (
+                      <a
+                        href={activeSession.pdf_links[selectedPdfIndex].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-purple d-flex align-items-center gap-1 font-semibold"
+                      >
+                        <i className="bi bi-box-arrow-up-right"></i>
+                        <span>Open in Full Tab</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {/* Sub-Tabs for Template PDFs */}
@@ -855,7 +884,24 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                         <i className="bi bi-eye-fill me-1 text-purple"></i>
                         Previewing: {activeSession.pdf_links[selectedPdfIndex].template_name.replace(/_/g, ' ')} Template
                       </span>
-                      <small className="text-muted font-monospace">{activeSession.pdf_links[selectedPdfIndex].filename}</small>
+                      <div className="d-flex align-items-center gap-3">
+                        {activeSession.job_id && (
+                          <a
+                            href={
+                              activeSession.job_id.startsWith('http')
+                                ? activeSession.job_id
+                                : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-info text-decoration-none font-monospace fs-9 d-flex align-items-center gap-1 hover-underline"
+                          >
+                            <i className="bi bi-linkedin"></i>
+                            <span>Job #{activeSession.job_id}</span>
+                          </a>
+                        )}
+                        <small className="text-muted font-monospace">{activeSession.pdf_links[selectedPdfIndex].filename}</small>
+                      </div>
                     </div>
 
                     <iframe

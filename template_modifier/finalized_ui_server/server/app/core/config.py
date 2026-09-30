@@ -3,6 +3,7 @@ import os
 class Settings:
     PROJECT_NAME: str = "Finalized Auth API"
     API_V1_STR: str = "/api"
+    ENV: str = os.getenv("ENV", os.getenv("ENVIRONMENT", "dev")).lower()
     
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_PORT: str = os.getenv("DB_PORT", "3306")
@@ -17,5 +18,15 @@ class Settings:
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
+    def CENTRIFUGO_BASE_URL(self) -> str:
+        env_url = os.getenv("CENTRIFUGO_BASE_URL")
+        if env_url:
+            return env_url.rstrip("/")
+        if self.DB_HOST == "mysql" or self.ENV in ["docker", "prod", "production"]:
+            return "http://centrifugo:8000"
+        dev_port = os.getenv("CENTRIFUGO_PORT", "8002")
+        return f"http://localhost:{dev_port}"
 
 settings = Settings()

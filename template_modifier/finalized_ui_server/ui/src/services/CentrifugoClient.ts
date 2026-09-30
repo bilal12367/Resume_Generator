@@ -40,7 +40,8 @@ export class CentrifugoClient {
   private reconnectTimer: number | null = null;
 
   constructor(config: CentrifugoConfig = {}) {
-    this.wsUrl = config.wsUrl || 'ws://localhost:8008/connection/websocket';
+    const defaultWsUrl = 'ws://localhost:8008/connection/websocket'
+    this.wsUrl = config.wsUrl || defaultWsUrl;
     this.token = config.token || null;
     this.userId = config.userId || 'user_demo';
     this.autoReconnect = config.autoReconnect !== false;

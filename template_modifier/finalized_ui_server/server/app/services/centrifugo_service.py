@@ -27,7 +27,9 @@ class CentrifugoService:
         api_url: Optional[str] = None,
         api_key: Optional[str] = None
     ):
-        base_url = os.getenv("CENTRIFUGO_BASE_URL", "http://localhost:8008").rstrip("/")
+        default_host = "http://localhost:8008"
+        # print(default_host)
+        base_url = os.getenv("CENTRIFUGO_BASE_URL", default_host).rstrip("/")
         self.hmac_secret = hmac_secret or os.getenv("CENTRIFUGO_HMAC_SECRET", "a45131f8882de49f3e")
         self.api_url = api_url or os.getenv("CENTRIFUGO_API_URL", f"{base_url}/api")
         self.api_key = api_key or os.getenv("CENTRIFUGO_API_KEY", "bcb3a1a3ad19f36fd95f49")

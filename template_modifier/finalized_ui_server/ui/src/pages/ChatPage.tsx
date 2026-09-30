@@ -35,6 +35,10 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const [isAgentThinking, setIsAgentThinking] = useState<boolean>(false);
   const [expandedTraceMsgIds, setExpandedTraceMsgIds] = useState<Record<string, boolean>>({});
 
+  // Session Title Editing State
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editingTitleInput, setEditingTitleInput] = useState<string>('');
+
   const centrifugoRef = useRef<CentrifugoClient | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -46,6 +50,42 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleStartRename = (session: ChatSession, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditingTitleInput(session.title);
+  };
+
+  const handleSaveRename = async (sessionId: string, e?: React.MouseEvent | React.FormEvent) => {
+    e?.stopPropagation();
+    e?.preventDefault();
+    const trimmedTitle = editingTitleInput.trim();
+    if (!trimmedTitle) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/linkedin/agent/session/${sessionId}/title`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmedTitle }),
+      });
+      if (res.ok) {
+        setChatSessions(prev => prev.map(s => s.id === sessionId ? { ...s, title: trimmedTitle } : s));
+        fetchAllSessions();
+      }
+    } catch (err) {
+      console.error('[Rename Session Error]:', err);
+    } finally {
+      setEditingSessionId(null);
+      setEditingTitleInput('');
+    }
+  };
+
+  const handleCancelRename = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingSessionId(null);
+    setEditingTitleInput('');
   };
 
   // Fetch Session History from Backend MySQL Database
@@ -134,7 +174,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               const existing = existingMap.get(s.session_id);
               return {
                 id: s.session_id,
-                title: existing?.title || (s.session_id === 'job_agent_session_01' ? 'Python Remote Job Search' : `Job Search (${s.session_id.slice(-6)})`),
+                title: s.title || existing?.title || (s.session_id === 'job_agent_session_01' ? 'Python Remote Job Search' : `Job Search (${s.session_id.slice(-6)})`),
                 time: s.last_activity ? new Date(s.last_activity).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent',
                 messages: existing?.messages || []
               };
@@ -171,8 +211,9 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
   // Centrifugo Connection & Real-time Event Listener per activeSessionId
   useEffect(() => {
+    const defaultWsUrl = import.meta.env.VITE_CENTRIFUGO_WS_URL || (import.meta.env.DEV ? 'ws://localhost:8008/connection/websocket' : 'ws://localhost:8008/connection/websocket');
     const cfClient = new CentrifugoClient({
-      wsUrl: 'ws://localhost:8008/connection/websocket',
+      wsUrl: defaultWsUrl,
       userId: 'user_demo',
       autoReconnect: true,
     });
@@ -227,11 +268,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                 const targetMsg = { ...messagesCopy[agentMsgIndex] };
                 const traces: AgentTraces = targetMsg.traces
                   ? {
-                      thinking: [...targetMsg.traces.thinking],
-                      action: [...targetMsg.traces.action],
-                      observation: [...targetMsg.traces.observation],
-                      answering: targetMsg.traces.answering || ''
-                    }
+                    thinking: [...targetMsg.traces.thinking],
+                    action: [...targetMsg.traces.action],
+                    observation: [...targetMsg.traces.observation],
+                    answering: targetMsg.traces.answering || ''
+                  }
                   : { thinking: [], action: [], observation: [], answering: '' };
 
                 let sessionTokenUsage = s.tokenUsage;
@@ -527,26 +568,52 @@ export const ChatPage: React.FC<ChatPageProps> = ({
             <div
               key={session.id}
               onClick={() => onSelectSession(session.id)}
-              className={`p-3 rounded-3 cursor-pointer transition-all border ${
-                activeSessionId === session.id
+              className={`p-3 rounded-3 cursor-pointer transition-all border ${activeSessionId === session.id
                   ? 'bg-white shadow-sm border-purple-light'
                   : 'bg-transparent border-transparent hover-bg-white'
-              }`}
+                }`}
             >
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <strong className="text-purple fs-7 text-truncate me-2" style={{ maxWidth: '160px' }}>
-                  {session.title}
-                </strong>
-                <div className="d-flex align-items-center gap-1">
-                  <small className="text-muted fs-8">{session.time}</small>
-                  <button
-                    onClick={(e) => handleDeleteChatSession(session.id, e)}
-                    className="btn btn-sm text-danger p-0 border-0 ms-1"
-                    title="Delete Session"
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
-                </div>
+                {editingSessionId === session.id ? (
+                  <form onSubmit={(e) => handleSaveRename(session.id, e)} className="d-flex align-items-center gap-1 w-100 me-1" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      className="form-control form-control-sm py-0 px-1 fs-7"
+                      value={editingTitleInput}
+                      onChange={(e) => setEditingTitleInput(e.target.value)}
+                      autoFocus
+                    />
+                    <button type="submit" className="btn btn-sm text-success p-0 border-0" title="Save Title">
+                      <i className="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" onClick={handleCancelRename} className="btn btn-sm text-secondary p-0 border-0" title="Cancel">
+                      <i className="bi bi-x-lg"></i>
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <strong className="text-purple fs-7 text-truncate me-2" style={{ maxWidth: '140px' }}>
+                      {session.title}
+                    </strong>
+                    <div className="d-flex align-items-center gap-1">
+                      <small className="text-muted fs-8">{session.time}</small>
+                      <button
+                        onClick={(e) => handleStartRename(session, e)}
+                        className="btn btn-sm text-purple p-0 border-0 ms-1"
+                        title="Rename Session"
+                      >
+                        <i className="bi bi-pencil-square"></i>
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteChatSession(session.id, e)}
+                        className="btn btn-sm text-danger p-0 border-0 ms-1"
+                        title="Delete Session"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <p className="text-muted fs-7 mb-0 text-truncate" style={{ maxWidth: '260px' }}>
@@ -570,7 +637,30 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                   <i className="bi bi-robot text-purple fs-5"></i>
                 </div>
                 <div className="text-truncate">
-                  <h6 className="fw-bold text-dark mb-0 text-truncate">{activeSession.title}</h6>
+                  {editingSessionId === activeSession.id ? (
+                    <form onSubmit={(e) => handleSaveRename(activeSession.id, e)} className="d-flex align-items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm py-1 px-2 fw-bold"
+                        value={editingTitleInput}
+                        onChange={(e) => setEditingTitleInput(e.target.value)}
+                        autoFocus
+                      />
+                      <button type="submit" className="btn btn-sm btn-purple py-0 px-2" title="Save Title">Save</button>
+                      <button type="button" onClick={handleCancelRename} className="btn btn-sm btn-light py-0 px-2" title="Cancel">Cancel</button>
+                    </form>
+                  ) : (
+                    <div className="d-flex align-items-center gap-2">
+                      <h6 className="fw-bold text-dark mb-0 text-truncate">{activeSession.title}</h6>
+                      <button
+                        onClick={(e) => handleStartRename(activeSession, e)}
+                        className="btn btn-sm text-purple p-0 border-0"
+                        title="Rename Session"
+                      >
+                        <i className="bi bi-pencil-square fs-7"></i>
+                      </button>
+                    </div>
+                  )}
                   <small className="text-muted fs-8 text-truncate d-block">Session ID: {activeSession.id}</small>
                 </div>
               </div>
@@ -595,17 +685,15 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               {activeSession.messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`d-flex flex-column ${
-                    msg.sender === 'user' ? 'align-items-end' : 'align-items-start'
-                  }`}
+                  className={`d-flex flex-column ${msg.sender === 'user' ? 'align-items-end' : 'align-items-start'
+                    }`}
                   style={{ minWidth: 0, maxWidth: '100%' }}
                 >
                   <div
-                    className={`p-3 rounded-4 shadow-sm ${
-                      msg.sender === 'user'
+                    className={`p-3 rounded-4 shadow-sm ${msg.sender === 'user'
                         ? 'bg-purple text-white'
                         : 'bg-white border text-dark'
-                    }`}
+                      }`}
                     style={{ maxWidth: '85%', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                   >
                     {/* Live Delta Stream Card when Agent is actively streaming */}

@@ -40,7 +40,7 @@ services:
     network_mode: "service:nginx"
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_HOSTNAME=bilal-job-scraper
+      - TS_HOSTNAME=bilal1-job-scraper
       - TS_STATE_DIR=/var/lib/tailscale
       # 1. Point this to the port your application listens on internally
       - TS_SERVE_PORT=80

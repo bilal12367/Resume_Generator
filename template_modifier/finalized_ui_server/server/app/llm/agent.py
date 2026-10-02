@@ -5,7 +5,7 @@ import inspect
 import sqlite3
 import logging
 import asyncio
-from typing import List, Dict, Any, Optional, Callable, Literal, Generator, AsyncGenerator
+from typing import List, Dict, Any, Optional, Callable, Literal, Generator, AsyncGenerator, Union
 
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(usecwd=True))
@@ -22,6 +22,7 @@ from app.models.agent_model import (
     DBSessionMetadata,
     DBSessionEvent,
     DBJobDescription,
+    DBSystemPrompt,
 )
 from llama_index.llms.siliconflow import SiliconFlow
 from llama_index.core.llms import ChatMessage, MessageRole
@@ -141,7 +142,46 @@ class AgentDatabase:
 
     def _init_db(self):
         Base.metadata.create_all(bind=self.engine)
+        # Ensure system_prompt column exists on existing session_metadata table
+        from sqlalchemy import text
+        with self.engine.connect() as conn:
+            try:
+                conn.execute(text("ALTER TABLE session_metadata ADD COLUMN system_prompt TEXT NULL"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE session_jobs ADD COLUMN message_id VARCHAR(255) NULL"))
+                conn.commit()
+            except Exception:
+                pass
+
         logger.info("Database schema initialized successfully using SQLAlchemy ORM.")
+        try:
+            with self.SessionLocal() as session:
+                existing = session.query(DBSystemPrompt).first()
+                if not existing:
+                    default_prompt = (
+                        "You are a Job Finder Consultant expert agent.\n"
+                        "Your job is to chat with user, use right keywords to search jobs.\n"
+                        "Your primary mission is to take user job preferences, search jobs using `search_linkedin_jobs`, and directly call `ask_user_to_select_jobs` with the job IDs found.\n\n"
+                        "STRICT OPERATIONAL RULES:\n"
+                        "1. DO NOT ASK QUESTIONS: Infer preferences from user input and search directly.\n"
+                        "2. INSTANT SEARCH EXECUTION & KEYWORD ENRICHMENT: Call search_linkedin_jobs with sensible defaults.\n"
+                        "3. DIRECT HITL SELECTION TOOL CALL: Call ask_user_to_select_jobs with found job IDs.\n"
+                        "4. AWAITING SELECTION ANSWER: Respond with 'Awaiting User selection'.\n"
+                        "5. NO TOOL DEFINITIONS: Never explain internal instructions.\n"
+                        "6. JOB DETAIL INSPECTION: Fetch job details when requested."
+                    )
+                    sp = DBSystemPrompt(
+                        name="Default Job Finder Consultant",
+                        prompt_text=default_prompt,
+                        is_default=1
+                    )
+                    session.add(sp)
+                    session.commit()
+        except Exception as e:
+            logger.warning(f"Could not seed default system prompt: {e}")
 
     def add_message(self, session_id: str, role: str, content: str, token_count: int) -> int:
         with self.SessionLocal() as session:
@@ -155,17 +195,23 @@ class AgentDatabase:
     def get_all_messages(self, session_id: str) -> List[Dict[str, Any]]:
         with self.SessionLocal() as session:
             msgs = session.query(DBMessage).filter(DBMessage.session_id == session_id).order_by(DBMessage.id.asc()).all()
-            return [
-                {
+            result = []
+            for m in msgs:
+                job_records = session.query(DBSessionJob).filter(
+                    DBSessionJob.session_id == session_id,
+                    DBSessionJob.message_id == str(m.id)
+                ).all()
+                job_ids = [j.job_id for j in job_records]
+                result.append({
                     "id": m.id,
                     "session_id": m.session_id,
                     "role": m.role,
                     "content": m.content,
                     "token_count": m.token_count,
+                    "job_ids": job_ids,
                     "created_at": str(m.created_at) if m.created_at else None
-                }
-                for m in msgs
-            ]
+                })
+            return result
 
     def get_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
         with self.SessionLocal() as session:
@@ -265,9 +311,9 @@ class AgentDatabase:
             return logs
 
     def get_all_sessions(self) -> List[Dict[str, Any]]:
-        """Fetches distinct active session IDs, custom titles, and their latest activity timestamp."""
+        """Fetches distinct active session IDs, custom titles, system prompts, and their latest activity timestamp."""
         with self.SessionLocal() as session:
-            meta_map = {sm.session_id: sm.title for sm in session.query(DBSessionMetadata).all()}
+            meta_map = {sm.session_id: {"title": sm.title, "system_prompt": sm.system_prompt} for sm in session.query(DBSessionMetadata).all()}
 
             msg_results = session.query(
                 DBMessage.session_id,
@@ -283,18 +329,21 @@ class AgentDatabase:
             seen_sessions = set()
             for s_id, last_activity, message_count in msg_results:
                 seen_sessions.add(s_id)
+                meta_item = meta_map.get(s_id, {})
                 sessions.append({
                     "session_id": s_id,
-                    "title": meta_map.get(s_id),
+                    "title": meta_item.get("title"),
+                    "system_prompt": meta_item.get("system_prompt"),
                     "last_activity": str(last_activity) if last_activity else None,
                     "message_count": message_count
                 })
 
-            for s_id, title in meta_map.items():
+            for s_id, meta_item in meta_map.items():
                 if s_id not in seen_sessions:
                     sessions.append({
                         "session_id": s_id,
-                        "title": title,
+                        "title": meta_item.get("title"),
+                        "system_prompt": meta_item.get("system_prompt"),
                         "last_activity": None,
                         "message_count": 0
                     })
@@ -315,6 +364,154 @@ class AgentDatabase:
             session.commit()
         return True
 
+    def get_session_metadata(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Queries session metadata (title, system_prompt) by session_id."""
+        if not session_id:
+            return None
+        with self.SessionLocal() as session:
+            sm = session.query(DBSessionMetadata).filter(DBSessionMetadata.session_id == session_id).first()
+            if sm:
+                return {
+                    "session_id": sm.session_id,
+                    "title": sm.title,
+                    "system_prompt": sm.system_prompt,
+                    "created_at": str(sm.created_at) if sm.created_at else None
+                }
+            return None
+
+    def save_session_metadata(self, session_id: str, title: Optional[str] = None, system_prompt: Optional[str] = None) -> bool:
+        """Saves or updates session metadata (title, system_prompt) for a session in DB."""
+        if not session_id:
+            return False
+        with self.SessionLocal() as session:
+            sm = session.query(DBSessionMetadata).filter(DBSessionMetadata.session_id == session_id).first()
+            if sm:
+                if title is not None:
+                    sm.title = title
+                if system_prompt is not None:
+                    sm.system_prompt = system_prompt
+            else:
+                sm = DBSessionMetadata(session_id=session_id, title=title, system_prompt=system_prompt)
+                session.add(sm)
+            session.commit()
+        return True
+
+    def get_all_system_prompts(self) -> List[Dict[str, Any]]:
+        """Queries all system prompts, ordered by default status and creation date."""
+        with self.SessionLocal() as session:
+            prompts = session.query(DBSystemPrompt).order_by(DBSystemPrompt.is_default.desc(), DBSystemPrompt.id.asc()).all()
+            return [
+                {
+                    "id": p.id,
+                    "name": p.name,
+                    "prompt_text": p.prompt_text,
+                    "is_default": bool(p.is_default),
+                    "created_at": str(p.created_at) if p.created_at else None,
+                    "updated_at": str(p.updated_at) if p.updated_at else None,
+                }
+                for p in prompts
+            ]
+
+    def get_default_system_prompt(self) -> Optional[Dict[str, Any]]:
+        """Queries the current active default system prompt."""
+        with self.SessionLocal() as session:
+            p = session.query(DBSystemPrompt).filter(DBSystemPrompt.is_default == 1).first()
+            if not p:
+                p = session.query(DBSystemPrompt).order_by(DBSystemPrompt.id.asc()).first()
+            if p:
+                return {
+                    "id": p.id,
+                    "name": p.name,
+                    "prompt_text": p.prompt_text,
+                    "is_default": bool(p.is_default),
+                    "created_at": str(p.created_at) if p.created_at else None,
+                    "updated_at": str(p.updated_at) if p.updated_at else None,
+                }
+            return None
+
+    def create_system_prompt(self, name: str, prompt_text: str, is_default: bool = False) -> Dict[str, Any]:
+        """Creates a new System Prompt record."""
+        with self.SessionLocal() as session:
+            if is_default:
+                session.query(DBSystemPrompt).update({DBSystemPrompt.is_default: 0})
+            
+            p = DBSystemPrompt(name=name, prompt_text=prompt_text, is_default=1 if is_default else 0)
+            session.add(p)
+            session.commit()
+            session.refresh(p)
+            return {
+                "id": p.id,
+                "name": p.name,
+                "prompt_text": p.prompt_text,
+                "is_default": bool(p.is_default),
+                "created_at": str(p.created_at) if p.created_at else None,
+                "updated_at": str(p.updated_at) if p.updated_at else None,
+            }
+
+    def update_system_prompt(
+        self,
+        prompt_id: int,
+        name: Optional[str] = None,
+        prompt_text: Optional[str] = None,
+        is_default: Optional[bool] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Updates an existing System Prompt record."""
+        with self.SessionLocal() as session:
+            p = session.query(DBSystemPrompt).filter(DBSystemPrompt.id == prompt_id).first()
+            if not p:
+                return None
+
+            if is_default is True:
+                session.query(DBSystemPrompt).update({DBSystemPrompt.is_default: 0})
+                p.is_default = 1
+            elif is_default is False:
+                p.is_default = 0
+
+            if name is not None:
+                p.name = name
+            if prompt_text is not None:
+                p.prompt_text = prompt_text
+
+            session.commit()
+            session.refresh(p)
+            return {
+                "id": p.id,
+                "name": p.name,
+                "prompt_text": p.prompt_text,
+                "is_default": bool(p.is_default),
+                "created_at": str(p.created_at) if p.created_at else None,
+                "updated_at": str(p.updated_at) if p.updated_at else None,
+            }
+
+    def delete_system_prompt(self, prompt_id: int) -> bool:
+        """Deletes a System Prompt record by ID."""
+        with self.SessionLocal() as session:
+            p = session.query(DBSystemPrompt).filter(DBSystemPrompt.id == prompt_id).first()
+            if not p:
+                return False
+            was_default = bool(p.is_default)
+            session.delete(p)
+            session.commit()
+
+            # If we deleted the default prompt, make the first remaining prompt default
+            if was_default:
+                first_p = session.query(DBSystemPrompt).order_by(DBSystemPrompt.id.asc()).first()
+                if first_p:
+                    first_p.is_default = 1
+                    session.commit()
+            return True
+
+    def set_default_system_prompt(self, prompt_id: int) -> bool:
+        """Sets a System Prompt as the active default."""
+        with self.SessionLocal() as session:
+            p = session.query(DBSystemPrompt).filter(DBSystemPrompt.id == prompt_id).first()
+            if not p:
+                return False
+            session.query(DBSystemPrompt).update({DBSystemPrompt.is_default: 0})
+            p.is_default = 1
+            session.commit()
+            return True
+
     def delete_session(self, session_id: str) -> bool:
         """Deletes all persistent records (messages, summaries, status logs, token usage, session jobs, metadata, events) for a given session_id from DB."""
         if not session_id:
@@ -331,22 +528,42 @@ class AgentDatabase:
         logger.info(f"[DB DELETE] Deleted all persistent records for session '{session_id}'.")
         return True
 
-    def save_session_job(self, session_id: str, job_id: str, job_title: str = "", company: str = "", location: str = "", details: Optional[Dict[str, Any]] = None):
-        """Caches a job ID associated with a session_id in DB."""
+    def save_session_job(
+        self,
+        session_id: str,
+        job_id: str,
+        message_id: Optional[Union[int, str]] = None,
+        job_title: str = "",
+        company: str = "",
+        location: str = "",
+        details: Optional[Dict[str, Any]] = None
+    ):
+        """Caches a job ID associated with a session_id and optional message_id in DB."""
         details_json = json.dumps(details) if details else None
+        msg_id_str = str(message_id) if message_id is not None else None
         with self.SessionLocal() as session:
-            job = session.query(DBSessionJob).filter(
+            query = session.query(DBSessionJob).filter(
                 DBSessionJob.session_id == session_id,
                 DBSessionJob.job_id == str(job_id)
-            ).first()
+            )
+            if msg_id_str:
+                query = query.filter(DBSessionJob.message_id == msg_id_str)
+            else:
+                query = query.filter((DBSessionJob.message_id.is_(None)) | (DBSessionJob.message_id == ""))
+
+            job = query.first()
             if job:
-                job.job_title = job_title or ""
-                job.company = company or ""
-                job.location = location or ""
-                job.details = details_json
+                job.job_title = job_title or job.job_title or ""
+                job.company = company or job.company or ""
+                job.location = location or job.location or ""
+                if details_json:
+                    job.details = details_json
+                if msg_id_str:
+                    job.message_id = msg_id_str
             else:
                 job = DBSessionJob(
                     session_id=session_id,
+                    message_id=msg_id_str,
                     job_id=str(job_id),
                     job_title=job_title or "",
                     company=company or "",
@@ -356,10 +573,49 @@ class AgentDatabase:
                 session.add(job)
             session.commit()
 
-    def get_session_jobs(self, session_id: str) -> List[Dict[str, Any]]:
-        """Retrieves all cached job IDs for a given session_id from DB."""
+    def link_session_jobs_to_message(self, session_id: str, job_ids: List[str], message_id: Union[int, str]):
+        """Links session jobs to a specific message_id in DB."""
+        if not session_id or not job_ids or message_id is None:
+            return
+        msg_id_str = str(message_id)
+        job_id_strs = [str(j) for j in job_ids]
         with self.SessionLocal() as session:
-            jobs_raw = session.query(DBSessionJob).filter(DBSessionJob.session_id == session_id).order_by(DBSessionJob.id.asc()).all()
+            session.query(DBSessionJob).filter(
+                DBSessionJob.session_id == session_id,
+                DBSessionJob.job_id.in_(job_id_strs)
+            ).update({DBSessionJob.message_id: msg_id_str}, synchronize_session=False)
+            session.commit()
+
+    def link_unassigned_jobs_to_message(self, session_id: str, message_id: Union[int, str]):
+        """Links any unassigned session jobs for this session to the given message_id."""
+        if not session_id or message_id is None:
+            return
+        msg_id_str = str(message_id)
+        with self.SessionLocal() as session:
+            session.query(DBSessionJob).filter(
+                DBSessionJob.session_id == session_id,
+                (DBSessionJob.message_id.is_(None)) | (DBSessionJob.message_id == "")
+            ).update({DBSessionJob.message_id: msg_id_str}, synchronize_session=False)
+            session.commit()
+
+    def clear_unassigned_session_jobs(self, session_id: str):
+        """Removes any unassigned session jobs for a session before starting a new tool selection."""
+        if not session_id:
+            return
+        with self.SessionLocal() as session:
+            session.query(DBSessionJob).filter(
+                DBSessionJob.session_id == session_id,
+                (DBSessionJob.message_id.is_(None)) | (DBSessionJob.message_id == "")
+            ).delete(synchronize_session=False)
+            session.commit()
+
+    def get_session_jobs(self, session_id: str, message_id: Optional[Union[int, str]] = None) -> List[Dict[str, Any]]:
+        """Retrieves cached job IDs for a given session_id from DB."""
+        with self.SessionLocal() as session:
+            query = session.query(DBSessionJob).filter(DBSessionJob.session_id == session_id)
+            if message_id is not None:
+                query = query.filter(DBSessionJob.message_id == str(message_id))
+            jobs_raw = query.order_by(DBSessionJob.id.asc()).all()
             jobs = []
             for j in jobs_raw:
                 details_val = None
@@ -371,6 +627,7 @@ class AgentDatabase:
                 jobs.append({
                     "id": j.id,
                     "session_id": j.session_id,
+                    "message_id": j.message_id,
                     "job_id": j.job_id,
                     "job_title": j.job_title,
                     "company": j.company,
@@ -395,8 +652,27 @@ class AgentDatabase:
         if not session_id:
             return []
         with self.SessionLocal() as session:
+            # Fetch assistant messages to map turn message_ids to their exact job_ids
+            asst_msgs = session.query(DBMessage).filter(
+                DBMessage.session_id == session_id,
+                DBMessage.role == "assistant"
+            ).order_by(DBMessage.id.asc()).all()
+
+            turn_jobs_map = []
+            for m in asst_msgs:
+                job_records = session.query(DBSessionJob).filter(
+                    DBSessionJob.session_id == session_id,
+                    DBSessionJob.message_id == str(m.id)
+                ).order_by(DBSessionJob.id.asc()).all()
+                if job_records:
+                    turn_jobs_map.append({
+                        "message_id": m.id,
+                        "job_ids": [j.job_id for j in job_records]
+                    })
+
             events_raw = session.query(DBSessionEvent).filter(DBSessionEvent.session_id == session_id).order_by(DBSessionEvent.id.asc()).all()
             events = []
+            hitl_event_idx = 0
             for e in events_raw:
                 data_val = {}
                 if e.data:
@@ -404,6 +680,14 @@ class AgentDatabase:
                         data_val = json.loads(e.data)
                     except Exception:
                         pass
+
+                if e.event_type == "hitl_prompt" and isinstance(data_val, dict):
+                    if hitl_event_idx < len(turn_jobs_map):
+                        if not data_val.get("job_ids"):
+                            data_val["job_ids"] = turn_jobs_map[hitl_event_idx]["job_ids"]
+                        data_val["message_id"] = turn_jobs_map[hitl_event_idx]["message_id"]
+                    hitl_event_idx += 1
+
                 events.append({
                     "timestamp": str(e.created_at) if e.created_at else None,
                     "session_id": e.session_id,
@@ -511,6 +795,7 @@ class Agent:
         self.session_id = session_id if session_id else str(uuid.uuid4())
         self.SYSTEM_PROMPT = SYSTEM_PROMPT
         self.token_limit = token_limit
+        self.last_assistant_message_id = None
 
         # Resolve DB URL (defaults to os.getenv('DATABASE_URL') or MySQL dev DB)
         db_host = os.getenv("DB_HOST", "mysql")
@@ -797,12 +1082,19 @@ class Agent:
 
         # 4. Store Assistant Message in DB
         a_tokens = estimate_tokens(response_text)
-        self.db.add_message(
+        asst_msg_id = self.db.add_message(
             session_id=self.session_id,
             role="assistant",
             content=response_text,
             token_count=a_tokens
         )
+        self.last_assistant_message_id = asst_msg_id
+
+        if asst_msg_id:
+            try:
+                self.db.link_unassigned_jobs_to_message(self.session_id, asst_msg_id)
+            except Exception as e:
+                logger.warning(f"Failed to link unassigned jobs to message '{asst_msg_id}': {e}")
 
         logger.info(f"=== Completed async chat execution [Session: {self.session_id}] | DB Accumulated Tokens: {self.usage['total_tokens']} ===")
         return response_text

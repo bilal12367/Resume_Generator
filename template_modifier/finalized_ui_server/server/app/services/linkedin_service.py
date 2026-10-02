@@ -3,6 +3,7 @@ import json
 import logging
 import asyncio
 import urllib.parse
+from datetime import datetime
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any, Optional, Union
 from playwright.async_api import async_playwright
@@ -66,6 +67,27 @@ class LinkedInService:
             subtitle_el = card.find("h4", class_=lambda c: c and "base-search-card__subtitle" in c)
             company_link = subtitle_el.find("a") if subtitle_el else None
             loc_el = card.find("span", class_=lambda c: c and "job-search-card__location" in c)
+            time_el = (
+                card.find("time", class_=re.compile(r"job-search-card__listdate"))
+                or card.find("time")
+                or card.find(class_=re.compile(r"job-search-card__listdate"))
+            )
+
+            posted_date = ""
+            if time_el:
+                dt_attr = time_el.get("datetime")
+                if dt_attr:
+                    raw_date = str(dt_attr[0]) if isinstance(dt_attr, list) else str(dt_attr)
+                    raw_date = raw_date.strip()
+                    try:
+                        dt = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
+                        posted_date = dt.strftime("%Y-%m-%d")
+                    except ValueError:
+                        match = re.search(r'\d{4}-\d{2}-\d{2}', raw_date)
+                        if match:
+                            posted_date = match.group(0)
+                        else:
+                            posted_date = raw_date
 
             urn_attr = card.get("data-entity-urn", "")
             urn_str = str(urn_attr[0]) if isinstance(urn_attr, list) else (str(urn_attr) if urn_attr else "")
@@ -87,6 +109,7 @@ class LinkedInService:
                     "title": title,
                     "company_name": company_name,
                     "location": location,
+                    "posted_date": posted_date,
                     "job_url": f"https://www.linkedin.com/jobs/view/{job_id}/"
                 }
                 jobs.append(job_data)

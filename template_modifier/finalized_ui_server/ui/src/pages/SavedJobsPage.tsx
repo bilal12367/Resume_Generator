@@ -123,12 +123,27 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
 
   // Filter & Sort Logic
   const filteredJobs = savedJobs.filter(j => {
-    const query = searchQuery.toLowerCase();
-    const matchesQuery = !query ||
-      j.title.toLowerCase().includes(query) ||
-      j.company_name.toLowerCase().includes(query) ||
-      j.job_id.includes(query) ||
-      (j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(query)));
+    const rawQuery = searchQuery.trim();
+    let matchesQuery = false;
+
+    if (!rawQuery) {
+      matchesQuery = true;
+    } else if (rawQuery.includes(',')) {
+      const terms = rawQuery.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+      matchesQuery = terms.some(term =>
+        j.job_id.toLowerCase().includes(term) ||
+        j.title.toLowerCase().includes(term) ||
+        j.company_name.toLowerCase().includes(term) ||
+        (j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(term)))
+      );
+    } else {
+      const query = rawQuery.toLowerCase();
+      matchesQuery =
+        j.title.toLowerCase().includes(query) ||
+        j.company_name.toLowerCase().includes(query) ||
+        j.job_id.toLowerCase().includes(query) ||
+        (j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(query)));
+    }
 
     // Selected Company Filter
     const matchesSelectedCompany = selectedCompany === 'All' || j.company_name === selectedCompany;

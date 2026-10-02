@@ -49,6 +49,9 @@ class RunATSWorkflowRequest(BaseModel):
     job_id: Optional[str] = None
     job_description_text: Optional[str] = None
 
+class UpdateATSDataRequest(BaseModel):
+    ats_data: Any  # JSON dict or text string
+
 class GeneratePDFRequest(BaseModel):
     filename: str
 
@@ -373,6 +376,51 @@ async def run_ats_workflow(session_id: str, payload: RunATSWorkflowRequest, db: 
         raise HTTPException(status_code=500, detail=f"ATS Workflow Error: {err_msg}")
 
 
+@router.put("/sessions/{session_id}/ats", summary="Update/Save Generated ATS Resume Data")
+@router.post("/sessions/{session_id}/ats", summary="Update/Save Generated ATS Resume Data")
+async def update_generated_ats_data(session_id: str, payload: UpdateATSDataRequest, db: Session = Depends(get_db)):
+    """
+    Saves or updates the generated ATS resume JSON data for a specific workflow session.
+    When PDF generation is subsequently called, it will use this updated ATS JSON data.
+    """
+    session = db.query(ATSWorkflowSession).filter(ATSWorkflowSession.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
+
+    try:
+        if isinstance(payload.ats_data, str):
+            ats_parsed = json.loads(payload.ats_data)
+        else:
+            ats_parsed = payload.ats_data
+
+        ats_json_str = json.dumps(ats_parsed, indent=2)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON format for ATS data: {str(e)}")
+
+    gen = db.query(GeneratedATS).filter(GeneratedATS.session_id == session_id).order_by(GeneratedATS.created_at.desc()).first()
+    if gen:
+        gen.ats_json_data = ats_json_str
+    else:
+        gen = GeneratedATS(
+            session_id=session_id,
+            profile_id=session.profile_id or 0,
+            job_id=session.job_id or "MANUAL",
+            ats_json_data=ats_json_str
+        )
+        db.add(gen)
+
+    if session.status in ["CREATED", "FAILED"]:
+        session.status = "ATS_COMPLETED"
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "session_id": session_id,
+        "ats_data_parsed": ats_parsed
+    }
+
+
 @router.post("/sessions/{session_id}/generate-pdf", summary="Generate Resume PDFs from ATS Data")
 async def generate_pdfs_for_session(session_id: str, payload: GeneratePDFRequest, db: Session = Depends(get_db)):
     """
@@ -412,9 +460,11 @@ async def generate_pdfs_for_session(session_id: str, payload: GeneratePDFRequest
 
         pdf_files = list(generation_dir.glob("*.pdf")) if generation_dir.exists() else []
 
+        import time
+        ts = int(time.time())
         pdf_links = []
         for p in pdf_files:
-            rel_url = f"/output/{payload.filename}/{p.name}"
+            rel_url = f"/output/{payload.filename}/{p.name}?v={ts}"
             pdf_links.append({
                 "template_name": p.stem.replace(f"{payload.filename}_", ""),
                 "filename": p.name,

@@ -9,6 +9,7 @@ from app.models.agent_model import (
     DBSessionMetadata,
     DBSessionEvent,
     DBJobDescription,
+    DBSystemPrompt,
 )
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "DBSessionMetadata",
     "DBSessionEvent",
     "DBJobDescription",
+    "DBSystemPrompt",
 ]
 

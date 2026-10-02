@@ -63,6 +63,11 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
   const [generatingPDFs, setGeneratingPDFs] = useState<boolean>(false);
   const [showRawATSJson, setShowRawATSJson] = useState<boolean>(false);
 
+  // Editable ATS JSON State
+  const [editedAtsJsonText, setEditedAtsJsonText] = useState<string>('');
+  const [savingAtsJson, setSavingAtsJson] = useState<boolean>(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
   // Sub-Tab Navigation: 'session' | 'manual'
   const [activeTab, setActiveTab] = useState<'session' | 'manual'>('session');
 
@@ -71,6 +76,51 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
   const [manualCustomUserData, setManualCustomUserData] = useState<string>('');
   const [manualJobTitle, setManualJobTitle] = useState<string>('');
   const [manualJobDescription, setManualJobDescription] = useState<string>('');
+
+  // Sync active session's parsed ATS JSON into editor state
+  useEffect(() => {
+    if (activeSession?.generated_ats?.ats_data_parsed) {
+      setEditedAtsJsonText(JSON.stringify(activeSession.generated_ats.ats_data_parsed, null, 2));
+    } else {
+      setEditedAtsJsonText('');
+    }
+  }, [activeSession?.generated_ats?.ats_data_parsed]);
+
+  // Handler to Save Modified ATS JSON to Backend DB
+  const handleSaveATSJson = async () => {
+    if (!activeSessionId) return;
+    let parsed: any;
+    try {
+      parsed = JSON.parse(editedAtsJsonText);
+    } catch (err: any) {
+      alert(`Invalid JSON syntax: ${err.message}`);
+      return;
+    }
+
+    setSavingAtsJson(true);
+    setSaveSuccessMsg(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/workflow/sessions/${activeSessionId}/ats`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ats_data: parsed })
+      });
+
+      if (res.ok) {
+        await fetchSessionDetails(activeSessionId);
+        setSaveSuccessMsg("✅ Modified ATS JSON saved successfully! Generating PDFs will now use this updated JSON data.");
+        setTimeout(() => setSaveSuccessMsg(null), 5000);
+      } else {
+        const errData = await res.json();
+        alert(`Failed to save ATS JSON: ${errData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Save ATS JSON Error:", err);
+      alert("Network error saving ATS JSON.");
+    } finally {
+      setSavingAtsJson(false);
+    }
+  };
 
   // Sync initialSessionId prop
   useEffect(() => {
@@ -697,10 +747,10 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                   </h5>
                   <button
                     onClick={() => setShowRawATSJson(!showRawATSJson)}
-                    className="btn btn-sm btn-outline-purple"
+                    className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1.5 fw-semibold"
                   >
-                    <i className="bi bi-code-square me-1"></i>
-                    {showRawATSJson ? 'Hide Raw JSON' : 'View Raw JSON'}
+                    <i className="bi bi-pencil-square"></i>
+                    {showRawATSJson ? 'Close JSON Editor' : 'Edit / View Raw ATS JSON'}
                   </button>
                 </div>
 
@@ -745,10 +795,64 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                   </div>
                 </div>
 
-                {/* Raw JSON Code Viewer */}
+                {/* Raw JSON Code Editor & Save Controls */}
                 {showRawATSJson && (
-                  <div className="bg-dark text-light p-3 rounded-3 overflow-auto font-monospace fs-8" style={{ maxHeight: '350px' }}>
-                    <pre className="mb-0">{JSON.stringify(atsData, null, 2)}</pre>
+                  <div className="mt-3 p-3 bg-dark text-light rounded-3 shadow-sm border border-secondary">
+                    <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary">
+                      <span className="fs-8 font-monospace text-purple-light fw-bold">
+                        <i className="bi bi-pencil-square me-1"></i> Editable ATS Resume JSON
+                      </span>
+                      <div className="d-flex align-items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            try {
+                              const p = JSON.parse(editedAtsJsonText);
+                              setEditedAtsJsonText(JSON.stringify(p, null, 2));
+                            } catch (e: any) {
+                              alert(`Cannot format: Invalid JSON - ${e.message}`);
+                            }
+                          }}
+                          className="btn btn-xs btn-outline-light fs-9 py-1 px-2"
+                          disabled={savingAtsJson}
+                        >
+                          <i className="bi bi-magic me-1"></i> Format JSON
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveATSJson}
+                          className="btn btn-sm btn-success fw-bold fs-8 py-1 px-3 d-flex align-items-center gap-1 shadow-sm"
+                          disabled={savingAtsJson}
+                        >
+                          {savingAtsJson ? (
+                            <>
+                              <div className="spinner-border spinner-border-sm text-white" role="status"></div>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="bi bi-floppy-fill me-1"></i> Save ATS JSON
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {saveSuccessMsg && (
+                      <div className="alert alert-success p-2 fs-8 fw-bold mb-2">
+                        {saveSuccessMsg}
+                      </div>
+                    )}
+
+                    <textarea
+                      className="form-control bg-dark text-light font-monospace fs-8 border-secondary"
+                      rows={16}
+                      style={{ lineHeight: '1.4', whiteSpace: 'pre', resize: 'vertical' }}
+                      value={editedAtsJsonText}
+                      onChange={(e) => setEditedAtsJsonText(e.target.value)}
+                      disabled={savingAtsJson}
+                      placeholder="Paste or edit ATS resume JSON data here..."
+                    />
                   </div>
                 )}
               </div>

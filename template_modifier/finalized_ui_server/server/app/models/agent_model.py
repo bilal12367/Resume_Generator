@@ -48,6 +48,7 @@ class DBSessionJob(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     session_id = Column(String(255), nullable=False)
+    message_id = Column(String(255), nullable=True, index=True)
     job_id = Column(String(255), nullable=False)
     job_title = Column(String(255), nullable=True)
     company = Column(String(255), nullable=True)
@@ -56,7 +57,7 @@ class DBSessionJob(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
-        UniqueConstraint("session_id", "job_id", name="idx_session_job"),
+        UniqueConstraint("session_id", "job_id", "message_id", name="idx_session_job_msg"),
     )
 
 
@@ -65,6 +66,7 @@ class DBSessionMetadata(Base):
 
     session_id = Column(String(255), primary_key=True)
     title = Column(String(255), nullable=False)
+    system_prompt = Column(Text, nullable=True)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
@@ -95,3 +97,15 @@ class DBJobDescription(Base):
     raw_description = Column(Text, nullable=True)
     skills_required = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class DBSystemPrompt(Base):
+    __tablename__ = "system_prompts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    prompt_text = Column(Text, nullable=False)
+    is_default = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+

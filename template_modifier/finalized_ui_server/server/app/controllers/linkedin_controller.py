@@ -142,16 +142,24 @@ async def get_job_agent_logs_endpoint(session_id: str):
 
 
 @router.get("/jobs/saved", summary="Get All Saved LinkedIn Jobs from Database")
-async def get_saved_jobs_endpoint():
+async def get_saved_jobs_endpoint(
+    job_ids: Optional[str] = Query(default=None, description="Optional comma-separated job IDs to filter")
+):
     """
-    Fetches all job descriptions stored in database table `job_descriptions`.
-    Returns list of saved job objects with title, company, location, posted_time, seniority_level, skills_required, etc.
+    Fetches job descriptions stored in database table `job_descriptions`.
+    Supports optional comma-separated `job_ids` parameter to fetch specific jobs.
     """
     try:
         from app.models.agent_model import DBJobDescription
         db = AgentDatabase()
         with db.SessionLocal() as session:
-            rows = session.query(DBJobDescription).order_by(DBJobDescription.created_at.desc()).all()
+            query = session.query(DBJobDescription)
+            if job_ids:
+                id_list = [j.strip() for j in job_ids.split(",") if j.strip()]
+                if id_list:
+                    query = query.filter(DBJobDescription.job_id.in_(id_list))
+
+            rows = query.order_by(DBJobDescription.created_at.desc()).all()
             jobs = []
             for jd in rows:
                 skills_val = []
@@ -275,6 +283,137 @@ async def get_centrifugo_token_endpoint(user_id: str = Query(default="user_demo"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate Centrifugo token: {str(e)}")
+
+
+class CreateSessionRequest(BaseModel):
+    session_id: Optional[str] = Field(None, description="Optional custom session ID")
+    title: Optional[str] = Field(None, description="Optional session title")
+    system_prompt: Optional[str] = Field(None, description="System prompt to apply for this session")
+
+@router.post("/agent/session/create", summary="Create New Agent Chat Session with System Prompt")
+@router.post("/agent/session", summary="Create New Agent Chat Session")
+async def create_agent_session_endpoint(payload: Optional[CreateSessionRequest] = None):
+    """
+    Creates a new chat session with optional title and custom system prompt.
+    """
+    try:
+        import uuid
+        s_id = (payload.session_id.strip() if payload and payload.session_id else str(uuid.uuid4()))
+        title = payload.title.strip() if payload and payload.title else f"Session {s_id[:6]}"
+        sp = payload.system_prompt.strip() if payload and payload.system_prompt else None
+
+        db = AgentDatabase()
+        db.save_session_metadata(session_id=s_id, title=title, system_prompt=sp)
+        return {
+            "status": "success",
+            "session_id": s_id,
+            "title": title,
+            "system_prompt": sp
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create agent session: {str(e)}")
+
+
+class CreateSystemPromptRequest(BaseModel):
+    name: str = Field(..., description="Display name of system prompt")
+    prompt_text: str = Field(..., description="Prompt instructions text")
+    is_default: bool = Field(False, description="Whether to set as default prompt")
+
+class UpdateSystemPromptRequest(BaseModel):
+    name: Optional[str] = Field(None, description="Display name of system prompt")
+    prompt_text: Optional[str] = Field(None, description="Prompt instructions text")
+    is_default: Optional[bool] = Field(None, description="Whether to set as default prompt")
+
+
+@router.get("/system-prompts", summary="Get All System Prompts")
+async def get_system_prompts_endpoint():
+    """
+    Fetches all configured System Prompts.
+    """
+    try:
+        db = AgentDatabase()
+        prompts = db.get_all_system_prompts()
+        return {"count": len(prompts), "prompts": prompts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch system prompts: {str(e)}")
+
+
+@router.post("/system-prompts", summary="Create System Prompt")
+async def create_system_prompt_endpoint(payload: CreateSystemPromptRequest):
+    """
+    Creates a new System Prompt entry.
+    """
+    try:
+        if not payload.name.strip() or not payload.prompt_text.strip():
+            raise HTTPException(status_code=400, detail="Name and prompt_text are required")
+        db = AgentDatabase()
+        p = db.create_system_prompt(
+            name=payload.name.strip(),
+            prompt_text=payload.prompt_text.strip(),
+            is_default=payload.is_default
+        )
+        return {"status": "success", "prompt": p}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create system prompt: {str(e)}")
+
+
+@router.put("/system-prompts/{prompt_id}", summary="Update System Prompt")
+@router.patch("/system-prompts/{prompt_id}", summary="Update System Prompt")
+async def update_system_prompt_endpoint(prompt_id: int, payload: UpdateSystemPromptRequest):
+    """
+    Updates an existing System Prompt entry.
+    """
+    try:
+        db = AgentDatabase()
+        p = db.update_system_prompt(
+            prompt_id=prompt_id,
+            name=payload.name.strip() if payload.name is not None else None,
+            prompt_text=payload.prompt_text.strip() if payload.prompt_text is not None else None,
+            is_default=payload.is_default
+        )
+        if not p:
+            raise HTTPException(status_code=404, detail=f"System prompt with ID {prompt_id} not found")
+        return {"status": "success", "prompt": p}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update system prompt: {str(e)}")
+
+
+@router.delete("/system-prompts/{prompt_id}", summary="Delete System Prompt")
+async def delete_system_prompt_endpoint(prompt_id: int):
+    """
+    Deletes a System Prompt entry by ID.
+    """
+    try:
+        db = AgentDatabase()
+        ok = db.delete_system_prompt(prompt_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail=f"System prompt with ID {prompt_id} not found")
+        return {"status": "success", "prompt_id": prompt_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete system prompt: {str(e)}")
+
+
+@router.post("/system-prompts/{prompt_id}/set-default", summary="Set System Prompt as Default")
+async def set_default_system_prompt_endpoint(prompt_id: int):
+    """
+    Sets a System Prompt as active default.
+    """
+    try:
+        db = AgentDatabase()
+        ok = db.set_default_system_prompt(prompt_id)
+        if not ok:
+            raise HTTPException(status_code=404, detail=f"System prompt with ID {prompt_id} not found")
+        return {"status": "success", "prompt_id": prompt_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to set default system prompt: {str(e)}")
 
 
 

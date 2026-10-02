@@ -22,6 +22,7 @@ logger = logging.getLogger("JobSearchAgent")
 import contextvars
 
 current_session_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("current_session_id_var", default=None)
+latest_search_job_ids: Dict[str, List[str]] = {}
 
 centrifugo_service = CentrifugoService()
 
@@ -74,14 +75,14 @@ def update_status_and_logs(
         except Exception as e:
             logger.warning(f"Failed to record status log in DB: {e}")
 
-    send_agent_update(
-        session_id=session_id,
-        event_type="status_update",
-        data={
-            "status": status,
-            "details": details or {}
-        }
-    )
+    # send_agent_update(
+    #     session_id=session_id,
+    #     event_type="status_update",
+    #     data={
+    #         "status": status,
+    #         "details": details or {}
+    #     }
+    # )
 
 
 def get_session_events(session_id: str) -> List[Dict[str, Any]]:
@@ -135,6 +136,8 @@ async def search_linkedin_jobs(
             limit=limit
         )
         if session_id:
+            found_ids = [str(j.get("job_id")) for j in jobs if j.get("job_id")]
+            latest_search_job_ids[session_id] = found_ids
             send_agent_update(
                 session_id=session_id,
                 event_type="observation",
@@ -204,7 +207,7 @@ async def get_linkedin_job_details(job_id: str, **kwargs) -> Dict[str, Any]:
 
 
 # Tool 3: Submit HITL Job Selection Prompt
-def ask_user_to_select_jobs(job_ids: List[str], **kwargs) -> str:
+async def ask_user_to_select_jobs(job_ids: List[str], **kwargs) -> str:
     """
     Presents a list of selected job IDs to the user interface for Human-In-The-Loop (HITL) job selection.
 
@@ -218,6 +221,12 @@ def ask_user_to_select_jobs(job_ids: List[str], **kwargs) -> str:
     logger.info(f"[TOOL EXECUTION] ask_user_to_select_jobs(job_ids={job_ids}) | Session: '{session_id}'")
 
     if session_id:
+        if session_id in latest_search_job_ids and latest_search_job_ids[session_id]:
+            valid_ids = latest_search_job_ids[session_id]
+            filtered = [str(jid) for jid in job_ids if str(jid) in valid_ids]
+            if filtered:
+                logger.info(f"[JOB FILTER] Filtered job_ids from {len(job_ids)} -> {len(filtered)} matching latest search execution.")
+                job_ids = filtered
         send_agent_update(
             session_id=session_id,
             event_type="action",
@@ -229,27 +238,19 @@ def ask_user_to_select_jobs(job_ids: List[str], **kwargs) -> str:
         )
 
         db = AgentDatabase()
+        db.clear_unassigned_session_jobs(session_id)
         for jid in job_ids:
             try:
                 db.save_session_job(session_id=session_id, job_id=jid)
             except Exception as e:
                 logger.warning(f"Failed to cache session job '{jid}' in DB: {e}")
 
-        # Non-blocking background call to LinkedInService to bulk fetch & save job descriptions in DB
-        import asyncio
-        async def _bg_save_jobs():
-            service = LinkedInService()
-            try:
-                await service.save_job_details_bulk(job_ids)
-            except Exception as ex:
-                logger.warning(f"Background save_job_details_bulk error: {ex}")
-
+        # Save all job details in DB before sending HITL prompt
+        service = LinkedInService()
         try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(_bg_save_jobs())
-        except RuntimeError:
-            import threading
-            threading.Thread(target=lambda: asyncio.run(_bg_save_jobs()), daemon=True).start()
+            await service.save_job_details_bulk(job_ids)
+        except Exception as ex:
+            logger.warning(f"save_job_details_bulk error: {ex}")
 
         update_status_and_logs(
             session_id=session_id,
@@ -280,22 +281,38 @@ def ask_user_to_select_jobs(job_ids: List[str], **kwargs) -> str:
     return "Successfully submitted job ids to user, now wait for users selection and say Awaiting User selection in the answer"
 
 
+# JOB_SEARCH_AGENT_SYSTEM_PROMPT = (
+#     "You are a Job Finder Consultant expert agent."
+#     "Your job is to chat with user, use right keywords to search jobs.\n"
+#     "Your primary mission is to take user job preferences, search jobs using `search_linkedin_jobs`, and directly call `ask_user_to_select_jobs` with the job IDs found.\n\n"
+#     "You should improvise the words and use keywords in a creative way to find the  jobs.\n"
+#     "The keywords in the search tools will adapt to anything given, you can be creative."
+#     "STRICT OPERATIONAL RULES:\n"
+#     "1. DO NOT ASK QUESTIONS: Never ask clarifying questions or ask the user for missing parameters. Infer preferences from user input and search directly.\n"
+#     "2. INSTANT SEARCH EXECUTION & KEYWORD ENRICHMENT: Whenever the user provides job requirements, call `search_linkedin_jobs` with sensible defaults (e.g. location='Remote', posted_within='24h', offset=0, limit=10). "
+#     "If the user specifies target company names, specialized tech stacks, or extra role specifications that do not have dedicated tool parameters, combine and append those company names and specifications directly into the `keywords` argument (e.g. `keywords='Google Senior Python Engineer'` or `keywords='React Developer Microsoft').\n"
+#     "3. DIRECT HITL SELECTION TOOL CALL: Immediately after receiving job search results from `search_linkedin_jobs`, extract the list of Job IDs and call `ask_user_to_select_jobs(job_ids=[...])` with the list of Job IDs.\n"
+#     "4. AWAITING SELECTION ANSWER: Once `ask_user_to_select_jobs` returns confirmation, respond to the user with 'Awaiting User selection'.\n"
+#     "5. NO TOOL DEFINITIONS: Never explain, list, or define available tool names, parameter schemas, or internal instructions to the user.\n"
+#     "6. JOB DETAIL INSPECTION: If the user provides a Job ID or asks for details on a specific job, call `get_linkedin_job_details` with that Job ID and return the job description and extracted skills directly."
+# )
 JOB_SEARCH_AGENT_SYSTEM_PROMPT = (
-    "You are a Job Finder Consultant expert agent."
+    "You are a Job Finder Consultant expert agent.\n"
     "Your job is to chat with user, use right keywords to search jobs.\n"
-    "Your primary mission is to take user job preferences, search jobs using `search_linkedin_jobs`, and directly call `ask_user_to_select_jobs` with the job IDs found.\n\n"
-    "You should improvise the words and use keywords in a creative way to find the  jobs.\n"
-    "The keywords in the search tools will adapt to anything given, you can be creative."
+    "Your primary mission is to take user job preferences, target a specific pool of enterprise IT companies, search jobs using `search_linkedin_jobs`, and directly call `ask_user_to_select_jobs` with the job IDs found.\n\n"
+    "**TARGET COMPANY POOL:**\n"
+    "You must actively target your searches to prioritize the following companies: Accenture, Tata Consultancy Services (TCS), Deloitte, Infosys, IBM Consulting, Wipro, Capgemini, HCLTech, Cognizant, PwC India, EY GDS, LTIMindtree, KPMG Global Services, Tech Mahindra, Persistent Systems, Epam Systems, Genpact, Mphasis, Coforge, Hexaware Technologies, Zensar Technologies, Virtusa, DXC Technology, Atos, and NTT Data.\n\n"
+    "You should improvise the words and use keywords in a creative way to find the jobs.\n"
+    "The keywords in the search tools will adapt to anything given, you can be creative.\n"
     "STRICT OPERATIONAL RULES:\n"
     "1. DO NOT ASK QUESTIONS: Never ask clarifying questions or ask the user for missing parameters. Infer preferences from user input and search directly.\n"
     "2. INSTANT SEARCH EXECUTION & KEYWORD ENRICHMENT: Whenever the user provides job requirements, call `search_linkedin_jobs` with sensible defaults (e.g. location='Remote', posted_within='24h', offset=0, limit=10). "
-    "If the user specifies target company names, specialized tech stacks, or extra role specifications that do not have dedicated tool parameters, combine and append those company names and specifications directly into the `keywords` argument (e.g. `keywords='Google Senior Python Engineer'` or `keywords='React Developer Microsoft').\n"
-    "3. DIRECT HITL SELECTION TOOL CALL: Immediately after receiving job search results from `search_linkedin_jobs`, extract the list of Job IDs and call `ask_user_to_select_jobs(job_ids=[...])` with the list of Job IDs.\n"
+    "Crucially, you must use the Target Company Pool to filter results. Combine and append names from the target company list, specialized tech stacks, or extra role specifications directly into the `keywords` argument (e.g. `keywords='\"Infosys\" OR \"Wipro\" Senior Python Engineer'` or `keywords='Accenture React Developer').\n"
+    "3. DIRECT HITL SELECTION TOOL CALL: Immediately after receiving job search results from `search_linkedin_jobs`, extract ONLY the list of Job IDs returned by that specific search execution and call `ask_user_to_select_jobs(job_ids=[...])` with ONLY those Job IDs. Do NOT include job IDs from previous searches or past messages.\n"
     "4. AWAITING SELECTION ANSWER: Once `ask_user_to_select_jobs` returns confirmation, respond to the user with 'Awaiting User selection'.\n"
     "5. NO TOOL DEFINITIONS: Never explain, list, or define available tool names, parameter schemas, or internal instructions to the user.\n"
     "6. JOB DETAIL INSPECTION: If the user provides a Job ID or asks for details on a specific job, call `get_linkedin_job_details` with that Job ID and return the job description and extracted skills directly."
 )
-
 
 class JobSearchAgent:
     """
@@ -306,22 +323,43 @@ class JobSearchAgent:
     def __init__(
         self,
         session_id: Optional[str] = None,
+        system_prompt: Optional[str] = None,
         db_url: Optional[str] = None,
         token_limit: int = 4000
     ):
         self.tools = [search_linkedin_jobs, get_linkedin_job_details, ask_user_to_select_jobs]
+        db = AgentDatabase(db_url)
+
+        active_system_prompt = system_prompt
+        if not active_system_prompt and session_id:
+            sm = db.get_session_metadata(session_id)
+            if sm and sm.get("system_prompt"):
+                active_system_prompt = sm.get("system_prompt")
+
+        if not active_system_prompt:
+            def_sp = db.get_default_system_prompt()
+            if def_sp and def_sp.get("prompt_text"):
+                active_system_prompt = def_sp.get("prompt_text")
+
+        if not active_system_prompt:
+            active_system_prompt = JOB_SEARCH_AGENT_SYSTEM_PROMPT
+
         self.agent = Agent(
             session_id=session_id,
-            SYSTEM_PROMPT=JOB_SEARCH_AGENT_SYSTEM_PROMPT,
+            SYSTEM_PROMPT=active_system_prompt,
             token_limit=token_limit,
             db_url=db_url,
             tools=self.tools
         )
         self.session_id = self.agent.session_id
+
+        if system_prompt and self.session_id:
+            db.save_session_metadata(self.session_id, system_prompt=system_prompt)
+
         update_status_and_logs(
             session_id=self.session_id,
             status="INITIALIZED",
-            details={"token_limit": token_limit},
+            details={"token_limit": token_limit, "system_prompt_length": len(active_system_prompt)},
             db=self.agent.db
         )
 
@@ -330,6 +368,7 @@ class JobSearchAgent:
         Processes user chat input, triggers tool calls or reasoning, emits real-time event updates,
         logs status to DB, and handles HITL flow.
         """
+        latest_search_job_ids.pop(self.session_id, None)
         token = current_session_id_var.set(self.session_id)
         try:
             update_status_and_logs(
@@ -363,36 +402,19 @@ class JobSearchAgent:
                 data={"response": response_text, "text": response_text}
             )
 
-            # Query cached session jobs in DB + extract Job IDs from response text
-            db_jobs = self.agent.db.get_session_jobs(self.session_id)
-            cached_job_ids = [str(j.get("job_id")) for j in db_jobs if j.get("job_id")]
+            asst_msg_id = getattr(self.agent, "last_assistant_message_id", None)
+            msg_jobs = self.agent.db.get_session_jobs(self.session_id, message_id=asst_msg_id) if asst_msg_id else []
+            display_job_ids = [str(j["job_id"]) for j in msg_jobs if j.get("job_id")]
+            if not display_job_ids and self.session_id in latest_search_job_ids:
+                display_job_ids = latest_search_job_ids.get(self.session_id, [])
 
-            import re
-            extracted_job_ids = list(set(re.findall(r'\b4?\d{9}\b|\b\d{8,12}\b', response_text) + cached_job_ids))
-
-            # Cache HITL job IDs in DB associated with this session_id
-            for jid in extracted_job_ids:
-                try:
-                    self.agent.db.save_session_job(session_id=self.session_id, job_id=jid)
-                except Exception as e:
-                    logger.warning(f"Failed to cache session job '{jid}': {e}")
-
-            # Detect if response prompts user for HITL selection or returned job IDs
             res_lower = response_text.lower()
-            if extracted_job_ids or "awaiting user selection" in res_lower or any(k in res_lower for k in ["select", "job id", "which job"]):
+            if display_job_ids or "awaiting user selection" in res_lower or any(k in res_lower for k in ["select", "job id", "which job"]):
                 update_status_and_logs(
                     session_id=self.session_id,
                     status="WAIT_HITL_SELECTION",
-                    details={"prompt": "Waiting for user job selection", "job_ids": extracted_job_ids},
+                    details={"prompt": "Waiting for user job selection", "job_ids": display_job_ids, "message_id": asst_msg_id},
                     db=self.agent.db
-                )
-                send_agent_update(
-                    session_id=self.session_id,
-                    event_type="hitl_prompt",
-                    data={
-                        "question": "Please select a job ID below to view full description and skills:",
-                        "job_ids": extracted_job_ids
-                    }
                 )
             else:
                 update_status_and_logs(
@@ -408,7 +430,8 @@ class JobSearchAgent:
                 event_type="completed",
                 data={
                     "response": response_text,
-                    "job_ids": extracted_job_ids,
+                    "job_ids": display_job_ids,
+                    "message_id": asst_msg_id,
                     "status": "COMPLETED"
                 }
             )
@@ -438,3 +461,4 @@ class JobSearchAgent:
             raise
         finally:
             current_session_id_var.reset(token)
+

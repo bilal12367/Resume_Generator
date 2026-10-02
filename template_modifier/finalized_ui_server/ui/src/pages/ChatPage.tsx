@@ -113,20 +113,16 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               }
             }
 
-            if (m.role !== 'user' && cachedJobIds.length > 0) {
-              cachedJobIds.forEach(id => {
-                if (!extractedJobIds.includes(id)) {
-                  extractedJobIds.push(id);
-                }
-              });
-            }
+            const finalJobIds = (m.job_ids && Array.isArray(m.job_ids) && m.job_ids.length > 0)
+              ? m.job_ids
+              : (extractedJobIds.length > 0 ? extractedJobIds : undefined);
 
             return {
               id: `msg-${m.id || Date.now()}`,
               sender: m.role === 'user' ? 'user' : 'agent',
               text: m.content,
               timestamp: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-              jobIds: extractedJobIds.length > 0 ? extractedJobIds : undefined,
+              jobIds: m.role !== 'user' ? finalJobIds : undefined,
               isStreaming: false,
               traces: m.role !== 'user' ? {
                 thinking: thinkingSteps.length > 0 ? thinkingSteps : ['Analyzed job preferences & LinkedIn query.'],
@@ -301,8 +297,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                   targetMsg.isStreaming = true;
                 } else if (eventType === 'hitl_prompt') {
                   if (eventData.job_ids && Array.isArray(eventData.job_ids)) {
-                    const existing = targetMsg.jobIds || [];
-                    targetMsg.jobIds = Array.from(new Set([...existing, ...eventData.job_ids]));
+                    targetMsg.jobIds = eventData.job_ids;
                   }
                   const promptText = eventData.question || 'Human-In-The-Loop Selection Required';
                   if (!traces.action.includes(promptText)) {
@@ -321,8 +316,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                     traces.answering = eventData.response;
                   }
                   if (eventData.job_ids && Array.isArray(eventData.job_ids)) {
-                    const existing = targetMsg.jobIds || [];
-                    targetMsg.jobIds = Array.from(new Set([...existing, ...eventData.job_ids]));
+                    targetMsg.jobIds = eventData.job_ids;
                   }
                 }
 
@@ -471,13 +465,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({
           }
         }
 
-        apiEvents.filter(e => e.event_type === 'hitl_prompt' || e.event_type === 'completed').forEach(e => {
-          if (e.data?.job_ids && Array.isArray(e.data.job_ids)) {
-            e.data.job_ids.forEach((id: string) => {
-              if (!extractedJobIds.includes(id)) extractedJobIds.push(id);
-            });
-          }
-        });
+        const lastHitlOrCompletedEvent = [...apiEvents].reverse().find(e => (e.event_type === 'hitl_prompt' || e.event_type === 'completed') && e.data?.job_ids && Array.isArray(e.data.job_ids));
+        if (lastHitlOrCompletedEvent?.data?.job_ids && Array.isArray(lastHitlOrCompletedEvent.data.job_ids)) {
+          lastHitlOrCompletedEvent.data.job_ids.forEach((id: string) => {
+            if (!extractedJobIds.includes(id)) extractedJobIds.push(id);
+          });
+        }
 
         setChatSessions(prev => prev.map(s => {
           if (s.id !== activeSessionId) return s;

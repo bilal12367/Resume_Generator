@@ -44,7 +44,15 @@ class PDFGenerator:
         # Ensure output base directory and generation directory exist locally
         output_base_dir.mkdir(parents=True, exist_ok=True)
         generation_dir = output_base_dir / filename
-        generation_dir.mkdir(parents=True, exist_ok=True)
+        if generation_dir.exists():
+            for old_pdf in generation_dir.glob("*.pdf"):
+                try:
+                    old_pdf.unlink()
+                    logger.info(f"[PDFGenerator] Deleted old PDF: {old_pdf.name}")
+                except Exception as ex:
+                    logger.warning(f"[PDFGenerator] Failed to delete old PDF {old_pdf.name}: {ex}")
+        else:
+            generation_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"[PDFGenerator] Project Root: {project_root}")
         logger.info(f"[PDFGenerator] Templates Dir: {templates_dir}")

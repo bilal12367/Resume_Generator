@@ -49,6 +49,8 @@ dependencies = [
     "playwright-stealth>=2.0.3",
     "mysqlclient>=2.3.0",
     "google-adk>=2.9.2",
+    "curl-cffi>=0.16.3",
+    "selenium>=4.50.0",
 ]
 
 [tool.pytest.ini_options]

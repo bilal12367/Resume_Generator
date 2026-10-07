@@ -51,6 +51,27 @@ class LinkedInService:
             
         return None
 
+    @staticmethod
+    def format_experience_level_param(exp_level: Optional[str]) -> Optional[str]:
+        if not exp_level:
+            return None
+        val = str(exp_level).strip().lower()
+        if val in ["1", "2", "3", "4", "5", "6"]:
+            return val
+        if "intern" in val:
+            return "1"
+        elif "entry" in val:
+            return "2"
+        elif "assoc" in val:
+            return "3"
+        elif "mid" in val or "senior" in val:
+            return "4"
+        elif "direct" in val:
+            return "5"
+        elif "exec" in val:
+            return "6"
+        return None
+
     def parse_job_cards(self, html_content: str) -> List[Dict[str, str]]:
         soup = BeautifulSoup(html_content, "html.parser")
         list_container = soup.find(class_=lambda c: c and "jobs-search__results-list" in c)
@@ -88,6 +109,8 @@ class LinkedInService:
                             posted_date = match.group(0)
                         else:
                             posted_date = raw_date
+                else:
+                    posted_date = time_el.text.strip()
 
             urn_attr = card.get("data-entity-urn", "")
             urn_str = str(urn_attr[0]) if isinstance(urn_attr, list) else (str(urn_attr) if urn_attr else "")
@@ -110,6 +133,7 @@ class LinkedInService:
                     "company_name": company_name,
                     "location": location,
                     "posted_date": posted_date,
+                    "posted_time": posted_date,
                     "job_url": f"https://www.linkedin.com/jobs/view/{job_id}/"
                 }
                 jobs.append(job_data)
@@ -134,6 +158,11 @@ class LinkedInService:
         tpr_val = self.format_time_posted_param(posted_within)
         if tpr_val:
             params["f_TPR"] = tpr_val
+
+        exp_val = self.format_experience_level_param(experience_level)
+        if exp_val:
+            params["f_E"] = exp_val
+
         params["start"] = str(offset)
 
         if offset >= 25:

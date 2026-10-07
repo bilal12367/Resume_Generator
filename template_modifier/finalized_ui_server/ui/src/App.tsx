@@ -8,6 +8,7 @@ import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { JobsPage } from './pages/JobsPage';
 import { SavedJobsPage } from './pages/SavedJobsPage';
+import { ManualSearchPage } from './pages/ManualSearchPage';
 import { ChatPage } from './pages/ChatPage';
 import { WorkflowPage } from './pages/WorkflowPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
@@ -142,6 +143,8 @@ export function App() {
         setActivePage('jobs');
       } else if (hash === '#/saved-jobs') {
         setActivePage('saved-jobs');
+      } else if (hash === '#/manual-search') {
+        setActivePage('manual-search');
       } else if (hash === '#/workflow') {
         setActivePage('workflow');
       } else if (hash === '#/analytics') {
@@ -185,18 +188,28 @@ export function App() {
   };
 
   // Fetch & Open Job Details Modal
-  const handleOpenJobModal = async (jobId: string) => {
+  const handleOpenJobModal = async (jobId: string, jobSource?: string, jobUrl?: string) => {
     setShowJobModal(true);
     setLoadingJobModal(true);
     setJobModalData({ job_id: jobId, title: `Loading Job ${jobId}...` });
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/linkedin/jobs/details/${jobId}`);
+      const isNaukri = jobSource === 'naukri';
+      let endpoint = isNaukri
+        ? `${API_BASE_URL}/api/naukri/jobs/details/${jobId}`
+        : `${API_BASE_URL}/api/linkedin/jobs/details/${jobId}`;
+
+      if (isNaukri && jobUrl) {
+        endpoint += `?job_url=${encodeURIComponent(jobUrl)}`;
+      }
+
+      const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
         setJobModalData(data.job || data);
       } else {
-        setJobModalData({ job_id: jobId, title: `Job ${jobId}`, description: 'Details cached in database.' });
+        const platformName = isNaukri ? 'Naukri' : 'LinkedIn';
+        setJobModalData({ job_id: jobId, title: `Job ${jobId}`, description: `Job description unavailable from ${platformName}.` });
       }
     } catch (err) {
       setJobModalData({ job_id: jobId, title: `Job ${jobId}`, description: 'Failed to connect to backend job cache.' });
@@ -204,6 +217,7 @@ export function App() {
       setLoadingJobModal(false);
     }
   };
+
 
   const handleStartWorkflowForJob = async (jobId: string) => {
     setShowJobModal(false);
@@ -289,6 +303,19 @@ export function App() {
             <SavedJobsPage
               API_BASE_URL={API_BASE_URL}
               onViewJob={handleOpenJobModal}
+              selectedJobs={selectedJobs}
+              onToggleAddToList={handleToggleAddToList}
+              onStartWorkflow={handleStartWorkflowForJob}
+            />
+          )}
+
+          {activePage === 'manual-search' && (
+            <ManualSearchPage
+              API_BASE_URL={API_BASE_URL}
+              onViewJob={handleOpenJobModal}
+              selectedJobs={selectedJobs}
+              onToggleAddToList={handleToggleAddToList}
+              onStartWorkflow={handleStartWorkflowForJob}
             />
           )}
 

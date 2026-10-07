@@ -66,7 +66,7 @@ export const JobModal: React.FC<JobModalProps> = ({
               </div>
               <div>
                 <h5 className="modal-title fw-bold mb-1">
-                  {loading ? 'Fetching LinkedIn Job Details...' : (jobData?.title || 'Job Details')}
+                  {loading ? 'Fetching Job Details...' : (jobData?.title || 'Job Details')}
                 </h5>
                 <small className="text-white-50">
                   Job ID: {targetJobId || 'N/A'}
@@ -80,7 +80,7 @@ export const JobModal: React.FC<JobModalProps> = ({
             {loading ? (
               <div className="text-center py-5">
                 <div className="spinner-border text-purple mb-3" style={{ width: '3rem', height: '3rem' }} role="status"></div>
-                <p className="text-muted fw-bold">Connecting to LinkedIn & fetching live job metadata...</p>
+                <p className="text-muted fw-bold">Connecting to live job service & fetching metadata...</p>
               </div>
             ) : jobData ? (
               <div className="d-flex flex-column gap-4">
@@ -178,7 +178,7 @@ export const JobModal: React.FC<JobModalProps> = ({
                   </div>
                 </div>
 
-                {/* Direct LinkedIn URL Button */}
+                {/* Direct Job URL Button */}
                 {jobData.job_url && (
                   <div className="pt-2">
                     <a
@@ -187,7 +187,7 @@ export const JobModal: React.FC<JobModalProps> = ({
                       rel="noopener noreferrer"
                       className="btn btn-outline-purple w-100 fw-bold d-flex align-items-center justify-content-center gap-2"
                     >
-                      <span>View Full Job Listing on LinkedIn</span>
+                      <span>View Full Job Listing on {jobData.job_source === 'naukri' ? 'Naukri' : 'LinkedIn'}</span>
                       <i className="bi bi-box-arrow-up-right"></i>
                     </a>
                   </div>

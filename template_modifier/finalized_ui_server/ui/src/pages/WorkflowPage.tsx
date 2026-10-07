@@ -11,6 +11,8 @@ interface SavedJob {
   title: string;
   company_name: string;
   location: string;
+  job_source?: string;
+  job_url?: string;
 }
 
 interface WorkflowSession {
@@ -19,6 +21,8 @@ interface WorkflowSession {
   status: 'CREATED' | 'ATS_GENERATING' | 'ATS_COMPLETED' | 'PDF_GENERATING' | 'PDF_COMPLETED' | 'FAILED';
   profile_id?: number;
   job_id?: string;
+  job_source?: string;
+  job_url?: string;
   pdf_filename?: string;
   pdf_links?: Array<{ template_name: string; filename: string; url: string }>;
   error_message?: string;
@@ -35,7 +39,7 @@ interface WorkflowSession {
 
 interface WorkflowPageProps {
   API_BASE_URL: string;
-  onOpenJobModal: (jobId: string) => void;
+  onOpenJobModal: (jobId: string, jobSource?: string, jobUrl?: string) => void;
   initialSessionId?: string;
 }
 
@@ -157,18 +161,28 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
   // Fetch Profiles & Saved Jobs for Dropdowns
   const fetchDropdownData = async () => {
     try {
-      const [profRes, jobsRes] = await Promise.all([
+      const [profRes, linkedInRes, naukriRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/workflow/profiles`),
-        fetch(`${API_BASE_URL}/api/linkedin/jobs/saved`)
+        fetch(`${API_BASE_URL}/api/linkedin/jobs/saved`),
+        fetch(`${API_BASE_URL}/api/naukri/jobs/saved`)
       ]);
       if (profRes.ok) {
         const pData = await profRes.json();
         setProfiles(pData.profiles || []);
       }
-      if (jobsRes.ok) {
-        const jData = await jobsRes.json();
-        setSavedJobs(jData.jobs || []);
+
+      let combinedJobs: SavedJob[] = [];
+      if (linkedInRes.ok) {
+        const lData = await linkedInRes.json();
+        const lJobs = (lData.jobs || []).map((j: any) => ({ ...j, job_source: j.job_source || 'linkedin' }));
+        combinedJobs = [...combinedJobs, ...lJobs];
       }
+      if (naukriRes.ok) {
+        const nData = await naukriRes.json();
+        const nJobs = (nData.jobs || []).map((j: any) => ({ ...j, job_source: j.job_source || 'naukri' }));
+        combinedJobs = [...combinedJobs, ...nJobs];
+      }
+      setSavedJobs(combinedJobs);
     } catch (err) {
       console.error("Failed to fetch dropdown options:", err);
     }
@@ -506,7 +520,7 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                 className={`btn btn-sm ${activeTab === 'session' ? 'btn-purple shadow-sm fw-bold' : 'btn-link text-secondary text-decoration-none'} d-flex align-items-center gap-2 px-3 py-2`}
               >
                 <i className="bi bi-diagram-3-fill"></i>
-                <span>LinkedIn Job ID Session</span>
+                <span>Job ID Session (LinkedIn / Naukri)</span>
               </button>
               <button
                 type="button"
@@ -528,7 +542,7 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
               </div>
             )}
 
-            {/* Step 1 (Option A): Session & LinkedIn Job ID Configuration */}
+            {/* Step 1 (Option A): Session & Target Job ID Configuration */}
             {activeTab === 'session' && (
               <div className="card-modern p-4 shadow-sm">
                 <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
@@ -539,7 +553,10 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                   {selectedJobId && selectedJobId !== 'custom' && (
                     <button
                       type="button"
-                      onClick={() => onOpenJobModal(selectedJobId)}
+                      onClick={() => {
+                        const selectedJobObj = savedJobs.find((j) => j.job_id === selectedJobId);
+                        onOpenJobModal(selectedJobId, selectedJobObj?.job_source, selectedJobObj?.job_url);
+                      }}
                       className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1"
                     >
                       <i className="bi bi-eye-fill"></i>
@@ -571,7 +588,7 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
 
                   {/* Target Job ID Selection */}
                   <div className="col-md-5">
-                    <label className="fs-8 fw-bold text-muted mb-1 d-block">Target LinkedIn Job ID:</label>
+                    <label className="fs-8 fw-bold text-muted mb-1 d-block">Target Job ID (LinkedIn / Naukri):</label>
                     <select
                       className="form-select fs-7"
                       value={selectedJobId}
@@ -584,9 +601,9 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                           Job #{selectedJobId} (Current Job)
                         </option>
                       )}
-                      {savedJobs.map((j) => (
-                        <option key={j.job_id} value={j.job_id}>
-                          {j.title} - {j.company_name} (ID: {j.job_id})
+                      {savedJobs.map((j, idx) => (
+                        <option key={`${j.job_source || 'job'}-${j.job_id}-${idx}`} value={j.job_id}>
+                          [{j.job_source === 'naukri' ? 'Naukri' : 'LinkedIn'}] {j.title} - {j.company_name} (ID: {j.job_id})
                         </option>
                       ))}
                       <option value="custom">➕ Enter Custom Job ID...</option>
@@ -599,7 +616,7 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                       <input
                         type="text"
                         className="form-control fs-7"
-                        placeholder="Enter LinkedIn Job ID (e.g. 4448338827)..."
+                        placeholder="Enter Job ID (e.g. 4448338827 or Naukri ID)..."
                         value={customJobId}
                         onChange={(e) => setCustomJobId(e.target.value)}
                       />
@@ -918,23 +935,36 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                     {activeSession.job_id && (
                       <a
                         href={
-                          activeSession.job_id.startsWith('http')
-                            ? activeSession.job_id
-                            : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
+                          activeSession.job_url
+                            ? activeSession.job_url
+                            : activeSession.job_id.startsWith('http')
+                              ? activeSession.job_id
+                              : activeSession.job_source === 'naukri'
+                                ? `https://www.naukri.com/job-listings-${activeSession.job_id}`
+                                : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
                         }
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1.5 font-semibold"
+                        className={`btn btn-sm ${activeSession.job_source === 'naukri' ? 'btn-outline-info' : 'btn-outline-primary'} d-flex align-items-center gap-1.5 font-semibold`}
                       >
-                        <i className="bi bi-linkedin text-primary"></i>
-                        <span>View on LinkedIn</span>
+                        {activeSession.job_source === 'naukri' ? (
+                          <>
+                            <span className="fw-bold text-info" style={{ fontSize: '12px' }}>Naukri</span>
+                            <span>View on Naukri</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-linkedin text-primary"></i>
+                            <span>View on LinkedIn</span>
+                          </>
+                        )}
                       </a>
                     )}
 
                     {activeSession.job_id && (
                       <button
                         type="button"
-                        onClick={() => onOpenJobModal(activeSession.job_id!)}
+                        onClick={() => onOpenJobModal(activeSession.job_id!, activeSession.job_source, activeSession.job_url)}
                         className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1.5 font-semibold"
                       >
                         <i className="bi bi-eye-fill"></i>
@@ -992,15 +1022,23 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                         {activeSession.job_id && (
                           <a
                             href={
-                              activeSession.job_id.startsWith('http')
-                                ? activeSession.job_id
-                                : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
+                              activeSession.job_url
+                                ? activeSession.job_url
+                                : activeSession.job_id.startsWith('http')
+                                  ? activeSession.job_id
+                                  : activeSession.job_source === 'naukri'
+                                    ? `https://www.naukri.com/job-listings-${activeSession.job_id}`
+                                    : `https://www.linkedin.com/jobs/view/${activeSession.job_id}`
                             }
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-info text-decoration-none font-monospace fs-9 d-flex align-items-center gap-1 hover-underline"
                           >
-                            <i className="bi bi-linkedin"></i>
+                            {activeSession.job_source === 'naukri' ? (
+                              <span className="fw-bold me-1 text-info">Naukri</span>
+                            ) : (
+                              <i className="bi bi-linkedin text-primary"></i>
+                            )}
                             <span>Job #{activeSession.job_id}</span>
                           </a>
                         )}

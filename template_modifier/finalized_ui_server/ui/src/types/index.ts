@@ -62,6 +62,8 @@ export interface SelectedJob {
   title?: string;
   company?: string;
   location?: string;
+  jobSource?: string;
+  jobUrl?: string;
   addedAt?: string;
 }
 

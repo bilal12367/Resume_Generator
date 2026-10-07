@@ -94,8 +94,6 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       const res = await fetch(`${API_BASE_URL}/api/linkedin/agent/history/${sessionId}`);
       if (res.ok) {
         const data = await res.json();
-        const cachedJobIds: string[] = data.job_ids || (data.cached_jobs ? data.cached_jobs.map((j: any) => j.job_id) : []);
-
         const sessionEvents: any[] = data.events || [];
         const thinkingSteps = sessionEvents.filter(e => e.event_type === 'thinking').map(e => e.data?.text || e.data?.state).filter(Boolean);
         const actionSteps = sessionEvents.filter(e => e.event_type === 'action' || e.event_type === 'tool_calling').map(e => e.data?.text || (e.data?.tool_name ? `Executing tool: ${e.data.tool_name}` : null)).filter(Boolean);

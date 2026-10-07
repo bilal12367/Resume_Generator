@@ -16,6 +16,13 @@ from app.models import user_model
 # Automatically create database tables on startup
 try:
     Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE job_descriptions ADD COLUMN job_source VARCHAR(50) NOT NULL DEFAULT 'linkedin'"))
+            conn.commit()
+        except Exception:
+            pass
 except Exception as e:
     print(f"Database initialization info: {e}")
 

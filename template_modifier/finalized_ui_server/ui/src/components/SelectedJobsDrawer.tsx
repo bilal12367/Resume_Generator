@@ -5,7 +5,7 @@ interface SelectedJobsDrawerProps {
   selectedJobs: SelectedJob[];
   onRemoveJob: (jobId: string) => void;
   onClearAll: () => void;
-  onViewJob: (jobId: string) => void;
+  onViewJob: (jobId: string, jobSource?: string, jobUrl?: string) => void;
 }
 
 export const SelectedJobsDrawer: React.FC<SelectedJobsDrawerProps> = ({
@@ -77,7 +77,7 @@ export const SelectedJobsDrawer: React.FC<SelectedJobsDrawerProps> = ({
             >
               <div
                 className="flex-grow-1 min-w-0 me-2 cursor-pointer"
-                onClick={() => onViewJob(job.jobId)}
+                onClick={() => onViewJob(job.jobId, job.jobSource, job.jobUrl)}
                 title="Click to view details"
               >
                 <div className="d-flex align-items-center gap-1.5 mb-1">

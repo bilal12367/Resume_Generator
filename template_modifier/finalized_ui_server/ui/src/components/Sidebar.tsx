@@ -13,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onLogo
     { id: 'dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill' },
     { id: 'jobs', label: 'Applied Jobs', icon: 'bi-briefcase-fill' },
     { id: 'saved-jobs', label: 'Saved Jobs', icon: 'bi-bookmark-star-fill' },
+    { id: 'manual-search', label: 'Manual Search', icon: 'bi-search', badge: 'NEW' },
     { id: 'chat', label: 'Agent Chat', icon: 'bi-chat-dots-fill', badge: 'AI' },
     { id: 'workflow', label: 'ATS Workflow', icon: 'bi-magic', badge: 'PRO' },
     { id: 'analytics', label: 'Analytics', icon: 'bi-bar-chart-line-fill' },
@@ -76,4 +77,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, onLogo
   );
 };
 
-export type NavPage = 'dashboard' | 'jobs' | 'saved-jobs' | 'chat' | 'workflow' | 'analytics' | 'profile';
+export type NavPage = 'dashboard' | 'jobs' | 'saved-jobs' | 'manual-search' | 'chat' | 'workflow' | 'analytics' | 'profile';

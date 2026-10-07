@@ -14,12 +14,14 @@ graph TD
     ChatScreen["1. AI Job Agent Chat Screen"]
     WorkflowScreen["2. ATS Resume Generator Screen"]
     SavedJobsScreen["3. Saved Jobs & PDF History Screen"]
-    ProfileScreen["4. Settings & Prompts Screen"]
+    ManualSearchScreen["4. Manual Job Search Screen"]
+    ProfileScreen["5. Settings & Prompts Screen"]
 
     Root --> AuthScreen
     Root --> ChatScreen
     Root --> WorkflowScreen
     Root --> SavedJobsScreen
+    Root --> ManualSearchScreen
     Root --> ProfileScreen
 
     ChatScreen --> NewSessionModal["New Session & System Prompt Modal"]
@@ -28,6 +30,8 @@ graph TD
     
     WorkflowScreen --> JobDetailModal
     SavedJobsScreen --> JobDetailModal
+    ManualSearchScreen --> JobDetailModal
+    ManualSearchScreen --> SelectedJobsStack
 ```
 
 ### Global Shared States

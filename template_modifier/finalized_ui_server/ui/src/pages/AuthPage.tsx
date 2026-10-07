@@ -5,7 +5,7 @@ interface AuthPageProps {
   API_BASE_URL: string;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, API_BASE_URL }) => {
+export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess, API_BASE_URL: _API_BASE_URL }) => {
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');

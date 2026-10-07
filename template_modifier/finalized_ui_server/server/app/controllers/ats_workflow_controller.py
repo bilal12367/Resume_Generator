@@ -159,14 +159,18 @@ async def delete_profile(profile_id: int, db: Session = Depends(get_db)):
 async def list_workflow_sessions(db: Session = Depends(get_db)):
     try:
         sessions = db.query(ATSWorkflowSession).order_by(ATSWorkflowSession.updated_at.desc()).all()
+        agent_db = AgentDatabase()
         result = []
         for s in sessions:
+            job_info = agent_db.get_cached_job_description(s.job_id) if s.job_id and s.job_id != "MANUAL" else None
             d = {
                 "session_id": s.session_id,
                 "title": s.title,
                 "status": s.status,
                 "profile_id": s.profile_id,
                 "job_id": s.job_id,
+                "job_source": (job_info.get("job_source") or "linkedin") if job_info else "linkedin",
+                "job_url": (job_info.get("job_url") or "") if job_info else "",
                 "pdf_filename": s.pdf_filename,
                 "error_message": s.error_message,
                 "created_at": str(s.created_at) if s.created_at else None,
@@ -213,12 +217,17 @@ async def get_workflow_session_details(session_id: str, db: Session = Depends(ge
         if not session:
             raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found.")
 
+        agent_db = AgentDatabase()
+        job_info = agent_db.get_cached_job_description(session.job_id) if session.job_id and session.job_id != "MANUAL" else None
+
         d = {
             "session_id": session.session_id,
             "title": session.title,
             "status": session.status,
             "profile_id": session.profile_id,
             "job_id": session.job_id,
+            "job_source": (job_info.get("job_source") or "linkedin") if job_info else "linkedin",
+            "job_url": (job_info.get("job_url") or "") if job_info else "",
             "pdf_filename": session.pdf_filename,
             "error_message": session.error_message,
             "created_at": str(session.created_at) if session.created_at else None,
@@ -316,14 +325,21 @@ async def run_ats_workflow(session_id: str, payload: RunATSWorkflowRequest, db: 
         elif payload.job_id:
             agent_db = AgentDatabase()
             cached_job = agent_db.get_cached_job_description(payload.job_id)
-            if cached_job and cached_job.get("raw_description"):
+            if cached_job and cached_job.get("raw_description") and "unavailable" not in cached_job.get("raw_description", "").lower():
                 job_description = cached_job["raw_description"]
             else:
-                # Fallback: Live fetch via Playwright LinkedIn Service
-                service = LinkedInService()
-                details = await service.get_job_details(payload.job_id)
-                await service.close()
-                job_description = details.get("raw_description") or details.get("minimal_description") or ""
+                # Check Naukri service if job is from Naukri
+                from app.services.naukri_service import NaukriService
+                naukri_svc = NaukriService()
+                naukri_details = await naukri_svc.process_single_job_and_save(payload.job_id)
+                if naukri_details and naukri_details.get("raw_description") and "unavailable" not in naukri_details.get("raw_description", "").lower():
+                    job_description = naukri_details["raw_description"]
+                else:
+                    # Fallback: Live fetch via LinkedIn Service
+                    service = LinkedInService()
+                    details = await service.get_job_description(payload.job_id)
+                    await service.close()
+                    job_description = details.get("raw_description") or details.get("minimal_description") or ""
         else:
             raise Exception("No job description text or Job ID provided.")
 

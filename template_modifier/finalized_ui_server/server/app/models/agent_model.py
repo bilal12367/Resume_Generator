@@ -93,6 +93,7 @@ class DBJobDescription(Base):
     employment_type = Column(String(100), nullable=True)
     job_function = Column(String(100), nullable=True)
     job_url = Column(String(500), nullable=True)
+    job_source = Column(String(50), default="linkedin", nullable=False, index=True)
     minimal_description = Column(Text, nullable=True)
     raw_description = Column(Text, nullable=True)
     skills_required = Column(Text, nullable=True)

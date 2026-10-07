@@ -155,6 +155,11 @@ class AgentDatabase:
                 conn.commit()
             except Exception:
                 pass
+            try:
+                conn.execute(text("ALTER TABLE job_descriptions ADD COLUMN job_source VARCHAR(50) NOT NULL DEFAULT 'linkedin'"))
+                conn.commit()
+            except Exception:
+                pass
 
         logger.info("Database schema initialized successfully using SQLAlchemy ORM.")
         try:
@@ -696,7 +701,7 @@ class AgentDatabase:
                 })
             return events
 
-    def save_job_description(self, job_data: Dict[str, Any]) -> None:
+    def save_job_description(self, job_data: Dict[str, Any], job_source: Optional[str] = None) -> None:
         """Caches a complete job description metadata dictionary into DB by job_id."""
         if not job_data or not job_data.get("job_id"):
             return
@@ -704,21 +709,29 @@ class AgentDatabase:
         job_id = str(job_data.get("job_id"))
         skills = job_data.get("skills_required") or []
         skills_json = json.dumps(skills) if isinstance(skills, (list, dict)) else str(skills)
+        source_val = job_source or job_data.get("job_source") or job_data.get("source") or "linkedin"
 
         with self.SessionLocal() as session:
-            jd = session.query(DBJobDescription).filter(DBJobDescription.job_id == job_id).first()
+            jd = session.query(DBJobDescription).filter(
+                DBJobDescription.job_id == job_id,
+                DBJobDescription.job_source == source_val
+            ).first()
+            if not jd:
+                jd = session.query(DBJobDescription).filter(DBJobDescription.job_id == job_id).first()
+
             if jd:
-                jd.title = job_data.get("title") or ""
-                jd.company_name = job_data.get("company_name") or ""
-                jd.location = job_data.get("location") or ""
-                jd.posted_time = job_data.get("posted_time") or ""
-                jd.num_applicants = job_data.get("num_applicants") or ""
-                jd.seniority_level = job_data.get("seniority_level") or ""
-                jd.employment_type = job_data.get("employment_type") or ""
-                jd.job_function = job_data.get("job_function") or ""
-                jd.job_url = job_data.get("job_url") or ""
-                jd.minimal_description = job_data.get("minimal_description") or ""
-                jd.raw_description = job_data.get("raw_description") or ""
+                jd.title = job_data.get("title") or jd.title or ""
+                jd.company_name = job_data.get("company_name") or jd.company_name or ""
+                jd.location = job_data.get("location") or jd.location or ""
+                jd.posted_time = job_data.get("posted_time") or jd.posted_time or ""
+                jd.num_applicants = job_data.get("num_applicants") or jd.num_applicants or ""
+                jd.seniority_level = job_data.get("seniority_level") or jd.seniority_level or ""
+                jd.employment_type = job_data.get("employment_type") or jd.employment_type or ""
+                jd.job_function = job_data.get("job_function") or jd.job_function or ""
+                jd.job_url = job_data.get("job_url") or jd.job_url or ""
+                jd.job_source = source_val
+                jd.minimal_description = job_data.get("minimal_description") or jd.minimal_description or ""
+                jd.raw_description = job_data.get("raw_description") or jd.raw_description or ""
                 jd.skills_required = skills_json
             else:
                 jd = DBJobDescription(
@@ -732,21 +745,30 @@ class AgentDatabase:
                     employment_type=job_data.get("employment_type") or "",
                     job_function=job_data.get("job_function") or "",
                     job_url=job_data.get("job_url") or "",
+                    job_source=source_val,
                     minimal_description=job_data.get("minimal_description") or "",
                     raw_description=job_data.get("raw_description") or "",
                     skills_required=skills_json
                 )
                 session.add(jd)
             session.commit()
-            logger.info(f"[DB CACHE] Cached job description in DB for job_id '{job_id}'.")
+            logger.info(f"[DB CACHE] Cached job description ({source_val}) in DB for job_id '{job_id}'.")
 
-    def get_cached_job_description(self, job_id: str) -> Optional[Dict[str, Any]]:
-        """Queries cached job description by job_id from DB."""
+    def get_cached_job_description(self, job_id: str, job_source: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Queries cached job description by job_id and optional job_source from DB."""
         if not job_id:
             return None
 
         with self.SessionLocal() as session:
-            jd = session.query(DBJobDescription).filter(DBJobDescription.job_id == str(job_id)).first()
+            query = session.query(DBJobDescription).filter(DBJobDescription.job_id == str(job_id))
+            if job_source:
+                query_source = query.filter(DBJobDescription.job_source == str(job_source))
+                jd = query_source.first()
+                if not jd:
+                    jd = query.first()
+            else:
+                jd = query.first()
+
             if not jd:
                 return None
 
@@ -756,6 +778,7 @@ class AgentDatabase:
                     skills_val = json.loads(jd.skills_required)
                 except Exception:
                     pass
+
             return {
                 "job_id": jd.job_id,
                 "title": jd.title,
@@ -767,6 +790,7 @@ class AgentDatabase:
                 "employment_type": jd.employment_type,
                 "job_function": jd.job_function,
                 "job_url": jd.job_url,
+                "job_source": getattr(jd, "job_source", "linkedin") or "linkedin",
                 "minimal_description": jd.minimal_description,
                 "raw_description": jd.raw_description,
                 "skills_required": skills_val,

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+import type { SelectedJob } from '../types';
+
 interface SavedJob {
   job_id: string;
   title: string;
@@ -14,12 +16,16 @@ interface SavedJob {
   minimal_description?: string;
   raw_description?: string;
   skills_required?: string[];
+  job_source?: string;
   created_at?: string;
 }
 
 interface SavedJobsPageProps {
   API_BASE_URL: string;
-  onViewJob: (jobId: string) => void;
+  onViewJob: (jobId: string, jobSource?: string, jobUrl?: string) => void;
+  selectedJobs?: SelectedJob[];
+  onToggleAddToList?: (job: SelectedJob) => void;
+  onStartWorkflow?: (jobId: string) => void;
 }
 
 const formatPostedDate = (rawTime?: string): string => {
@@ -70,7 +76,13 @@ const parsePostedTimeDays = (rawTime?: string): number => {
   return 999;
 };
 
-export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onViewJob }) => {
+export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({
+  API_BASE_URL,
+  onViewJob,
+  selectedJobs = [],
+  onToggleAddToList,
+  onStartWorkflow,
+}) => {
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -87,11 +99,26 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
   const fetchSavedJobs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/linkedin/jobs/saved`);
-      if (res.ok) {
-        const data = await res.json();
-        setSavedJobs(data.jobs || []);
+      const [linkedinRes, naukriRes] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/api/linkedin/jobs/saved`),
+        fetch(`${API_BASE_URL}/api/naukri/jobs/saved`),
+      ]);
+
+      let combinedJobs: SavedJob[] = [];
+
+      if (linkedinRes.status === 'fulfilled' && linkedinRes.value.ok) {
+        const lData = await linkedinRes.value.json();
+        const lJobs = (lData.jobs || []).map((j: any) => ({ ...j, job_source: j.job_source || 'linkedin' }));
+        combinedJobs = combinedJobs.concat(lJobs);
       }
+
+      if (naukriRes.status === 'fulfilled' && naukriRes.value.ok) {
+        const nData = await naukriRes.value.json();
+        const nJobs = (nData.jobs || []).map((j: any) => ({ ...j, job_source: j.job_source || 'naukri' }));
+        combinedJobs = combinedJobs.concat(nJobs);
+      }
+
+      setSavedJobs(combinedJobs);
     } catch (err) {
       console.error("Failed to fetch saved jobs:", err);
     } finally {
@@ -134,7 +161,7 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
         j.job_id.toLowerCase().includes(term) ||
         j.title.toLowerCase().includes(term) ||
         j.company_name.toLowerCase().includes(term) ||
-        (j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(term)))
+        Boolean(j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(term)))
       );
     } else {
       const query = rawQuery.toLowerCase();
@@ -142,7 +169,7 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
         j.title.toLowerCase().includes(query) ||
         j.company_name.toLowerCase().includes(query) ||
         j.job_id.toLowerCase().includes(query) ||
-        (j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(query)));
+        Boolean(j.skills_required && j.skills_required.some(s => s.toLowerCase().includes(query)));
     }
 
     // Selected Company Filter
@@ -163,7 +190,7 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
     }
 
     const matchesExperience = experienceFilter === 'All' ||
-      (j.seniority_level && j.seniority_level.toLowerCase().includes(experienceFilter.toLowerCase()));
+      Boolean(j.seniority_level && j.seniority_level.toLowerCase().includes(experienceFilter.toLowerCase()));
 
     return matchesQuery && matchesSelectedCompany && matchesExperience;
   }).sort((a, b) => {
@@ -486,84 +513,121 @@ export const SavedJobsPage: React.FC<SavedJobsPageProps> = ({ API_BASE_URL, onVi
         </div>
       ) : (
         <div className="row g-4">
-          {filteredJobs.map((job) => (
-            <div key={job.job_id} className="col-md-6 col-lg-4">
-              <div className="card-modern p-4 h-100 d-flex flex-column justify-content-between shadow-sm hover-shadow transition">
-                <div>
-                  {/* Job ID & Date Header */}
-                  <div className="d-flex align-items-center justify-content-between mb-2">
-                    <span className="badge badge-purple font-monospace">Job ID: {job.job_id}</span>
-                    <span className="badge bg-light text-purple border border-purple-light fs-8">
-                      <i className="bi bi-clock-history me-1"></i>
-                      {formatPostedDate(job.posted_time)}
-                    </span>
-                  </div>
+          {filteredJobs.map((job) => {
+            const isAdded = selectedJobs.some((j) => j.jobId === String(job.job_id));
 
-                  {/* Title & Company */}
-                  <h6 className="fw-bold text-dark mb-1 text-truncate" title={job.title}>
-                    {job.title}
-                  </h6>
-                  <p className="text-muted fs-7 mb-3 text-truncate">
-                    <i className="bi bi-building me-1 text-purple"></i>
-                    <strong>{job.company_name || 'LinkedIn Posting'}</strong>
-                  </p>
-
-                  {/* Metadata Badges */}
-                  <div className="d-flex flex-wrap gap-2 mb-3">
-                    <span className="badge badge-warning-subtle fs-8">
-                      <i className="bi bi-award-fill me-1"></i> {job.seniority_level || 'Mid-Senior'}
-                    </span>
-                    {job.num_applicants && (
-                      <span className="badge badge-success-subtle fs-8">
-                        <i className="bi bi-people-fill me-1"></i> {job.num_applicants}
+            return (
+              <div key={job.job_id} className="col-md-6 col-lg-4">
+                <div className="card-modern p-4 h-100 d-flex flex-column justify-content-between shadow-sm hover-shadow transition">
+                  <div>
+                    {/* Job ID & Date Header */}
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <span className="badge badge-purple font-monospace">Job ID: {job.job_id}</span>
+                      <span className="badge bg-light text-purple border border-purple-light fs-8">
+                        <i className="bi bi-clock-history me-1"></i>
+                        {formatPostedDate(job.posted_time)}
                       </span>
+                    </div>
+
+                    {/* Title & Company */}
+                    <h6 className="fw-bold text-dark mb-1 text-truncate" title={job.title}>
+                      {job.title}
+                    </h6>
+                    <p className="text-muted fs-7 mb-3 text-truncate">
+                      <i className="bi bi-building me-1 text-purple"></i>
+                      <strong>{job.company_name || 'LinkedIn Posting'}</strong>
+                    </p>
+
+                    {/* Metadata Badges */}
+                    <div className="d-flex flex-wrap gap-2 mb-3">
+                      <span className="badge badge-warning-subtle fs-8">
+                        <i className="bi bi-award-fill me-1"></i> {job.seniority_level || 'Mid-Senior'}
+                      </span>
+                      {job.num_applicants && (
+                        <span className="badge badge-success-subtle fs-8">
+                          <i className="bi bi-people-fill me-1"></i> {job.num_applicants}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Skills Tags */}
+                    {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
+                      <div className="mb-3">
+                        <small className="text-muted fw-bold d-block mb-1 fs-9">KEY SKILLS:</small>
+                        <div className="d-flex flex-wrap gap-1" style={{ maxHeight: '60px', overflow: 'hidden' }}>
+                          {job.skills_required.slice(0, 4).map((sk, idx) => (
+                            <span key={idx} className="badge bg-light text-purple border border-purple-light fs-9">
+                              {sk}
+                            </span>
+                          ))}
+                          {job.skills_required.length > 4 && (
+                            <span className="badge bg-purple-subtle text-purple fs-9">
+                              +{job.skills_required.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Skills Tags */}
-                  {job.skills_required && Array.isArray(job.skills_required) && job.skills_required.length > 0 && (
-                    <div className="mb-3">
-                      <small className="text-muted fw-bold d-block mb-1 fs-9">KEY SKILLS:</small>
-                      <div className="d-flex flex-wrap gap-1" style={{ maxHeight: '60px', overflow: 'hidden' }}>
-                        {job.skills_required.slice(0, 4).map((sk, idx) => (
-                          <span key={idx} className="badge bg-light text-purple border border-purple-light fs-9">
-                            {sk}
-                          </span>
-                        ))}
-                        {job.skills_required.length > 4 && (
-                          <span className="badge bg-purple-subtle text-purple fs-9">
-                            +{job.skills_required.length - 4} more
-                          </span>
+                  {/* Actions */}
+                  <div className="pt-3 border-top d-flex flex-column gap-2">
+                    <div className="d-flex gap-2">
+                      <button
+                        onClick={() => onViewJob(job.job_id, job.job_source, job.job_url)}
+                        className={`btn btn-sm ${job.job_source === 'naukri' ? 'btn-danger' : 'btn-purple'} flex-grow-1 font-semibold d-flex align-items-center justify-content-center gap-1`}
+                      >
+                        <i className="bi bi-eye-fill"></i>
+                        <span>Read Description</span>
+                      </button>
+                      {job.job_url && (
+                        <a
+                          href={job.job_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-purple"
+                          title="View on LinkedIn"
+                        >
+                          <i className="bi bi-box-arrow-up-right"></i>
+                        </a>
+                      )}
+                    </div>
+
+                    {onToggleAddToList && (
+                      <div className="d-flex gap-2">
+                        <button
+                          onClick={() =>
+                            onToggleAddToList({
+                              jobId: String(job.job_id),
+                              title: job.title,
+                              company: job.company_name,
+                              location: job.location,
+                            })
+                          }
+                          className={`btn btn-sm flex-grow-1 font-semibold d-flex align-items-center justify-content-center gap-1 ${
+                            isAdded ? 'btn-success text-white' : 'btn-outline-purple'
+                          }`}
+                        >
+                          <i className={`bi ${isAdded ? 'bi-check-circle-fill' : 'bi-plus-circle'}`}></i>
+                          <span>{isAdded ? 'In List' : 'Add to List'}</span>
+                        </button>
+                        {onStartWorkflow && (
+                          <button
+                            onClick={() => onStartWorkflow(String(job.job_id))}
+                            className="btn btn-sm btn-purple-subtle text-purple border border-purple-light font-semibold d-flex align-items-center justify-content-center gap-1"
+                            title="Process job through ATS Workflow"
+                          >
+                            <i className="bi bi-gear-wide-connected"></i>
+                            <span>Process</span>
+                          </button>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="pt-3 border-top d-flex gap-2">
-                  <button
-                    onClick={() => onViewJob(job.job_id)}
-                    className="btn btn-sm btn-purple flex-grow-1 font-semibold d-flex align-items-center justify-content-center gap-1"
-                  >
-                    <i className="bi bi-eye-fill"></i>
-                    <span>Read Description</span>
-                  </button>
-                  {job.job_url && (
-                    <a
-                      href={job.job_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-sm btn-outline-purple"
-                      title="View on LinkedIn"
-                    >
-                      <i className="bi bi-box-arrow-up-right"></i>
-                    </a>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

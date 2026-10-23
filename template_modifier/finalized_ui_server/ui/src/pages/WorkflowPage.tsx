@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { CentrifugoClient } from '../services/CentrifugoClient';
 
 interface UserProfile {
   id: number;
@@ -18,14 +19,18 @@ interface SavedJob {
 interface WorkflowSession {
   session_id: string;
   title: string;
-  status: 'CREATED' | 'ATS_GENERATING' | 'ATS_COMPLETED' | 'PDF_GENERATING' | 'PDF_COMPLETED' | 'FAILED';
+  status: 'CREATED' | 'QUEUED' | 'ATS_GENERATING' | 'ATS_COMPLETED' | 'PDF_GENERATING' | 'PDF_COMPLETED' | 'FAILED';
   profile_id?: number;
   job_id?: string;
+  batch_id?: string;
+  batch_title?: string;
   job_source?: string;
   job_url?: string;
   pdf_filename?: string;
   pdf_links?: Array<{ template_name: string; filename: string; url: string }>;
   error_message?: string;
+  total_tokens?: number;
+  processing_time_seconds?: number;
   created_at?: string;
   updated_at?: string;
   generated_ats?: {
@@ -37,19 +42,45 @@ interface WorkflowSession {
   };
 }
 
+interface WorkflowBatch {
+  batch_id: string;
+  batch_title: string;
+  total_jobs: number;
+  completed_jobs: number;
+  status: string;
+  total_tokens?: number;
+  processing_time_seconds?: number;
+  last_updated?: string;
+}
+
 interface WorkflowPageProps {
   API_BASE_URL: string;
   onOpenJobModal: (jobId: string, jobSource?: string, jobUrl?: string) => void;
   initialSessionId?: string;
+  selectedJobsList?: any[];
+  onClearSelectedJobs?: () => void;
 }
 
-export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpenJobModal, initialSessionId }) => {
+export const WorkflowPage: React.FC<WorkflowPageProps> = ({
+  API_BASE_URL,
+  onOpenJobModal,
+  initialSessionId,
+  selectedJobsList,
+  onClearSelectedJobs,
+}) => {
   // Workflow Sessions State
   const [sessions, setSessions] = useState<WorkflowSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>(initialSessionId || '');
   const [activeSession, setActiveSession] = useState<WorkflowSession | null>(null);
   const [loadingSessions, setLoadingSessions] = useState<boolean>(true);
   const [loadingDetails, setLoadingDetails] = useState<boolean>(false);
+
+  // Batch Processing State
+  const [batches, setBatches] = useState<WorkflowBatch[]>([]);
+  const [activeBatchId, setActiveBatchId] = useState<string>('');
+  const [batchProfileId, setBatchProfileId] = useState<string>('');
+  const [runningBatchATS, setRunningBatchATS] = useState<boolean>(false);
+  const centrifugoRef = useRef<CentrifugoClient | null>(null);
 
   // Available Data Dropdowns
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
@@ -72,8 +103,8 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
   const [savingAtsJson, setSavingAtsJson] = useState<boolean>(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
-  // Sub-Tab Navigation: 'session' | 'manual'
-  const [activeTab, setActiveTab] = useState<'session' | 'manual'>('session');
+  // Sub-Tab Navigation: 'session' | 'manual' | 'batch'
+  const [activeTab, setActiveTab] = useState<'session' | 'manual' | 'batch'>('session');
 
   // Manual Free Text Workflow State
   const [manualProfileId, setManualProfileId] = useState<string>('');
@@ -188,10 +219,148 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
     }
   };
 
+  // Fetch Workflow Batches
+  const fetchBatches = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/workflow/batches`);
+      if (res.ok) {
+        const data = await res.json();
+        const list: WorkflowBatch[] = data.batches || [];
+        setBatches(list);
+        if (list.length > 0 && !activeBatchId) {
+          setActiveBatchId(list[0].batch_id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch workflow batches:", err);
+    }
+  };
+
   useEffect(() => {
     fetchSessions();
     fetchDropdownData();
+    fetchBatches();
   }, [API_BASE_URL]);
+
+  // Centrifugo WebSocket Connection & Real-Time Event Listener
+  useEffect(() => {
+    const defaultWsUrl = import.meta.env.VITE_CENTRIFUGO_WS_URL || (import.meta.env.DEV ? 'ws://localhost:8008/connection/websocket' : 'ws://localhost:8008/connection/websocket');
+    const cfClient = new CentrifugoClient({
+      wsUrl: defaultWsUrl,
+      userId: 'user_demo',
+      autoReconnect: true,
+    });
+    centrifugoRef.current = cfClient;
+
+    let unsubUpdates: (() => void) | null = null;
+    let unsubBatch: (() => void) | null = null;
+
+    async function initCentrifugo() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/linkedin/centrifugo/token?user_id=user_demo`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.token) {
+            await cfClient.connect(data.token);
+
+            // Subscribe to global batch updates channel
+            unsubUpdates = cfClient.subscribe("batch:updates", () => {
+              fetchSessions();
+              fetchBatches();
+            });
+
+            // Subscribe to active batch channel if present
+            if (activeBatchId) {
+              unsubBatch = cfClient.subscribe(`batch:${activeBatchId}`, (eventRecord) => {
+                const dataPayload = eventRecord.data || eventRecord;
+                if (dataPayload && dataPayload.session_id && dataPayload.status) {
+                  setSessions((prev) => prev.map((s) => {
+                    if (s.session_id === dataPayload.session_id) {
+                      return {
+                        ...s,
+                        status: dataPayload.status,
+                        total_tokens: dataPayload.total_tokens !== undefined ? dataPayload.total_tokens : s.total_tokens,
+                        processing_time_seconds: dataPayload.processing_time_seconds !== undefined ? dataPayload.processing_time_seconds : s.processing_time_seconds,
+                        error_message: dataPayload.error_message || s.error_message
+                      };
+                    }
+                    return s;
+                  }));
+
+                  if (dataPayload.session_id === activeSessionId) {
+                    fetchSessionDetails(activeSessionId);
+                  }
+                }
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Centrifugo connection error in WorkflowPage:", err);
+      }
+    }
+
+    initCentrifugo();
+
+    return () => {
+      if (unsubUpdates) unsubUpdates();
+      if (unsubBatch) unsubBatch();
+      cfClient.disconnect();
+    };
+  }, [API_BASE_URL, activeBatchId, activeSessionId]);
+
+  // Handle Batch ATS Execution
+  const handleStartBatchWorkflow = async () => {
+    if (!selectedJobsList || selectedJobsList.length === 0) {
+      alert("No jobs selected in your drawer list.");
+      return;
+    }
+    if (!batchProfileId) {
+      alert("Please select a candidate profile for this batch.");
+      return;
+    }
+
+    setRunningBatchATS(true);
+    try {
+      const payload = {
+        profile_id: parseInt(batchProfileId, 10),
+        jobs: selectedJobsList.map(j => ({
+          job_id: j.jobId,
+          title: j.title || `Job ${j.jobId}`,
+          company_name: j.company || 'Company',
+          job_source: j.jobSource || 'linkedin',
+          job_url: j.jobUrl
+        })),
+        max_concurrency: 3
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/workflow/batches/run-ats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (onClearSelectedJobs) onClearSelectedJobs();
+        await fetchSessions();
+        await fetchBatches();
+        if (data.batch_id) setActiveBatchId(data.batch_id);
+        if (data.sessions && data.sessions.length > 0) {
+          setActiveSessionId(data.sessions[0].session_id);
+        }
+        setActiveTab('batch');
+      } else {
+        const errData = await res.json();
+        alert(`Failed to start batch workflow: ${errData.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Batch ATS Execution Error:", err);
+      alert("Network error executing batch workflow.");
+    } finally {
+      setRunningBatchATS(false);
+    }
+  };
 
   // Fetch Active Session Details (Stateful Persistence)
   const fetchSessionDetails = async (sessionId: string) => {
@@ -409,6 +578,8 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
     switch (status) {
       case 'CREATED':
         return <span className="badge bg-secondary">Created</span>;
+      case 'QUEUED':
+        return <span className="badge bg-secondary text-white"><i className="bi bi-clock me-1"></i> Queued</span>;
       case 'ATS_GENERATING':
         return <span className="badge bg-warning text-dark"><i className="bi bi-gear spin me-1"></i> Bypassing ATS...</span>;
       case 'ATS_COMPLETED':
@@ -450,37 +621,86 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
           ) : sessions.length === 0 ? (
             <div className="p-3 text-center text-muted fs-8">No workflow sessions.</div>
           ) : (
-            sessions.map((sess) => (
-              <div
-                key={sess.session_id}
-                onClick={() => setActiveSessionId(sess.session_id)}
-                className={`p-3 rounded-3 cursor-pointer transition-all border ${
-                  activeSessionId === sess.session_id
-                    ? 'bg-white shadow-sm border-purple-light'
-                    : 'bg-transparent border-transparent hover-bg-white'
-                }`}
-              >
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <strong className="text-purple fs-7 text-truncate me-2" style={{ maxWidth: '160px' }}>
-                    {sess.title}
-                  </strong>
-                  <button
-                    onClick={(e) => handleDeleteSession(sess.session_id, e)}
-                    className="btn btn-sm text-danger p-0 border-0"
-                    title="Delete Session"
-                  >
-                    <i className="bi bi-trash"></i>
-                  </button>
+            <>
+              {/* Batch Runs Section */}
+              {batches.length > 0 && (
+                <div className="mb-2">
+                  <div className="fs-9 fw-bold text-muted text-uppercase px-2 mb-1">
+                    <i className="bi bi-layers-fill me-1 text-warning"></i> Batch Runs ({batches.length})
+                  </div>
+                  {batches.map((b) => (
+                    <div
+                      key={b.batch_id}
+                      onClick={() => {
+                        setActiveBatchId(b.batch_id);
+                        setActiveTab('batch');
+                        const bSessions = sessions.filter(s => s.batch_id === b.batch_id);
+                        if (bSessions.length > 0) setActiveSessionId(bSessions[0].session_id);
+                      }}
+                      className={`p-2.5 mb-1 rounded-3 cursor-pointer transition-all border ${
+                        activeBatchId === b.batch_id && activeTab === 'batch'
+                          ? 'bg-purple-subtle border-purple shadow-sm'
+                          : 'bg-white border-light hover-bg-white'
+                      }`}
+                    >
+                      <div className="d-flex align-items-center justify-content-between mb-1">
+                        <strong className="text-purple fs-8 text-truncate me-1" style={{ maxWidth: '140px' }}>
+                          {b.batch_title}
+                        </strong>
+                        <span className="badge bg-purple text-white fs-9">{b.completed_jobs}/{b.total_jobs}</span>
+                      </div>
+                      <div className="d-flex align-items-center justify-content-between text-muted fs-9">
+                        <span>Status: <span className="fw-semibold text-capitalize">{b.status}</span></span>
+                        {b.total_tokens ? (
+                          <span className="text-purple fw-semibold"><i className="bi bi-cpu me-0.5"></i>{b.total_tokens.toLocaleString()}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                <div className="d-flex align-items-center justify-content-between mt-2">
-                  {getStatusBadge(sess.status)}
-                  <small className="text-muted fs-9">
-                    {sess.updated_at ? new Date(sess.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
-                  </small>
+              {/* Individual Sessions Section */}
+              <div>
+                <div className="fs-9 fw-bold text-muted text-uppercase px-2 mb-1">
+                  <i className="bi bi-file-earmark-text me-1 text-primary"></i> Individual Workflows
                 </div>
+                {sessions.filter(s => !s.batch_id).map((sess) => (
+                  <div
+                    key={sess.session_id}
+                    onClick={() => {
+                      setActiveSessionId(sess.session_id);
+                      if (activeTab === 'batch') setActiveTab('session');
+                    }}
+                    className={`p-2.5 mb-1 rounded-3 cursor-pointer transition-all border ${
+                      activeSessionId === sess.session_id && activeTab !== 'batch'
+                        ? 'bg-white shadow-sm border-purple-light'
+                        : 'bg-transparent border-transparent hover-bg-white'
+                    }`}
+                  >
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <strong className="text-purple fs-8 text-truncate me-2" style={{ maxWidth: '150px' }}>
+                        {sess.title}
+                      </strong>
+                      <button
+                        onClick={(e) => handleDeleteSession(sess.session_id, e)}
+                        className="btn btn-sm text-danger p-0 border-0"
+                        title="Delete Session"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </div>
+
+                    <div className="d-flex align-items-center justify-content-between mt-1">
+                      {getStatusBadge(sess.status)}
+                      <small className="text-muted fs-9">
+                        {sess.updated_at ? new Date(sess.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
+                      </small>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))
+            </>
           )}
         </div>
       </div>
@@ -520,7 +740,7 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                 className={`btn btn-sm ${activeTab === 'session' ? 'btn-purple shadow-sm fw-bold' : 'btn-link text-secondary text-decoration-none'} d-flex align-items-center gap-2 px-3 py-2`}
               >
                 <i className="bi bi-diagram-3-fill"></i>
-                <span>Job ID Session (LinkedIn / Naukri)</span>
+                <span>Single Job Session</span>
               </button>
               <button
                 type="button"
@@ -528,7 +748,15 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
                 className={`btn btn-sm ${activeTab === 'manual' ? 'btn-purple shadow-sm fw-bold' : 'btn-link text-secondary text-decoration-none'} d-flex align-items-center gap-2 px-3 py-2`}
               >
                 <i className="bi bi-pencil-square"></i>
-                <span>Manual Free-Text Job Description</span>
+                <span>Manual Free-Text JD</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('batch')}
+                className={`btn btn-sm ${activeTab === 'batch' ? 'btn-purple shadow-sm fw-bold' : 'btn-link text-secondary text-decoration-none'} d-flex align-items-center gap-2 px-3 py-2`}
+              >
+                <i className="bi bi-layers-fill text-warning"></i>
+                <span>⚡ Batch Jobs Workflow {batches.length > 0 ? `(${batches.length})` : ''}</span>
               </button>
             </div>
 
@@ -754,14 +982,232 @@ export const WorkflowPage: React.FC<WorkflowPageProps> = ({ API_BASE_URL, onOpen
               </div>
             )}
 
+            {/* Step 1 (Option C): Batch Jobs Workflow Configuration & Monitor */}
+            {activeTab === 'batch' && (
+              <div className="card-modern p-4 shadow-sm">
+                <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                  <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i className="bi bi-layers-fill text-purple fs-4"></i>
+                    <span>Batch ATS Processing Workspace</span>
+                  </h5>
+
+                  {batches.length > 0 && (
+                    <div className="d-flex align-items-center gap-2">
+                      <label className="fs-8 fw-bold text-muted mb-0">Select Batch Run:</label>
+                      <select
+                        className="form-select form-select-sm fs-8 font-monospace"
+                        value={activeBatchId}
+                        onChange={(e) => {
+                          setActiveBatchId(e.target.value);
+                          const bSessions = sessions.filter(s => s.batch_id === e.target.value);
+                          if (bSessions.length > 0) setActiveSessionId(bSessions[0].session_id);
+                        }}
+                      >
+                        {batches.map((b) => (
+                          <option key={b.batch_id} value={b.batch_id}>
+                            {b.batch_title} ({b.completed_jobs}/{b.total_jobs} Ready)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Launch New Batch section if selectedJobsList has items */}
+                {selectedJobsList && selectedJobsList.length > 0 && (
+                  <div className="p-3 bg-purple-subtle border border-purple-light rounded-3 mb-4">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <strong className="text-purple fs-7">
+                        <i className="bi bi-stack me-1"></i> Launch Batch for {selectedJobsList.length} Selected Jobs
+                      </strong>
+                    </div>
+                    <div className="row g-3 align-items-end">
+                      <div className="col-md-8">
+                        <label className="fs-8 fw-bold text-muted mb-1 d-block">Candidate User Profile:</label>
+                        <select
+                          className="form-select fs-7"
+                          value={batchProfileId}
+                          onChange={(e) => setBatchProfileId(e.target.value)}
+                          disabled={runningBatchATS}
+                        >
+                          <option value="">-- Select Candidate Profile --</option>
+                          {profiles.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.profile_name} (ID: {p.id})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-md-4">
+                        <button
+                          type="button"
+                          onClick={handleStartBatchWorkflow}
+                          disabled={runningBatchATS || !batchProfileId}
+                          className="btn btn-purple w-100 fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm"
+                        >
+                          {runningBatchATS ? (
+                            <>
+                              <div className="spinner-border spinner-border-sm text-white" role="status"></div>
+                              <span>Starting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="bi bi-rocket-takeoff-fill fs-6"></i>
+                              <span>Process Batch ({selectedJobsList.length} Jobs)</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Batch Progress Bar & Grid if active batch selected */}
+                {activeBatchId ? (
+                  <div>
+                    {(() => {
+                      const batchSessions = sessions.filter(s => s.batch_id === activeBatchId);
+                      const totalCount = batchSessions.length;
+                      const completedCount = batchSessions.filter(s => s.status === 'ATS_COMPLETED' || s.status === 'PDF_GENERATING' || s.status === 'PDF_COMPLETED').length;
+                      const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                      const totalBatchTokens = batchSessions.reduce((acc, s) => acc + (s.total_tokens || 0), 0);
+                      const totalBatchTime = batchSessions.reduce((acc, s) => acc + (s.processing_time_seconds || 0), 0);
+                      const avgTokensPerJob = completedCount > 0 ? Math.round(totalBatchTokens / completedCount) : 0;
+
+                      return (
+                        <>
+                          {/* Batch Statistics & Execution Summary */}
+                          <div className="mb-4 p-3 bg-light rounded-3 border">
+                            <div className="row g-2 mb-3">
+                              {/* Completed Jobs Stat */}
+                              <div className="col-md-4">
+                                <div className="p-2.5 bg-white rounded-3 border h-100 d-flex align-items-center gap-2.5 shadow-xs">
+                                  <div className="p-2 bg-purple-subtle text-purple rounded-2">
+                                    <i className="bi bi-check2-circle fs-5"></i>
+                                  </div>
+                                  <div>
+                                    <small className="text-muted fs-9 d-block fw-bold text-uppercase">Completed Jobs</small>
+                                    <strong className="fs-7 text-dark">{completedCount} of {totalCount} Ready</strong>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Token Utilization Stat */}
+                              <div className="col-md-4">
+                                <div className="p-2.5 bg-white rounded-3 border h-100 d-flex align-items-center gap-2.5 shadow-xs">
+                                  <div className="p-2 bg-warning-subtle text-warning rounded-2">
+                                    <i className="bi bi-cpu-fill fs-5 text-warning"></i>
+                                  </div>
+                                  <div>
+                                    <small className="text-muted fs-9 d-block fw-bold text-uppercase">Total Token Usage</small>
+                                    <strong className="fs-7 text-dark">{totalBatchTokens.toLocaleString()} tokens</strong>
+                                    {completedCount > 0 && (
+                                      <span className="text-muted fs-9 ms-1">({avgTokensPerJob.toLocaleString()} avg)</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Workflow Processing Time Stat */}
+                              <div className="col-md-4">
+                                <div className="p-2.5 bg-white rounded-3 border h-100 d-flex align-items-center gap-2.5 shadow-xs">
+                                  <div className="p-2 bg-info-subtle text-info rounded-2">
+                                    <i className="bi bi-stopwatch-fill fs-5 text-info"></i>
+                                  </div>
+                                  <div>
+                                    <small className="text-muted fs-9 d-block fw-bold text-uppercase">Processing Time</small>
+                                    <strong className="fs-7 text-dark">{totalBatchTime.toFixed(1)}s</strong>
+                                    {completedCount > 0 && (
+                                      <span className="text-muted fs-9 ms-1">({(totalBatchTime / completedCount).toFixed(1)}s avg)</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="d-flex justify-content-between align-items-center mb-1 fs-8 fw-semibold">
+                              <span className="text-muted">Batch Workflow Progress</span>
+                              <span className="text-purple fw-bold">{pct}%</span>
+                            </div>
+                            <div className="progress" style={{ height: '8px' }}>
+                              <div
+                                className="progress-bar bg-purple-gradient progress-bar-striped progress-bar-animated"
+                                role="progressbar"
+                                style={{ width: `${pct}%` }}
+                              ></div>
+                            </div>
+                          </div>
+
+                          <h6 className="fw-bold text-dark mb-2 fs-8">Jobs in this Batch (Click any job card to inspect its ATS data & generate PDFs):</h6>
+                          <div className="row g-2 mb-3">
+                            {batchSessions.map((s) => (
+                              <div key={s.session_id} className="col-md-6 col-lg-4">
+                                <div
+                                  onClick={() => setActiveSessionId(s.session_id)}
+                                  className={`p-3 rounded-3 cursor-pointer border transition-all ${
+                                    activeSessionId === s.session_id
+                                      ? 'bg-purple-subtle border-purple shadow-sm'
+                                      : 'bg-light hover-bg-white border-secondary-subtle'
+                                  }`}
+                                >
+                                  <div className="d-flex align-items-center justify-content-between mb-1">
+                                    <span className="badge bg-white text-dark border fs-9">
+                                      ID: {s.job_id}
+                                    </span>
+                                    {getStatusBadge(s.status)}
+                                  </div>
+                                  <div className="fw-bold fs-8 text-dark text-truncate mb-1">{s.title}</div>
+                                  <div className="d-flex align-items-center justify-content-between gap-1 mt-2 pt-2 border-top border-light">
+                                    <span className="badge bg-light text-muted border fs-9" title="Total Tokens Used">
+                                      <i className="bi bi-cpu me-1 text-purple"></i>
+                                      {s.total_tokens ? `${s.total_tokens.toLocaleString()} tok` : '0 tok'}
+                                    </span>
+                                    <span className="badge bg-light text-muted border fs-9" title="LLM Processing Time">
+                                      <i className="bi bi-stopwatch me-1 text-info"></i>
+                                      {s.processing_time_seconds ? `${s.processing_time_seconds}s` : '0s'}
+                                    </span>
+                                    {s.job_source && (
+                                      <span className="badge bg-purple-subtle text-purple border border-purple-light fs-9 text-capitalize">
+                                        {s.job_source}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted py-4 fs-8">
+                    No batch selected. Add jobs to your Selected Jobs Drawer and click "Process Batch".
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Step 2: Generated ATS Resume Data & Interview Guide */}
             {atsData && (
               <div className="card-modern p-4 shadow-sm border-start border-4 border-purple">
                 <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                  <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i className="bi bi-2-circle-fill text-purple fs-4"></i>
-                    <span>Step 2: ATS Optimized Resume Data</span>
-                  </h5>
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                      <i className="bi bi-2-circle-fill text-purple fs-4"></i>
+                      <span>Step 2: ATS Optimized Resume Data</span>
+                    </h5>
+                    {activeSession?.total_tokens ? (
+                      <span className="badge bg-purple-subtle text-purple border border-purple-light fs-9">
+                        <i className="bi bi-cpu-fill me-1"></i>{activeSession.total_tokens.toLocaleString()} tokens
+                      </span>
+                    ) : null}
+                    {activeSession?.processing_time_seconds ? (
+                      <span className="badge bg-light text-dark border fs-9">
+                        <i className="bi bi-stopwatch me-1 text-info"></i>{activeSession.processing_time_seconds}s
+                      </span>
+                    ) : null}
+                  </div>
                   <button
                     onClick={() => setShowRawATSJson(!showRawATSJson)}
                     className="btn btn-sm btn-outline-purple d-flex align-items-center gap-1.5 fw-semibold"

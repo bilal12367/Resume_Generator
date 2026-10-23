@@ -167,14 +167,30 @@ export const JobModal: React.FC<JobModalProps> = ({
 
                 {/* Job Description Text */}
                 <div>
-                  <h6 className="fw-bold text-dark mb-2">
-                    <i className="bi bi-file-text-fill text-purple me-1"></i> Role Description:
-                  </h6>
+                  <div className="d-flex align-items-center justify-content-between mb-2">
+                    <h6 className="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                      <i className="bi bi-file-text-fill text-purple me-1"></i>
+                      <span>Role Description</span>
+                    </h6>
+                    <span className="badge bg-purple-subtle text-purple border border-purple-light fs-9">
+                      <i className="bi bi-arrows-vertical me-1"></i>Scroll to view full text
+                    </span>
+                  </div>
                   <div
-                    className="p-3 bg-light rounded-3 text-secondary fs-7 leading-relaxed"
-                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                    className="p-3.5 rounded-3 fs-7 shadow-sm border border-secondary border-opacity-25"
+                    style={{
+                      backgroundColor: '#1a192b',
+                      color: '#ffffff',
+                      maxHeight: '360px',
+                      overflowY: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere',
+                      lineHeight: '1.65',
+                      fontSize: '0.88rem'
+                    }}
                   >
-                    {jobData.minimal_description || jobData.raw_description || jobData.description || 'No description body available.'}
+                    {jobData.description || jobData.raw_description || jobData.minimal_description || 'No description body available.'}
                   </div>
                 </div>
 

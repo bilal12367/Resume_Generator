@@ -23,6 +23,26 @@ try:
             conn.commit()
         except Exception:
             pass
+        try:
+            conn.execute(text("ALTER TABLE ats_workflow_sessions ADD COLUMN batch_id VARCHAR(255)"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE ats_workflow_sessions ADD COLUMN batch_title VARCHAR(255)"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE ats_workflow_sessions ADD COLUMN total_tokens INT DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE ats_workflow_sessions ADD COLUMN processing_time_seconds FLOAT DEFAULT 0.0"))
+            conn.commit()
+        except Exception:
+            pass
 except Exception as e:
     print(f"Database initialization info: {e}")
 

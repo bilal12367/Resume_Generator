@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from pydantic import BaseModel
 from llama_index.core.base.llms.types import MessageRole, ChatMessage
 from llama_index.llms.siliconflow import SiliconFlow
@@ -28,7 +28,7 @@ class ATSDataModifier:
 
         self.llm = SiliconFlow(**kwargs, timeout=12000.0)
 
-    async def generate_data(self, job_description: str, user_old_data: dict) -> BaseModel:
+    async def generate_data(self, job_description: str, user_old_data: dict) -> Tuple[BaseModel, int]:
         response_format = {
             "type": "json_schema",
             "json_schema": {
@@ -76,7 +76,17 @@ class ATSDataModifier:
 
         response_content = str(response.message.content)
 
+        # Extract total token utilization
+        from app.llm.agent import extract_usage_from_response, estimate_tokens
+        usage = extract_usage_from_response(response)
+        total_tokens = usage.get("total_tokens", 0)
+        if not total_tokens:
+            # Fallback estimation if usage object was omitted by provider
+            total_tokens = estimate_tokens(SYSTEM_PROMPT + USER_MESSAGE) + estimate_tokens(response_content)
+
         if hasattr(UserDataSchema, "model_validate_json"):
-            return UserDataSchema.model_validate_json(response_content)
+            parsed_data = UserDataSchema.model_validate_json(response_content)
         else:
-            return UserDataSchema.parse_raw(response_content)
+            parsed_data = UserDataSchema.parse_raw(response_content)
+
+        return parsed_data, total_tokens

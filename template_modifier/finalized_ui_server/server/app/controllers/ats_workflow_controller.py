@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import time
 import logging
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -54,6 +55,18 @@ class UpdateATSDataRequest(BaseModel):
 
 class GeneratePDFRequest(BaseModel):
     filename: str
+
+class BatchJobItem(BaseModel):
+    job_id: str
+    title: Optional[str] = None
+    company_name: Optional[str] = None
+    job_source: Optional[str] = "linkedin"
+    job_url: Optional[str] = None
+
+class RunBatchATSRequest(BaseModel):
+    profile_id: int
+    jobs: List[BatchJobItem]
+    max_concurrency: Optional[int] = 3
 
 
 # --- User Profiles API Endpoints ---
@@ -169,10 +182,14 @@ async def list_workflow_sessions(db: Session = Depends(get_db)):
                 "status": s.status,
                 "profile_id": s.profile_id,
                 "job_id": s.job_id,
+                "batch_id": s.batch_id,
+                "batch_title": s.batch_title,
                 "job_source": (job_info.get("job_source") or "linkedin") if job_info else "linkedin",
                 "job_url": (job_info.get("job_url") or "") if job_info else "",
                 "pdf_filename": s.pdf_filename,
                 "error_message": s.error_message,
+                "total_tokens": s.total_tokens or 0,
+                "processing_time_seconds": round(s.processing_time_seconds, 2) if s.processing_time_seconds else 0.0,
                 "created_at": str(s.created_at) if s.created_at else None,
                 "updated_at": str(s.updated_at) if s.updated_at else None,
             }
@@ -230,6 +247,8 @@ async def get_workflow_session_details(session_id: str, db: Session = Depends(ge
             "job_url": (job_info.get("job_url") or "") if job_info else "",
             "pdf_filename": session.pdf_filename,
             "error_message": session.error_message,
+            "total_tokens": session.total_tokens or 0,
+            "processing_time_seconds": round(session.processing_time_seconds, 2) if session.processing_time_seconds else 0.0,
             "created_at": str(session.created_at) if session.created_at else None,
             "updated_at": str(session.updated_at) if session.updated_at else None,
         }
@@ -349,10 +368,12 @@ async def run_ats_workflow(session_id: str, payload: RunATSWorkflowRequest, db: 
         # 3. Call ATSDataModifier
         from app.services.ats_data_modifier import ATSDataModifier
         modifier = ATSDataModifier()
-        modified_res = await modifier.generate_data(
+        start_t = time.time()
+        modified_res, total_tokens = await modifier.generate_data(
             job_description=job_description,
             user_old_data=user_data_dict
         )
+        duration_s = round(time.time() - start_t, 2)
 
         # Convert result to Python dict & JSON string
         if hasattr(modified_res, "model_dump"):
@@ -373,12 +394,16 @@ async def run_ats_workflow(session_id: str, payload: RunATSWorkflowRequest, db: 
 
         # 5. Update session status to ATS_COMPLETED
         session.status = "ATS_COMPLETED"
+        session.total_tokens = total_tokens
+        session.processing_time_seconds = duration_s
         db.commit()
 
         return {
             "status": "ATS_COMPLETED",
             "session_id": session_id,
             "profile_id": payload.profile_id,
+            "total_tokens": total_tokens,
+            "processing_time_seconds": duration_s,
             "job_id": job_id_val,
             "generated_ats": modified_dict
         }
@@ -509,3 +534,224 @@ async def generate_pdfs_for_session(session_id: str, payload: GeneratePDFRequest
         session.error_message = err_msg
         db.commit()
         raise HTTPException(status_code=500, detail=f"PDF Generation Error: {err_msg}")
+
+
+# --- Batch ATS Workflows API Endpoints ---
+
+async def _process_batch_workflow_background(batch_id: str, profile_id: int, items: List[Dict[str, Any]], max_concurrency: int = 3):
+    import asyncio
+    from app.services.centrifugo_service import CentrifugoService
+    cf_svc = CentrifugoService()
+    sem = asyncio.Semaphore(max_concurrency)
+
+    async def _worker(item: Dict[str, Any]):
+        async with sem:
+            from app.db.connection import SessionLocal
+            db = SessionLocal()
+            sess_id = item["session_id"]
+            job_id = item["job_id"]
+            try:
+                # Update status to ATS_GENERATING
+                sess = db.query(ATSWorkflowSession).filter(ATSWorkflowSession.session_id == sess_id).first()
+                if sess:
+                    sess.status = "ATS_GENERATING"
+                    db.commit()
+                    try:
+                        cf_svc.publish(f"batch:{batch_id}", {
+                            "event": "status_update",
+                            "batch_id": batch_id,
+                            "session_id": sess_id,
+                            "job_id": job_id,
+                            "status": "ATS_GENERATING"
+                        })
+                        cf_svc.publish("batch:updates", {"event": "batch_update", "batch_id": batch_id})
+                    except Exception:
+                        pass
+
+                # Fetch User Profile Data
+                prof = db.query(UserProfile).filter(UserProfile.id == profile_id).first()
+                if not prof:
+                    raise Exception(f"User profile ID {profile_id} not found.")
+                try:
+                    user_dict = json.loads(prof.user_data)
+                except Exception:
+                    user_dict = {"free_text": prof.user_data}
+
+                # Fetch Job Description
+                agent_db = AgentDatabase()
+                cached_job = agent_db.get_cached_job_description(job_id)
+                job_desc = ""
+                if cached_job and cached_job.get("raw_description") and "unavailable" not in cached_job.get("raw_description", "").lower():
+                    job_desc = cached_job["raw_description"]
+                else:
+                    if item.get("job_source") == "naukri":
+                        from app.services.naukri_service import NaukriService
+                        naukri_svc = NaukriService()
+                        nd = await naukri_svc.process_single_job_and_save(job_id, item.get("job_url"))
+                        if nd and nd.get("raw_description"):
+                            job_desc = nd["raw_description"]
+                    if not job_desc:
+                        from app.services.linkedin_service import LinkedInService
+                        service = LinkedInService()
+                        ld = await service.get_job_description(job_id)
+                        await service.close()
+                        job_desc = ld.get("raw_description") or ld.get("minimal_description") or ""
+
+                if not job_desc:
+                    raise Exception(f"Could not resolve job description for job {job_id}")
+
+                # Run ATS Data Modifier
+                from app.services.ats_data_modifier import ATSDataModifier
+                modifier = ATSDataModifier()
+                worker_start_t = time.time()
+                modified_res, total_tokens = await modifier.generate_data(job_description=job_desc, user_old_data=user_dict)
+                worker_duration_s = round(time.time() - worker_start_t, 2)
+
+                if hasattr(modified_res, "model_dump"):
+                    modified_dict = modified_res.model_dump()
+                else:
+                    modified_dict = modified_res.dict()
+
+                modified_json_str = json.dumps(modified_dict, indent=2)
+
+                # Save into generated_ats table
+                gen = GeneratedATS(
+                    session_id=sess_id,
+                    profile_id=profile_id,
+                    job_id=job_id,
+                    ats_json_data=modified_json_str
+                )
+                db.add(gen)
+
+                # Update session status to ATS_COMPLETED
+                sess = db.query(ATSWorkflowSession).filter(ATSWorkflowSession.session_id == sess_id).first()
+                if sess:
+                    sess.status = "ATS_COMPLETED"
+                    sess.total_tokens = total_tokens
+                    sess.processing_time_seconds = worker_duration_s
+                    db.commit()
+                    try:
+                        cf_svc.publish(f"batch:{batch_id}", {
+                            "event": "status_update",
+                            "batch_id": batch_id,
+                            "session_id": sess_id,
+                            "job_id": job_id,
+                            "status": "ATS_COMPLETED",
+                            "total_tokens": total_tokens,
+                            "processing_time_seconds": worker_duration_s
+                        })
+                        cf_svc.publish("batch:updates", {"event": "batch_update", "batch_id": batch_id})
+                    except Exception:
+                        pass
+
+            except Exception as e:
+                logger.error(f"Batch background error for session '{sess_id}': {e}", exc_info=True)
+                sess = db.query(ATSWorkflowSession).filter(ATSWorkflowSession.session_id == sess_id).first()
+                if sess:
+                    sess.status = "FAILED"
+                    sess.error_message = str(e)
+                    db.commit()
+                    try:
+                        cf_svc.publish(f"batch:{batch_id}", {
+                            "event": "status_update",
+                            "batch_id": batch_id,
+                            "session_id": sess_id,
+                            "job_id": job_id,
+                            "status": "FAILED",
+                            "error_message": str(e)
+                        })
+                        cf_svc.publish("batch:updates", {"event": "batch_update", "batch_id": batch_id})
+                    except Exception:
+                        pass
+            finally:
+                db.close()
+
+    tasks = [_worker(item) for item in items]
+    await asyncio.gather(*tasks)
+
+
+@router.post("/batches/run-ats", summary="Start Concurrent Batch ATS Processing for Selected Jobs")
+async def start_batch_ats_workflow(payload: RunBatchATSRequest, db: Session = Depends(get_db)):
+    if not payload.jobs:
+        raise HTTPException(status_code=400, detail="No jobs provided in batch payload.")
+
+    import uuid
+    from datetime import datetime, timezone
+    batch_id = f"batch_{uuid.uuid4().hex[:10]}"
+    now_str = datetime.now().strftime("%b %d, %I:%M %p")
+    batch_title = f"Batch: {len(payload.jobs)} Jobs ({now_str})"
+
+    created_sessions = []
+    for job_item in payload.jobs:
+        sess_id = f"workflow_{uuid.uuid4().hex[:12]}"
+        title = f"{job_item.title or 'Job ' + job_item.job_id} - {job_item.company_name or 'Company'}"
+        sess = ATSWorkflowSession(
+            session_id=sess_id,
+            title=title,
+            status="QUEUED",
+            profile_id=payload.profile_id,
+            job_id=job_item.job_id,
+            batch_id=batch_id,
+            batch_title=batch_title
+        )
+        db.add(sess)
+        created_sessions.append({
+            "session_id": sess_id,
+            "job_id": job_item.job_id,
+            "title": title,
+            "job_source": job_item.job_source or "linkedin",
+            "job_url": job_item.job_url
+        })
+    db.commit()
+
+    import asyncio
+    asyncio.create_task(_process_batch_workflow_background(batch_id, payload.profile_id, created_sessions, payload.max_concurrency or 3))
+
+    return {
+        "status": "started",
+        "batch_id": batch_id,
+        "batch_title": batch_title,
+        "count": len(created_sessions),
+        "sessions": created_sessions
+    }
+
+
+@router.get("/batches", summary="List All Workflow Batches")
+async def list_workflow_batches(db: Session = Depends(get_db)):
+    try:
+        from sqlalchemy import func
+        results = db.query(
+            ATSWorkflowSession.batch_id,
+            ATSWorkflowSession.batch_title,
+            func.count(ATSWorkflowSession.session_id).label("total_jobs"),
+            func.max(ATSWorkflowSession.updated_at).label("last_updated")
+        ).filter(
+            ATSWorkflowSession.batch_id.isnot(None)
+        ).group_by(
+            ATSWorkflowSession.batch_id,
+            ATSWorkflowSession.batch_title
+        ).order_by(
+            func.max(ATSWorkflowSession.updated_at).desc()
+        ).all()
+
+        batches = []
+        for b_id, b_title, total, last_up in results:
+            sessions = db.query(ATSWorkflowSession).filter(ATSWorkflowSession.batch_id == b_id).all()
+            completed_count = sum(1 for s in sessions if s.status in ["ATS_COMPLETED", "PDF_GENERATING", "PDF_COMPLETED"])
+            batch_tokens = sum(s.total_tokens or 0 for s in sessions)
+            batch_time = sum(s.processing_time_seconds or 0.0 for s in sessions)
+            batches.append({
+                "batch_id": b_id,
+                "batch_title": b_title or f"Batch {b_id[-6:]}",
+                "total_jobs": total,
+                "completed_jobs": completed_count,
+                "total_tokens": batch_tokens,
+                "processing_time_seconds": round(batch_time, 2),
+                "status": "COMPLETED" if completed_count == total else "IN_PROGRESS",
+                "last_updated": str(last_up) if last_up else None
+            })
+        return {"count": len(batches), "batches": batches}
+    except Exception as e:
+        logger.error(f"Error fetching batches: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
+

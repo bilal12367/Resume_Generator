@@ -333,6 +333,8 @@ export function App() {
               API_BASE_URL={API_BASE_URL}
               onOpenJobModal={handleOpenJobModal}
               initialSessionId={targetWorkflowSessionId}
+              selectedJobsList={selectedJobs}
+              onClearSelectedJobs={handleClearAllSelectedJobs}
             />
           )}
 
@@ -377,6 +379,7 @@ export function App() {
         onRemoveJob={handleRemoveSelectedJob}
         onClearAll={handleClearAllSelectedJobs}
         onViewJob={handleOpenJobModal}
+        onProcessBatch={() => handleNavigate('workflow')}
       />
     </div>
   );

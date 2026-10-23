@@ -6,6 +6,7 @@ interface SelectedJobsDrawerProps {
   onRemoveJob: (jobId: string) => void;
   onClearAll: () => void;
   onViewJob: (jobId: string, jobSource?: string, jobUrl?: string) => void;
+  onProcessBatch?: (jobs: SelectedJob[]) => void;
 }
 
 export const SelectedJobsDrawer: React.FC<SelectedJobsDrawerProps> = ({
@@ -13,6 +14,7 @@ export const SelectedJobsDrawer: React.FC<SelectedJobsDrawerProps> = ({
   onRemoveJob,
   onClearAll,
   onViewJob,
+  onProcessBatch,
 }) => {
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
 
@@ -66,58 +68,71 @@ export const SelectedJobsDrawer: React.FC<SelectedJobsDrawerProps> = ({
 
       {/* Item Stack List */}
       {!isMinimized && (
-        <div
-          className="p-2 overflow-auto"
-          style={{ maxHeight: '280px', backgroundColor: '#181824' }}
-        >
-          {selectedJobs.map((job) => (
-            <div
-              key={job.jobId}
-              className="d-flex align-items-center justify-content-between p-2.5 mb-1.5 rounded-3 bg-white bg-opacity-5 border border-white border-opacity-10 hover-bg-opacity-10 transition-all"
-            >
+        <>
+          <div
+            className="p-2 overflow-auto"
+            style={{ maxHeight: '240px', backgroundColor: '#181824' }}
+          >
+            {selectedJobs.map((job) => (
               <div
-                className="flex-grow-1 min-w-0 me-2 cursor-pointer"
-                onClick={() => onViewJob(job.jobId, job.jobSource, job.jobUrl)}
-                title="Click to view details"
+                key={job.jobId}
+                className="d-flex align-items-center justify-content-between p-2.5 mb-1.5 rounded-3 bg-white bg-opacity-5 border border-white border-opacity-10 hover-bg-opacity-10 transition-all"
               >
-                <div className="d-flex align-items-center gap-1.5 mb-1">
-                  <span className="badge bg-purple-subtle text-purple border border-purple-light fs-9 px-1.5 py-0.5">
-                    ID: {job.jobId}
-                  </span>
-                  {job.company && (
-                    <span className="text-white-50 fs-9 text-truncate fw-normal">
-                      • {job.company}
+                <div
+                  className="flex-grow-1 min-w-0 me-2 cursor-pointer"
+                  onClick={() => onViewJob(job.jobId, job.jobSource, job.jobUrl)}
+                  title="Click to view details"
+                >
+                  <div className="d-flex align-items-center gap-1.5 mb-1">
+                    <span className="badge bg-purple-subtle text-purple border border-purple-light fs-9 px-1.5 py-0.5">
+                      ID: {job.jobId}
                     </span>
-                  )}
+                    {job.company && (
+                      <span className="text-white-50 fs-9 text-truncate fw-normal">
+                        • {job.company}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-white fw-medium fs-8 text-truncate">
+                    {job.title || `Job Listing ${job.jobId}`}
+                  </div>
                 </div>
-                <div className="text-white fw-medium fs-8 text-truncate">
-                  {job.title || `Job Listing ${job.jobId}`}
-                </div>
-              </div>
 
-              <div className="d-flex align-items-center gap-1">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-light border-0 p-1 rounded-circle"
-                  onClick={() => onViewJob(job.jobId)}
-                  title="View job details"
-                  style={{ width: '28px', height: '28px' }}
-                >
-                  <i className="bi bi-eye fs-7 text-info"></i>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-light border-0 p-1 rounded-circle"
-                  onClick={() => onRemoveJob(job.jobId)}
-                  title="Remove from list"
-                  style={{ width: '28px', height: '28px' }}
-                >
-                  <i className="bi bi-x-lg fs-7 text-danger"></i>
-                </button>
+                <div className="d-flex align-items-center gap-1">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light border-0 p-1 rounded-circle"
+                    onClick={() => onViewJob(job.jobId, job.jobSource, job.jobUrl)}
+                    title="View job details"
+                    style={{ width: '28px', height: '28px' }}
+                  >
+                    <i className="bi bi-eye fs-7 text-info"></i>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light border-0 p-1 rounded-circle"
+                    onClick={() => onRemoveJob(job.jobId)}
+                    title="Remove from list"
+                    style={{ width: '28px', height: '28px' }}
+                  >
+                    <i className="bi bi-x-lg fs-7 text-danger"></i>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="p-3 bg-dark border-top border-white border-opacity-10">
+            <button
+              type="button"
+              className="btn btn-purple w-100 fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 py-2 shadow-sm"
+              onClick={() => onProcessBatch && onProcessBatch(selectedJobs)}
+            >
+              <i className="bi bi-lightning-charge-fill text-warning"></i>
+              <span>Process Batch ({selectedJobs.length} Jobs) in ATS</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

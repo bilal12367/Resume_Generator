@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Float
 from datetime import datetime, timezone
 from app.db.connection import Base
 
@@ -20,9 +20,13 @@ class ATSWorkflowSession(Base):
     status = Column(String(50), default="CREATED", nullable=False)
     profile_id = Column(Integer, nullable=True)
     job_id = Column(String(255), nullable=True)
+    batch_id = Column(String(255), nullable=True, index=True)
+    batch_title = Column(String(255), nullable=True)
     pdf_filename = Column(String(255), nullable=True)
     pdf_links = Column(Text, nullable=True)
     error_message = Column(Text, nullable=True)
+    total_tokens = Column(Integer, default=0, nullable=True)
+    processing_time_seconds = Column(Float, default=0.0, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

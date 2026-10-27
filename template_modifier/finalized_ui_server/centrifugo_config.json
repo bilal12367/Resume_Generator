@@ -22,6 +22,11 @@
         "name": "agent",
         "allow_subscribe_for_client": true,
         "allow_publish_for_client": true
+      },
+      {
+        "name": "batch",
+        "allow_subscribe_for_client": true,
+        "allow_publish_for_client": true
       }
     ]
   },

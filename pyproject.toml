@@ -1,0 +1,12 @@
+[project]
+name = "resume-generator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "llama-index>=0.14.25",
+    "llama-index-embeddings-siliconflow>=0.5.0",
+    "llama-index-llms-siliconflow>=0.6.0",
+    "playwright>=1.64.1",
+]

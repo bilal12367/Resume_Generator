@@ -181,8 +181,7 @@ export const JobModal: React.FC<JobModalProps> = ({
                     style={{
                       backgroundColor: '#1a192b',
                       color: '#ffffff',
-                      maxHeight: '360px',
-                      overflowY: 'auto',
+                      minHeight: '150px',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                       overflowWrap: 'anywhere',

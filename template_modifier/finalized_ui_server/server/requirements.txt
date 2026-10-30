@@ -13,7 +13,6 @@ fastapi==0.141.1
 greenlet==3.5.4
 h11==0.16.0
 idna==3.18
-mysqlclient==2.3.0
 passlib==1.7.4
 playwright==1.62.0
 pyasn1==0.6.4
@@ -36,3 +35,5 @@ urllib3==2.7.0
 uvicorn==0.52.1
 llama-index-core>=0.10.0
 llama-index-llms-siliconflow>=0.1.0
+selenium>=4.20.0
+tiktoken>=0.7.0

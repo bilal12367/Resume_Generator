@@ -47,58 +47,92 @@ try:
             conn.commit()
         except Exception:
             pass
+
+    # Ensure default demo user exists for seamless app login
+    from app.db.connection import SessionLocal
+    from app.repositories.user_repository import user_repository
+    from app.schemas.user_schema import UserRegisterRequest
+    with SessionLocal() as db_session:
+        try:
+            candidate = user_repository.get_by_email(db_session, "candidate@example.com")
+            if not candidate:
+                user_repository.create(db_session, UserRegisterRequest(
+                    name="Demo Candidate",
+                    email="candidate@example.com",
+                    password="password123"
+                ))
+            # Ensure default candidate profile exists for ATS workflows
+            from app.controllers.ats_workflow_controller import get_or_create_default_profile
+            get_or_create_default_profile(db_session)
+        except Exception:
+            pass
 except Exception as e:
     print(f"Database initialization info: {e}")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Start tailscale and expose port 8000 via background funnel
-    print("Initializing the tailscale")
-    cmd = (
-        "tailscale up --auth-key=tskey-client-kY64CTJxq821CNTRL-cZ5E12PT59dHYbQ9kX4U9dKsddXAvTHN "
-        "--hostname=bilal1-job-scraper --advertise-tags=tag:admin-test --operator=bilal "
-        "&& tailscale funnel --bg --yes 8000"
-    )
-    process = subprocess.Popen(
-        cmd,
-        shell=True,
-        executable="/bin/bash",
-        preexec_fn=os.setsid,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
-    
-    try:
-        yield
-    finally:
-        # Terminate background startup if still running
-        if process.poll() is None:
-            try:
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                process.wait(timeout=3)
-            except Exception:
+# Environment mode check: Dev environment mode activates Tailscale Funnel lifespan
+env_mode = os.getenv("ENV", "dev").strip().lower()
+is_dev_env = env_mode in ["dev", "development"]
+# is_dev_env = False
+if is_dev_env:
+    @asynccontextmanager
+    async def tailscale_lifespan(app: FastAPI):
+        # Extract Tailscale auth key and hostname
+        ts_authkey = os.getenv("TS_AUTHKEY", "tskey-auth-kzCxGzhg3521CNTRL-Mzf8bpXJDcJ4FgUdmyAjcJJcdTQvh3B1")
+        ts_hostname = os.getenv("TS_HOSTNAME", "bilal2-job-scraper")
+        port = os.getenv("PORT", "8000")
+        user = os.getenv("USER", "bilal")
+
+        print(f"[{env_mode.upper()} MODE] Initializing Tailscale Funnel for '{ts_hostname}' on port {port}...")
+        cmd = (
+            f"tailscale up --authkey={ts_authkey} --hostname={ts_hostname} "
+            f"--operator={user} --reset "
+            f"&& tailscale funnel --bg --yes {port}"
+        )
+        process = subprocess.Popen(
+            cmd,
+            shell=True,
+            executable="/bin/bash",
+            preexec_fn=os.setsid,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        
+        try:
+            yield
+        finally:
+            print("Shutting down Tailscale Funnel...")
+            if process.poll() is None:
                 try:
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+                    process.wait(timeout=3)
                 except Exception:
-                    pass
-        # Down the funnel and tailscale when uvicorn server stops
-        subprocess.run(
-            ["tailscale", "funnel", "reset"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        subprocess.run(
-            ["tailscale", "down"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
+                    try:
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                    except Exception:
+                        pass
+            subprocess.run(
+                ["tailscale", "funnel", "reset"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            subprocess.run(
+                ["tailscale", "down"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+
+    app_lifespan = tailscale_lifespan
+    print(f"Tailscale Funnel lifespan registered for Dev environment mode (Hostname: {os.getenv('TS_HOSTNAME', 'bilal1-job-scraper')}).")
+else:
+    app_lifespan = None
+    print(f"Non-dev environment mode detected ('{env_mode}'). Tailscale Funnel lifespan is turned off and not applied.")
 
 
 app = FastAPI(
     title="Finalized Auth API",
     description="Enterprise Layered FastAPI Server (Controllers, Services, Repositories, Models) connected to MySQL",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=app_lifespan
 )
 
 app.add_middleware(

@@ -3,3 +3,8 @@
 
 ###
 GET http://localhost:8000/api/linkedin/job/4468221669
+
+
+
+###
+GET http://bilal1-job-scraper.bilal.ts.net:8000/health

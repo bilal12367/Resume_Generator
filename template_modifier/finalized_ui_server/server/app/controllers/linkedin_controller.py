@@ -24,6 +24,7 @@ async def search_jobs_endpoint(payload: LinkedInSearchRequest):
     """
     Search for jobs on LinkedIn matching specified keywords, locations, and time filters.
     """
+    print("Triggered")
     try:
         jobs = await linkedin_service.search_jobs(
             keywords=payload.keywords,
@@ -40,6 +41,7 @@ async def search_jobs_endpoint(payload: LinkedInSearchRequest):
             "jobs": jobs
         }
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"Failed to search jobs on LinkedIn: {str(e)}")
 
 

@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.141.1",
-    "mysqlclient>=2.3.0",
     "passlib>=1.7.4",
     "pydantic[email]>=2.13.4",
     "pymysql>=1.2.0",
@@ -16,4 +15,24 @@ dependencies = [
     "uvicorn>=0.52.1",
     "playwright>=1.40.0",
     "requests>=2.34.2",
+    "beautifulsoup4>=4.12.0",
+    "llama-index-core>=0.10.0",
+    "llama-index-llms-siliconflow>=0.1.0",
+    "pyjwt>=2.8.0",
+    "selenium>=4.20.0",
+    "tiktoken>=0.7.0",
+    "pytest>=9.1.1",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "."
+]
+testpaths = [
+    "app/tests"
+]
+filterwarnings = [
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+]
+
+

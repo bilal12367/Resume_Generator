@@ -2,7 +2,7 @@
 set -e
 
 TS_AUTHKEY="${TS_AUTHKEY:-tskey-auth-kzCxGzhg3521CNTRL-Mzf8bpXJDcJ4FgUdmyAjcJJcdTQvh3B1}"
-TS_HOSTNAME="bilal1-job-scraper"
+TS_HOSTNAME="bilal1-job-scraper-2"
 PORT="8000"
 
 echo "============================================"

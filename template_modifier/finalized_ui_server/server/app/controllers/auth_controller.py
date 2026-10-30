@@ -28,3 +28,24 @@ def get_me(current_user: User = Depends(get_current_user)):
     Fetch current authenticated user profile.
     """
     return user_service.get_current_user_profile(user=current_user)
+
+# Active Session Sync (Keeps mobile app logged in across restarts even before native APK recompile)
+_active_dev_session = {}
+
+@router.post("/session")
+def set_active_session(payload: dict):
+    global _active_dev_session
+    _active_dev_session = payload
+    return {"status": "success"}
+
+@router.get("/session")
+def get_active_session():
+    global _active_dev_session
+    return _active_dev_session
+
+@router.delete("/session")
+def clear_active_session():
+    global _active_dev_session
+    _active_dev_session = {}
+    return {"status": "cleared"}
+

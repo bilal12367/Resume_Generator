@@ -1,5 +1,5 @@
 import express from 'express'
-import { Document, Packer, PageMargin, PageSize, Paragraph, TextRun, BorderStyle, ExternalHyperlink, Table, Tab, TableRow, TableCell, TableBorders, WidthType, PageBreak } from 'docx'
+import { Document, Packer, Paragraph, TextRun, BorderStyle, ExternalHyperlink, Table, Tab, TableRow, TableCell, TableBorders, WidthType, PageBreak } from 'docx'
 import fs from 'fs'
 import crypto from 'crypto'
 const app = express()

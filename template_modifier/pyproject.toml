@@ -55,7 +55,11 @@ dependencies = [
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "."
+  ".",
+  "finalized_ui_server/server"
+]
+filterwarnings = [
+  "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 
 [tool.uv.workspace]

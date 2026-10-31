@@ -71,6 +71,15 @@ export interface UserProfile {
   updated_at?: string;
 }
 
+export interface SystemPrompt {
+  id: number;
+  name: string;
+  prompt_text: string;
+  is_default: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface PdfLink {
   template_name: string;
   filename: string;

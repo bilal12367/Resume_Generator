@@ -92,4 +92,8 @@ export const STORAGE_KEYS = {
   LAST_KEYWORD: '@jobagent_last_keyword',
   SELECTED_CITIES: '@jobagent_selected_cities',
   SELECTED_COMPANIES: '@jobagent_selected_companies',
+  ACTIVE_PROFILE_ID: '@jobagent_active_profile_id',
+  ACTIVE_PROMPT_ID: '@jobagent_active_prompt_id',
+  THEME_MODE: '@jobagent_theme_mode',
+  SELECTED_JOBS: '@jobagent_selected_jobs',
 };

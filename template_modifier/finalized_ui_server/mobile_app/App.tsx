@@ -6,6 +6,7 @@ import {
 } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { JobsProvider } from './src/context/JobsContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { TopHeader } from './src/components/TopHeader';
 import { BottomTabBar, TabScreen } from './src/components/BottomTabBar';
 import { SelectedJobsDrawer } from './src/components/SelectedJobsDrawer';
@@ -15,12 +16,14 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { SearchJobsScreen } from './src/screens/SearchJobsScreen';
 import { SavedJobsScreen } from './src/screens/SavedJobsScreen';
 import { WorkflowScreen } from './src/screens/WorkflowScreen';
+import { ProfileScreen } from './src/screens/ProfileScreen';
 import { COLORS, SPACING, RADIUS, SHADOWS } from './src/constants/theme';
 import { ENV_CONFIG } from './src/config/env';
 
 function AppContent() {
   const insets = useSafeAreaInsets();
   const { user, hasConnectedServer, setHasConnectedServer, isInitializing } = useAuth();
+  const { isDark, theme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<TabScreen>('search');
   const [showServerConfig, setShowServerConfig] = useState<boolean>(false);
@@ -99,6 +102,11 @@ function AppContent() {
           title: 'ATS Resume Workflow',
           subtitle: 'Generate tailored ATS data and multi-template PDFs',
         };
+      case 'profile':
+        return {
+          title: 'Profile & Prompts',
+          subtitle: 'Candidate resume profiles and agent system prompts',
+        };
       default:
         return {
           title: 'JobAgent AI',
@@ -110,7 +118,8 @@ function AppContent() {
   const headerInfo = getHeaderInfo();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bg }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       {/* Top Header */}
       <TopHeader
         title={headerInfo.title}
@@ -133,6 +142,8 @@ function AppContent() {
         )}
 
         {activeTab === 'workflow' && <WorkflowScreen />}
+
+        {activeTab === 'profile' && <ProfileScreen />}
       </View>
 
       {/* Persistent Selected Jobs Floating Drawer / Modal */}
@@ -158,12 +169,13 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
-      <AuthProvider>
-        <JobsProvider>
-          <AppContent />
-        </JobsProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <JobsProvider>
+            <AppContent />
+          </JobsProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

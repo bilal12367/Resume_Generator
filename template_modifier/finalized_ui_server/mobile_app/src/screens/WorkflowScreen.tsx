@@ -22,6 +22,7 @@ import {
   PdfLink,
 } from '../types';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
+import { AppStorage, STORAGE_KEYS } from '../utils/storage';
 
 interface WorkflowScreenProps {
   initialJobId?: string | null;
@@ -97,8 +98,20 @@ export const WorkflowScreen: React.FC<WorkflowScreenProps> = () => {
 
       setProfiles(profList);
       if (profList.length > 0) {
-        setSelectedProfileId(profList[0].id);
-        setBatchProfileId(profList[0].id);
+        let initialProfId = profList[0].id;
+        try {
+          const savedActiveId = await AppStorage.getItem(STORAGE_KEYS.ACTIVE_PROFILE_ID);
+          if (savedActiveId) {
+            const parsed = parseInt(savedActiveId, 10);
+            if (profList.some((p) => p.id === parsed)) {
+              initialProfId = parsed;
+            }
+          }
+        } catch {
+          // ignore
+        }
+        setSelectedProfileId(initialProfId);
+        setBatchProfileId(initialProfId);
       }
 
       setSavedJobs(jobList);

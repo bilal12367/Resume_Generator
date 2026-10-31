@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobsContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import { SavedJob } from '../types';
 import { JobCard } from '../components/JobCard';
@@ -26,6 +27,7 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
 }) => {
   const { apiBaseUrl } = useAuth();
   const { setTargetWorkflowJob } = useJobs();
+  const { theme } = useTheme();
 
   const [jobs, setJobs] = useState<SavedJob[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,8 +48,38 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const data = await api.getSavedJobs(apiBaseUrl);
-      setJobs(data);
+      const [savedJobs, workflowSessions] = await Promise.all([
+        api.getSavedJobs(apiBaseUrl),
+        api.getWorkflowSessions(apiBaseUrl).catch(() => []),
+      ]);
+
+      // Map workflow sessions by job_id to accurately resolve ATS & PDF generation status
+      const sessionMap = new Map<string, any>();
+      for (const s of workflowSessions) {
+        if (s.job_id) {
+          sessionMap.set(String(s.job_id), s);
+        }
+      }
+
+      const enriched: SavedJob[] = savedJobs.map((j) => {
+        const sess = sessionMap.get(String(j.job_id));
+        let resolvedStatus: any = j.status || 'Basic Information';
+
+        if (sess) {
+          if (sess.status === 'PDF_COMPLETED' || (sess.pdf_links && sess.pdf_links.length > 0)) {
+            resolvedStatus = 'PDF Generated';
+          } else if (sess.status === 'ATS_COMPLETED' || sess.generated_ats) {
+            resolvedStatus = 'ATS Data Generated';
+          }
+        }
+
+        return {
+          ...j,
+          status: resolvedStatus,
+        };
+      });
+
+      setJobs(enriched);
     } catch (err: any) {
       console.warn('Error loading saved jobs:', err);
       setErrorMsg(err.message || 'Failed to load saved jobs from server');
@@ -124,7 +156,7 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <FlatList
         data={filteredJobs}
         keyExtractor={(item) => `${item.job_source}-${item.job_id}`}
@@ -134,12 +166,12 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
         ListHeaderComponent={
           <View style={styles.header}>
             {/* Search Input */}
-            <View style={styles.searchBar}>
+            <View style={[styles.searchBar, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: theme.textMain }]}
                 placeholder="Search saved jobs by title, company, or ID..."
-                placeholderTextColor={COLORS.textLight}
+                placeholderTextColor={theme.textLight}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -151,7 +183,7 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
             </View>
 
             {/* Source Filters (All / LinkedIn / Naukri) */}
-            <View style={styles.sourceTabs}>
+            <View style={[styles.sourceTabs, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <TouchableOpacity
                 style={[
                   styles.sourceTab,
@@ -216,25 +248,30 @@ export const SavedJobsScreen: React.FC<SavedJobsScreenProps> = ({
                 'ATS Data Generated',
                 'PDF Generated',
                 'Applied',
-              ].map((st) => (
-                <TouchableOpacity
-                  key={st}
-                  style={[
-                    styles.statusPill,
-                    statusFilter === st && styles.statusPillActive,
-                  ]}
-                  onPress={() => setStatusFilter(st)}
-                >
-                  <Text
+              ].map((st) => {
+                const isActive = statusFilter === st;
+                return (
+                  <TouchableOpacity
+                    key={st}
                     style={[
-                      styles.statusPillText,
-                      statusFilter === st && styles.statusPillTextActive,
+                      styles.statusPill,
+                      { backgroundColor: theme.surface, borderColor: theme.border },
+                      isActive && { backgroundColor: theme.primaryLight, borderColor: theme.primary },
                     ]}
+                    onPress={() => setStatusFilter(st)}
                   >
-                    {st}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        { color: theme.textSecondary },
+                        isActive && { color: theme.primary, fontWeight: '700' },
+                      ]}
+                    >
+                      {st === 'ATS Data Generated' ? '⚡ ATS Generated' : st === 'PDF Generated' ? '📄 PDF Generated' : st}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             {/* Error Banner */}

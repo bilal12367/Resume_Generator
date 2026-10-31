@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 interface TopHeaderProps {
@@ -21,6 +22,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenServerConfig,
 }) => {
   const { user, logout, apiBaseUrl } = useAuth();
+  const { isDark, toggleTheme, theme } = useTheme();
 
   // Shorten host for display badge
   const displayHost = apiBaseUrl.replace(/^https?:\/\//, '').split('/')[0];
@@ -41,26 +43,35 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   };
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
       <View style={styles.topRow}>
         <View style={styles.brandRow}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoIcon}>🤖</Text>
+          <View style={[styles.logoBadge, { backgroundColor: theme.primaryLight, borderColor: theme.primaryBorder }]}>
+            <Text style={styles.logoIcon}>⚡</Text>
           </View>
           <View>
-            <Text style={styles.brandTitle}>JobAgent AI</Text>
-            <Text style={styles.brandSubtitle}>ATS & Job Suite</Text>
+            <Text style={[styles.brandTitle, { color: theme.primary }]}>JobAgent AI</Text>
+            <Text style={[styles.brandSubtitle, { color: theme.textMuted }]}>ATS & Job Suite</Text>
           </View>
         </View>
 
         <View style={styles.actionsRow}>
+          {/* Dark Mode Toggle */}
           <TouchableOpacity
-            style={styles.serverBadge}
+            style={[styles.themeToggleBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primaryBorder }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.serverBadge, { backgroundColor: theme.bg, borderColor: theme.border }]}
             onPress={onOpenServerConfig}
             activeOpacity={0.7}
           >
             <View style={styles.statusDot} />
-            <Text style={styles.serverBadgeText} numberOfLines={1}>
+            <Text style={[styles.serverBadgeText, { color: theme.textSecondary }]} numberOfLines={1}>
               {displayHost}
             </Text>
           </TouchableOpacity>
@@ -80,8 +91,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </View>
 
       <View style={styles.titleRow}>
-        <Text style={styles.screenTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.screenTitle, { color: theme.textMain }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.screenSubtitle, { color: theme.textMuted }]}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -137,6 +148,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
+  },
+  themeToggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  themeToggleIcon: {
+    fontSize: 14,
   },
   serverBadge: {
     flexDirection: 'row',

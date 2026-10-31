@@ -966,3 +966,34 @@ async def list_workflow_batches(db: Session = Depends(get_db)):
         logger.error(f"Error fetching batches: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to list batches: {str(e)}")
 
+
+# --- Selected Jobs Persistence API ---
+
+class PersistSelectedJobsRequest(BaseModel):
+    selected_jobs: List[Dict[str, Any]]
+
+
+@router.get("/selected-jobs", summary="Get Persisted Selected Jobs List")
+async def get_selected_jobs_endpoint():
+    try:
+        fpath = PROJECT_ROOT / "selected_jobs.json"
+        if fpath.exists():
+            data = json.loads(fpath.read_text(encoding="utf-8"))
+            return {"status": "success", "selected_jobs": data}
+        return {"status": "success", "selected_jobs": []}
+    except Exception as e:
+        logger.error(f"Error reading selected jobs: {e}")
+        return {"status": "success", "selected_jobs": []}
+
+
+@router.post("/selected-jobs", summary="Save Persisted Selected Jobs List")
+async def save_selected_jobs_endpoint(payload: PersistSelectedJobsRequest):
+    try:
+        fpath = PROJECT_ROOT / "selected_jobs.json"
+        fpath.write_text(json.dumps(payload.selected_jobs, indent=2), encoding="utf-8")
+        return {"status": "success", "count": len(payload.selected_jobs)}
+    except Exception as e:
+        logger.error(f"Error saving selected jobs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to persist selected jobs: {str(e)}")
+
+

@@ -7,9 +7,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useJobs } from '../context/JobsContext';
+import { useTheme } from '../context/ThemeContext';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
-export type TabScreen = 'search' | 'saved' | 'workflow';
+export type TabScreen = 'search' | 'saved' | 'workflow' | 'profile';
 
 interface BottomTabBarProps {
   currentTab: TabScreen;
@@ -22,6 +23,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { selectedJobs } = useJobs();
+  const { theme } = useTheme();
 
   const tabs: Array<{
     id: TabScreen;
@@ -37,13 +39,18 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
     {
       id: 'saved',
       label: 'Apply & Saved',
-      icon: '💼',
+      icon: '📑',
     },
     {
       id: 'workflow',
       label: 'ATS & PDF',
       icon: '⚡',
       badgeCount: selectedJobs.length > 0 ? selectedJobs.length : undefined,
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: '👤',
     },
   ];
 
@@ -52,6 +59,8 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       style={[
         styles.container,
         {
+          backgroundColor: theme.tabBar,
+          borderTopColor: theme.tabBarBorder,
           paddingBottom: Math.max(insets.bottom, SPACING.sm),
         },
       ]}
@@ -62,7 +71,10 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
           return (
             <TouchableOpacity
               key={tab.id}
-              style={[styles.tabButton, isActive && styles.activeTabButton]}
+              style={[
+                styles.tabButton,
+                isActive && { backgroundColor: theme.primaryLight },
+              ]}
               onPress={() => onSelectTab(tab.id)}
               activeOpacity={0.8}
             >
@@ -71,18 +83,24 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
                   {tab.icon}
                 </Text>
                 {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
-                  <View style={styles.badge}>
+                  <View style={[styles.badge, { backgroundColor: theme.primary, borderColor: theme.tabBar }]}>
                     <Text style={styles.badgeText}>{tab.badgeCount}</Text>
                   </View>
                 )}
               </View>
               <Text
-                style={[styles.tabLabel, isActive && styles.activeTabLabel]}
+                style={[
+                  styles.tabLabel,
+                  { color: isActive ? theme.primary : theme.textMuted },
+                  isActive && styles.activeTabLabel,
+                ]}
                 numberOfLines={1}
               >
                 {tab.label}
               </Text>
-              {isActive && <View style={styles.activeIndicator} />}
+              {isActive && (
+                <View style={[styles.activeIndicator, { backgroundColor: theme.primary }]} />
+              )}
             </TouchableOpacity>
           );
         })}

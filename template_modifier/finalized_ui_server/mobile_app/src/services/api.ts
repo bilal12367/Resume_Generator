@@ -4,6 +4,7 @@ import {
   SearchJobItem,
   SavedJob,
   UserProfile,
+  SystemPrompt,
   WorkflowSession,
   WorkflowBatch,
   JobSource,
@@ -319,6 +320,186 @@ class ApiService {
     throw new Error(errData.detail || `Failed to load user profiles (HTTP ${res.status})`);
   }
 
+  async createUserProfile(
+    baseUrl: string,
+    profileName: string,
+    userData: any
+  ): Promise<{ message: string; profile_id: number }> {
+    const url = this.formatUrl(baseUrl, 'api/workflow/profiles');
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile_name: profileName,
+          user_data: userData,
+        }),
+      });
+    } catch (err: any) {
+      throw new Error(`Network error creating profile: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to create profile (HTTP ${res.status})`);
+  }
+
+  async updateUserProfile(
+    baseUrl: string,
+    profileId: number,
+    profileName: string,
+    userData: any
+  ): Promise<{ message: string }> {
+    const url = this.formatUrl(baseUrl, `api/workflow/profiles/${profileId}`);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile_name: profileName,
+          user_data: userData,
+        }),
+      });
+    } catch (err: any) {
+      throw new Error(`Network error updating profile: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to update profile (HTTP ${res.status})`);
+  }
+
+  async deleteUserProfile(baseUrl: string, profileId: number): Promise<{ message: string }> {
+    const url = this.formatUrl(baseUrl, `api/workflow/profiles/${profileId}`);
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'DELETE' });
+    } catch (err: any) {
+      throw new Error(`Network error deleting profile: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to delete profile (HTTP ${res.status})`);
+  }
+
+  // --- System Prompts ---
+  async getSystemPrompts(baseUrl: string): Promise<SystemPrompt[]> {
+    const url = this.formatUrl(baseUrl, 'api/linkedin/system-prompts');
+    let res: Response;
+    try {
+      res = await fetch(url);
+    } catch (err: any) {
+      throw new Error(`Network error loading system prompts: ${err.message}`);
+    }
+
+    if (res.ok) {
+      const data = await res.json();
+      return data.prompts || [];
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to load system prompts (HTTP ${res.status})`);
+  }
+
+  async createSystemPrompt(
+    baseUrl: string,
+    name: string,
+    promptText: string,
+    isDefault: boolean = false
+  ): Promise<any> {
+    const url = this.formatUrl(baseUrl, 'api/linkedin/system-prompts');
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          prompt_text: promptText.trim(),
+          is_default: isDefault,
+        }),
+      });
+    } catch (err: any) {
+      throw new Error(`Network error creating prompt: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to create system prompt (HTTP ${res.status})`);
+  }
+
+  async updateSystemPrompt(
+    baseUrl: string,
+    promptId: number,
+    name: string,
+    promptText: string,
+    isDefault: boolean = false
+  ): Promise<any> {
+    const url = this.formatUrl(baseUrl, `api/linkedin/system-prompts/${promptId}`);
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          prompt_text: promptText.trim(),
+          is_default: isDefault,
+        }),
+      });
+    } catch (err: any) {
+      throw new Error(`Network error updating prompt: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to update system prompt (HTTP ${res.status})`);
+  }
+
+  async deleteSystemPrompt(baseUrl: string, promptId: number): Promise<any> {
+    const url = this.formatUrl(baseUrl, `api/linkedin/system-prompts/${promptId}`);
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'DELETE' });
+    } catch (err: any) {
+      throw new Error(`Network error deleting prompt: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to delete system prompt (HTTP ${res.status})`);
+  }
+
+  async setDefaultSystemPrompt(baseUrl: string, promptId: number): Promise<any> {
+    const url = this.formatUrl(baseUrl, `api/linkedin/system-prompts/${promptId}/set-default`);
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'POST' });
+    } catch (err: any) {
+      throw new Error(`Network error setting default prompt: ${err.message}`);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.detail || `Failed to set default system prompt (HTTP ${res.status})`);
+  }
+
   // --- Workflow Sessions ---
   async getWorkflowSessions(baseUrl: string): Promise<WorkflowSession[]> {
     const url = this.formatUrl(baseUrl, 'api/workflow/sessions');
@@ -513,6 +694,34 @@ class ApiService {
     }
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.detail || `Failed to load batches (HTTP ${res.status})`);
+  }
+
+  // --- Selected Jobs Persistence ---
+  async getSelectedJobs(baseUrl: string): Promise<any[]> {
+    const url = this.formatUrl(baseUrl, 'api/workflow/selected-jobs');
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return data.selected_jobs || [];
+      }
+    } catch {
+      // Fallback safe
+    }
+    return [];
+  }
+
+  async saveSelectedJobs(baseUrl: string, selectedJobs: any[]): Promise<void> {
+    const url = this.formatUrl(baseUrl, 'api/workflow/selected-jobs');
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_jobs: selectedJobs }),
+      });
+    } catch {
+      // Fallback safe
+    }
   }
 }
 

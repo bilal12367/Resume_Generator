@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SearchJobItem, SavedJob, SelectedJob } from '../types';
 import { useJobs } from '../context/JobsContext';
+import { useTheme } from '../context/ThemeContext';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../constants/theme';
 
 interface JobCardProps {
@@ -22,6 +23,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   onStartWorkflow,
 }) => {
   const { isSelected, toggleSelectedJob } = useJobs();
+  const { theme } = useTheme();
 
   const isNaukri = (job.job_source || '').toLowerCase() === 'naukri';
   const jobId = String(job.job_id);
@@ -62,8 +64,10 @@ export const JobCard: React.FC<JobCardProps> = ({
     }
   };
 
+  const jobStatus = 'status' in job ? (job.status as string) : undefined;
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
       {/* Top Header Row */}
       <View style={styles.headerRow}>
         <View style={styles.badgeGroup}>
@@ -78,13 +82,27 @@ export const JobCard: React.FC<JobCardProps> = ({
             </Text>
           </View>
 
-          <View style={styles.idBadge}>
-            <Text style={styles.idBadgeText}>ID: {jobId}</Text>
+          <View style={[styles.idBadge, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+            <Text style={[styles.idBadgeText, { color: theme.textMuted }]}>ID: {jobId}</Text>
           </View>
+
+          {/* Workflow Status Badge */}
+          {jobStatus && jobStatus !== 'Basic Information' && (
+            <View
+              style={[
+                styles.statusBadge,
+                jobStatus === 'PDF Generated' ? styles.statusBadgePdf : styles.statusBadgeAts,
+              ]}
+            >
+              <Text style={styles.statusBadgeText}>
+                {jobStatus === 'PDF Generated' ? '✓ PDF Ready' : '⚡ ATS Ready'}
+              </Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.timeBadge}>
-          <Text style={styles.timeBadgeText}>🕒 {postedDate}</Text>
+        <View style={[styles.timeBadge, { backgroundColor: theme.bg }]}>
+          <Text style={[styles.timeBadgeText, { color: theme.textMuted }]}>🕒 {postedDate}</Text>
         </View>
       </View>
 
@@ -94,13 +112,13 @@ export const JobCard: React.FC<JobCardProps> = ({
         activeOpacity={0.8}
         style={styles.clickableTitleArea}
       >
-        <Text style={styles.jobTitle} numberOfLines={2}>
+        <Text style={[styles.jobTitle, { color: theme.textMain }]} numberOfLines={2}>
           {job.title}
         </Text>
 
         <View style={styles.companyRow}>
           <Text style={styles.companyIcon}>🏢</Text>
-          <Text style={styles.companyName} numberOfLines={1}>
+          <Text style={[styles.companyName, { color: theme.textSecondary }]} numberOfLines={1}>
             {job.company_name || 'Employer'}
           </Text>
         </View>
@@ -108,8 +126,8 @@ export const JobCard: React.FC<JobCardProps> = ({
 
       {/* Location & Experience Meta Tags */}
       <View style={styles.metaRow}>
-        <View style={styles.metaBadge}>
-          <Text style={styles.metaBadgeText} numberOfLines={1}>
+        <View style={[styles.metaBadge, { backgroundColor: theme.bg, borderColor: theme.border }]}>
+          <Text style={[styles.metaBadgeText, { color: theme.textSecondary }]} numberOfLines={1}>
             📍 {job.location || 'Location Not Specified'}
           </Text>
         </View>
@@ -233,6 +251,25 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     fontFamily: 'monospace',
+  },
+  statusBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+  },
+  statusBadgePdf: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
+  },
+  statusBadgeAts: {
+    backgroundColor: '#F3E8FF',
+    borderColor: '#D8B4FE',
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#15803D',
   },
   timeBadge: {
     backgroundColor: COLORS.bg,

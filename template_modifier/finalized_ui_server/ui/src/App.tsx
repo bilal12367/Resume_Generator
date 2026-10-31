@@ -53,8 +53,33 @@ export function App() {
     return [];
   });
 
+  // On mount, sync persisted selected jobs from server
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/workflow/selected-jobs`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.selected_jobs) && data.selected_jobs.length > 0) {
+          setSelectedJobs((prev) => {
+            // If local storage is empty, take server list
+            if (prev.length === 0) return data.selected_jobs;
+            // Otherwise merge unique by jobId
+            const ids = new Set(prev.map((j) => j.jobId));
+            const newFromServer = data.selected_jobs.filter((j: any) => !ids.has(j.jobId));
+            return [...prev, ...newFromServer];
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Sync to both localStorage & server on changes
   useEffect(() => {
     localStorage.setItem('selected_jobs_list', JSON.stringify(selectedJobs));
+    fetch(`${API_BASE_URL}/api/workflow/selected-jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selected_jobs: selectedJobs }),
+    }).catch(() => {});
   }, [selectedJobs]);
 
   const handleToggleAddToList = (job: SelectedJob) => {
